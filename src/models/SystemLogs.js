@@ -33,4 +33,4 @@ const systemLogSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("ActionLog", actionLogSchema);
+module.exports = mongoose.model("ActionLog", systemLogSchema);
