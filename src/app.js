@@ -5,6 +5,9 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
+// routes
+const authRoutes = require("./routes/authRoutes");
+
 const app = express();
 
 app.use(cors());
@@ -14,6 +17,9 @@ mongoose
   .connect("mongodb://localhost:27017/progtalk")
   .then(() => console.log("Połączono z MongoDB"))
   .catch((err) => console.error("Błąd połączenia z bazą:", err));
+
+// routes
+app.use("/api/auth", authRoutes);
 
 app.get("/", (req, res) => {
   res.send("Serwer ProgTalk działa!");
