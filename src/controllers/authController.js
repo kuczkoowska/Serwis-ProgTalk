@@ -68,7 +68,7 @@ exports.login = async (req, res) => {
 
     if (!(await user.checkPassword(password))) {
       await SystemLogs.create({
-        performerEmailSnapshot: email,
+        performerEmailSnapshot: email || username,
         actionType: ACTION_TYPES.LOGIN_FAILED,
       });
       return res.status(401).json({ message: "Nieudana próba logowania" });
