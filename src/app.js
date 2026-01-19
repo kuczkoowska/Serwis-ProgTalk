@@ -7,6 +7,7 @@ const cors = require("cors");
 
 // routes
 const authRoutes = require("./routes/authRoutes");
+const topicRoutes = require("./routes/topicRoutes");
 
 const app = express();
 
@@ -20,6 +21,7 @@ mongoose
 
 // routes
 app.use("/api/auth", authRoutes);
+app.use("/api/topics", topicRoutes);
 
 app.get("/", (req, res) => {
   res.send("Serwer ProgTalk działa!");
