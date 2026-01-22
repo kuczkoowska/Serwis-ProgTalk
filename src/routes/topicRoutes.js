@@ -10,4 +10,7 @@ router.post("/", topicController.createTopic); // Tworzenie
 router.get("/", topicController.getAllTopics); // Lista
 router.get("/:id", topicController.getTopicDetails); // Szczegóły + podtematy
 
+router.post("/:topicId/moderators", topicController.promoteModerator);
+router.post("/:topicId/moderators/back", topicController.takeBackModerator);
+router.post("/:topicId/block", topicController.blockUserInTopic);
 module.exports = router;
