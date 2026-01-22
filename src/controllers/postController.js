@@ -1,5 +1,6 @@
 const Post = require("../models/Post");
 const Topic = require("../models/Topic");
+const { isUserBlockedInTopic } = require("../utils/permissions");
 
 exports.createPost = async (req, res) => {
   try {
@@ -16,7 +17,12 @@ exports.createPost = async (req, res) => {
       });
     }
 
-    // c) TODO: sprawdzanie czy użytkownik nie jest ZABLOKOWANY w tym temacie
+    const isBlocked = isUserBlockedInTopic(req.user._id, topicId);
+    if (isBlocked) {
+      return res.status(403).json({
+        message: "Jesteś zablokowany w tym temacie",
+      });
+    }
 
     const newPost = await Post.create({
       content,
@@ -64,6 +70,35 @@ exports.getTopicPosts = async (req, res) => {
       totalPages: Math.ceil(totalPosts / limit),
       currentPage: page,
       data: { posts },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Błąd serwera", error: error.message });
+  }
+};
+
+exports.toggleLike = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user._id;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Wpis nie istnieje." });
+    }
+
+    const isLiked = post.likes.includes(userId);
+
+    if (isLiked) {
+      post.likes.pull(userId);
+    } else {
+      post.likes.push(userId);
+    }
+
+    await post.save();
+    res.status(200).json({
+      status: "success",
+      message: isLiked ? "Polubienie usunięte" : "Wpis polubiony",
+      data: { likesCount: post.likes.length },
     });
   } catch (error) {
     res.status(500).json({ message: "Błąd serwera", error: error.message });

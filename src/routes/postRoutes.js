@@ -8,5 +8,6 @@ router.use(authMiddleware.protect);
 
 router.post("/", postController.createPost);
 router.get("/topic/:topicId", postController.getTopicPosts);
+router.post("/:postId/like", postController.toggleLike);
 
 module.exports = router;
