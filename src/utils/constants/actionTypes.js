@@ -17,6 +17,7 @@ const ACTION_TYPES = {
 
   // Bezpieczeństwo
   LOGIN_FAILED: "LOGIN_FAILED",
+  LOGIN_SUCCESS: "LOGIN_SUCCESS",
 };
 
 module.exports = {

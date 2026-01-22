@@ -4,6 +4,8 @@ const User = require("../models/User");
 const SystemLogs = require("../models/SystemLogs");
 const { ACTION_TYPES } = require("../utils/constants/actionTypes");
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: "5d", // potem do zmiany
@@ -13,6 +15,12 @@ const signToken = (id) => {
 exports.register = async (req, res) => {
   try {
     const { email, username, password, passwordConfirm } = req.body;
+
+    if (!emailRegex.test(email)) {
+      return res
+        .status(400)
+        .json({ message: "Podany email jest nieprawidłowy." });
+    }
 
     if (password != passwordConfirm) {
       return res.status(400).json({ message: "Hasła nie są identyczne" });
@@ -37,6 +45,16 @@ exports.register = async (req, res) => {
       password,
     });
 
+    const io = req.app.get("socketio");
+    if (io) {
+      io.to("admins").emit("new_user_registration", {
+        email: newUser.email,
+        id: newUser._id,
+        message: "Nowy użytkownik oczekuje na akceptację",
+      });
+      console.log(`Wysłano powiadomienie do adminów o: ${newUser.email}`);
+    }
+
     res.status(201).json({
       status: "success",
       message: "Konto zostało utworzone. Czeka na akceptację administratora.",
@@ -52,6 +70,12 @@ exports.login = async (req, res) => {
     const email = req.body?.email;
     const password = req.body?.password;
 
+    if (!emailRegex.test(email)) {
+      return res
+        .status(400)
+        .json({ message: "Podany email jest nieprawidłowy." });
+    }
+
     if (!password || (!email && !username)) {
       return res
         .status(400)
@@ -63,7 +87,7 @@ exports.login = async (req, res) => {
     }).select("+password");
 
     if (!user) {
-      return res.status(401).json({ message: "Użytkownik nie istnieje" });
+      return res.status(401).json({ message: "Błędne dane logowania" });
     }
 
     if (!(await user.checkPassword(password))) {
@@ -86,6 +110,12 @@ exports.login = async (req, res) => {
         message: "Twoje konto oczekuje na akceptację administratora.",
       });
     }
+
+    await SystemLogs.create({
+      performer: user._id,
+      actionType: "LOGIN_SUCCESS",
+      performerEmailSnapshot: user.email,
+    });
 
     const token = signToken(user._id);
 

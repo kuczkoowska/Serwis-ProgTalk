@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
+const { Server } = require("socket.io");
 
 // routes
 const authRoutes = require("./routes/authRoutes");
@@ -52,6 +53,16 @@ const options = {
 };
 
 const httpsServer = https.createServer(options, app);
+const socketHandler = require("./socket");
+
+const io = new Server(httpsServer, {
+  cors: {
+    origin: "*",
+  },
+});
+
+app.set("socketio", io);
+socketHandler(io);
 
 const PORT = process.env.PORT || 3000;
 httpsServer.listen(PORT, () => {
