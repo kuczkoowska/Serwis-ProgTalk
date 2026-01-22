@@ -4,6 +4,8 @@ const https = require("https");
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const swaggerUi = require("swagger-ui-express");
+const swaggerJsDoc = require("swagger-jsdoc");
 
 // routes
 const authRoutes = require("./routes/authRoutes");
@@ -19,6 +21,21 @@ mongoose
   .connect("mongodb://localhost:27017/progtalk")
   .then(() => console.log("Połączono z MongoDB"))
   .catch((err) => console.error("Błąd połączenia z bazą:", err));
+
+const swaggerOptions = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "ProgTalk API",
+      version: "1.0.0",
+      description: "Dokumentacja API",
+    },
+  },
+  apis: ["./src/docs/*.yaml"],
+};
+
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // routes
 app.use("/api/auth", authRoutes);
@@ -39,4 +56,5 @@ const httpsServer = https.createServer(options, app);
 const PORT = process.env.PORT || 3000;
 httpsServer.listen(PORT, () => {
   console.log(`Serwer nasłuchuje na https://localhost:${PORT}`);
+  console.log(`Dokumentacja: https://localhost:${PORT}/api-docs`);
 });

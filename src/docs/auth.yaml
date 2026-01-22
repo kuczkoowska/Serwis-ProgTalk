@@ -1,0 +1,44 @@
+paths:
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Rejestracja użytkownika
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, username, password, passwordConfirm]
+              properties:
+                email: { type: string, format: email, example: jan@test.pl }
+                username: { type: string, example: jankowalski }
+                password: { type: string, format: password, example: Haslo123! }
+                passwordConfirm:
+                  { type: string, format: password, example: Haslo123! }
+      responses:
+        201:
+          description: Konto utworzone
+        400:
+          description: Błąd walidacji
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Logowanie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                email: { type: string, example: jan@test.pl }
+                username: { type: string }
+                password: { type: string, example: Haslo123! }
+      responses:
+        200:
+          description: Zalogowano (Token JWT)
+        401:
+          description: Błędne dane
