@@ -3,14 +3,8 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const SystemLogs = require("../models/SystemLogs");
 const { ACTION_TYPES } = require("../utils/constants/actionTypes");
-
+const { signToken } = require("../utils/jwtHelper");
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const signToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: "5d", // potem do zmiany
-  });
-};
 
 exports.register = async (req, res) => {
   try {
