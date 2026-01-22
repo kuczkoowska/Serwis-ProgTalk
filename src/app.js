@@ -12,6 +12,7 @@ const { Server } = require("socket.io");
 const authRoutes = require("./routes/authRoutes");
 const topicRoutes = require("./routes/topicRoutes");
 const postRoutes = require("./routes/postRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.use("/api/auth", authRoutes);
 app.use("/api/topics", topicRoutes);
 app.use("/api/posts", postRoutes);
+app.use("api/users", userRoutes);
 
 app.get("/", (req, res) => {
   res.send("Serwer ProgTalk działa!");
