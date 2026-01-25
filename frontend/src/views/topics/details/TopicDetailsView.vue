@@ -21,7 +21,7 @@
             />
           </div>
 
-          <div v-else class="empty-state custom-card">
+          <div v-else class="empty-state">
             <div class="empty-icon-circle">
               <i
                 class="pi pi-comments"
@@ -32,11 +32,13 @@
             <p>Nikt jeszcze nie odpisał. Bądź tą pierwszą osobą!</p>
           </div>
 
-          <TopicReplyEditor
-            id="reply-form"
-            :loading="sending"
-            @submit="handleAddPost"
-          />
+          <div class="topic">
+            <TopicReplyEditor
+              id="reply-form"
+              :loading="sending"
+              @submit="handleAddPost"
+            />
+          </div>
         </div>
 
         <div class="sidebar-column">
@@ -180,6 +182,10 @@ const refreshData = () => loadAllData(route.params.id);
   align-items: center;
   justify-content: center;
   margin-bottom: 1rem;
+}
+
+.topic {
+  margin-top: 2rem;
 }
 
 .empty-state h3 {
