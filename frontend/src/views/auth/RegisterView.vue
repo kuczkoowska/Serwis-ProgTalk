@@ -92,12 +92,6 @@
 <script setup>
 import { ref, reactive } from "vue";
 import { useAuthStore } from "../../stores/auth";
-import Card from "primevue/card";
-import InputText from "primevue/inputtext";
-import Password from "primevue/password";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import { Divider } from "primevue";
 
 const form = reactive({
   email: "",

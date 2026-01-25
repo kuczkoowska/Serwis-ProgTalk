@@ -59,12 +59,6 @@
 import { ref } from "vue";
 import { useAuthStore } from "../../stores/auth";
 
-import Card from "primevue/card";
-import InputText from "primevue/inputtext";
-import Password from "primevue/password";
-import Button from "primevue/button";
-import Message from "primevue/message";
-
 const emailOrLogin = ref("");
 const password = ref("");
 const errorMessage = ref("");
