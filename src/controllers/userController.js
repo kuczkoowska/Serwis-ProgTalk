@@ -20,7 +20,6 @@ exports.updatePassword = async (req, res) => {
     user.password = newPassword;
     await user.save();
 
-    //nowy token aby nie wylogowalo - czy to będzie ok?
     const token = signToken(user._id);
 
     res

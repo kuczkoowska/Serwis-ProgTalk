@@ -17,7 +17,7 @@ exports.createPost = async (req, res) => {
       });
     }
 
-    const isBlocked = isUserBlockedInTopic(req.user._id, topicId);
+    const isBlocked = await isUserBlockedInTopic(req.user._id, topicId);
     if (isBlocked) {
       return res.status(403).json({
         message: "Jesteś zablokowany w tym temacie",

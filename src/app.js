@@ -43,7 +43,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.use("/api/auth", authRoutes);
 app.use("/api/topics", topicRoutes);
 app.use("/api/posts", postRoutes);
-app.use("api/users", userRoutes);
+app.use("/api/users", userRoutes);
 
 app.get("/", (req, res) => {
   res.send("Serwer ProgTalk działa!");

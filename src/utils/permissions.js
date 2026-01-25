@@ -10,7 +10,7 @@ exports.canManageTopic = async (userId, topicId) => {
   return topicsToCheck.some((t) => {
     if (t.creator.toString() === userIdStr) return true;
 
-    const isMod = t.moderators.some((m) => m.user.toString() === userId);
+    const isMod = t.moderators.some((m) => m.user.toString() === userIdStr);
     return isMod;
   });
 };
@@ -18,6 +18,8 @@ exports.canManageTopic = async (userId, topicId) => {
 exports.isUserBlockedInTopic = async (userId, topicId) => {
   const topic = await Topic.findById(topicId).populate("ancestors");
   if (!topic) return false;
+
+  const userIdStr = userId.toString();
 
   const blockedInCurrent = topic.blockedUsers.find(
     (b) => b.user.toString() === userIdStr,

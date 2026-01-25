@@ -140,8 +140,8 @@ exports.takeBackModerator = async (req, res) => {
         .json({ message: "Ten użytkownik nie jest moderatorem." });
 
     const isPromoter =
-      mod.promotedBy.toString() &&
-      mod.promotedBy.toString() === req.user._id.toString();
+      mod.promotedBy && mod.promotedBy.toString() === req.user._id.toString();
+
     const isCreator = topic.creator.toString() === req.user._id.toString();
     const isAdmin = req.user.role === "admin";
 
@@ -157,7 +157,7 @@ exports.takeBackModerator = async (req, res) => {
     }
 
     topic.moderators = topic.moderators.filter(
-      (m) => m.user.toString() !== userIdToRevoke,
+      (m) => m.user.toString() !== userIdToTake,
     );
     await topic.save();
 
