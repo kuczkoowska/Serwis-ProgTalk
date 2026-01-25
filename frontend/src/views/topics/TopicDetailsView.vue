@@ -72,14 +72,14 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useToast } from "primevue/usetoast";
-import { useTopicsStore } from "../../../stores/topics.js";
-import { usePostsStore } from "../../../stores/posts.js";
-import CreateTopicDialog from "../components/CreateTopicDialog.vue";
-import TopicStatsCard from "../../../components/topics/details/TopicStatsCard.vue";
-import SubtopicsCard from "../../../components/topics/details/SubtopicsCard.vue";
-import TopicReplyEditor from "../../../components/topics/details/TopicReplyEditor.vue";
-import TopicPost from "../../../components/topics/general/TopicPost.vue";
-import TopicHeader from "../../../components/topics/details/TopicHeader.vue";
+import { useTopicsStore } from "../../stores/topics.js";
+import { usePostsStore } from "../../stores/posts.js";
+import CreateTopicDialog from "./components/CreateTopicDialog.vue";
+import TopicStatsCard from "../../components/topics/details/TopicStatsCard.vue";
+import SubtopicsCard from "../../components/topics/details/SubtopicsCard.vue";
+import TopicReplyEditor from "../../components/topics/details/TopicReplyEditor.vue";
+import TopicPost from "../../components/topics/general/TopicPost.vue";
+import TopicHeader from "../../components/topics/details/TopicHeader.vue";
 
 const route = useRoute();
 const topicsStore = useTopicsStore();
