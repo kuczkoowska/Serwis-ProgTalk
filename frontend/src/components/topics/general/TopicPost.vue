@@ -39,9 +39,8 @@
 
 <script setup>
 import { computed } from "vue";
-import { useAuthStore } from "../../../../stores/auth";
-import AvatarComponent from "../../../../components/AvatarComponent.vue";
-
+import { useAuthStore } from "../../../stores/auth";
+import AvatarComponent from "../../AvatarComponent.vue";
 import Button from "primevue/button";
 
 const props = defineProps({

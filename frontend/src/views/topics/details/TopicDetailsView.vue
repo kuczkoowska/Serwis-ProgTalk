@@ -76,7 +76,7 @@ import CreateTopicDialog from "../components/CreateTopicDialog.vue";
 import TopicStatsCard from "./components/TopicStatsCard.vue";
 import SubtopicsCard from "./components/SubtopicsCard.vue";
 import TopicReplyEditor from "./components/TopicReplyEditor.vue";
-import TopicPost from "../general/components/TopicPost.vue";
+import TopicPost from "../../../components/topics/general/TopicPost.vue";
 import TopicHeader from "./components/TopicHeader.vue";
 
 const route = useRoute();
