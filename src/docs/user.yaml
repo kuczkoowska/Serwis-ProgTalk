@@ -1,0 +1,100 @@
+paths:
+  /api/users/update-password:
+    patch:
+      tags: [Users]
+      summary: Zmiana hasła zalogowanego użytkownika
+      description: Pozwala zalogowanemu użytkownikowi zmienić hasło. Zwraca nowy token JWT.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword, newPasswordConfirm]
+              properties:
+                currentPassword:
+                  type: string
+                  format: password
+                  example: StareHaslo123!
+                newPassword:
+                  type: string
+                  format: password
+                  example: NoweSuperHaslo!
+                newPasswordConfirm:
+                  type: string
+                  format: password
+                  example: NoweSuperHaslo!
+      responses:
+        200:
+          description: Hasło zostało zmienione
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  token: { type: string, description: Nowy token JWT }
+                  message: { type: string }
+        400:
+          description: Nowe hasła nie są identyczne
+        401:
+          description: Stare hasło jest nieprawidłowe
+
+  /api/users/pending:
+    get:
+      tags: [Users - Admin]
+      summary: Pobierz listę użytkowników oczekujących na akceptację
+      description: Dostępne tylko dla administratora.
+      security: [{ bearerAuth: [] }]
+      responses:
+        200:
+          description: Lista nieaktywnych użytkowników
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  results: { type: integer }
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            _id: { type: string }
+                            email: { type: string }
+                            username: { type: string }
+                            createdAt: { type: string, format: date-time }
+        403:
+          description: Brak uprawnień administratora
+
+  /api/users/approve/{id}:
+    patch:
+      tags: [Users - Admin]
+      summary: Zaakceptuj (aktywuj) użytkownika
+      description: Zmienia status konta na aktywny i wysyła powiadomienie WebSocket.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+          description: ID użytkownika do aktywacji
+      responses:
+        200:
+          description: Użytkownik aktywowany pomyślnie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  message: { type: string }
+        404:
+          description: Użytkownik nie znaleziony
+        403:
+          description: Brak uprawnień administratora

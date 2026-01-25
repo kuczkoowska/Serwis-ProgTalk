@@ -1,0 +1,191 @@
+paths:
+  /api/topics:
+    post:
+      tags: [Topics]
+      summary: Utwórz nowy temat
+      description: Tworzy temat główny (korzeń) lub podtemat.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, description]
+              properties:
+                name:
+                  type: string
+                  example: JavaScript
+                description:
+                  type: string
+                  example: Dyskusje o języku JS
+                parentId:
+                  type: string
+                  description: ID tematu nadrzędnego (opcjonalne)
+                  example: 64b1f23a9c9d440012345678
+      responses:
+        201:
+          description: Temat utworzony
+        400:
+          description: Temat nadrzędny jest zamknięty
+        404:
+          description: Temat nadrzędny nie istnieje
+
+    get:
+      tags: [Topics]
+      summary: Pobierz listę tematów
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: root
+          schema: { type: boolean }
+          description: Jeśli true, zwraca tylko tematy główne (bez rodzica)
+      responses:
+        200:
+          description: Lista tematów pobrana pomyślnie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  results: { type: integer }
+                  data:
+                    type: object
+                    properties:
+                      topics:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name: { type: string }
+                            creator:
+                              type: object
+                              properties:
+                                username: { type: string }
+
+  /api/topics/{id}:
+    get:
+      tags: [Topics]
+      summary: Szczegóły tematu i podtematy
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Szczegóły tematu oraz lista jego bezpośrednich dzieci
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      topic:
+                        type: object
+                        description: Dane wybranego tematu
+                      subtopics:
+                        type: array
+                        description: Lista podtematów
+        404:
+          description: Temat nie znaleziony
+
+  /api/topics/{topicId}/moderators:
+    post:
+      tags: [Topics - Moderation]
+      summary: Mianuj użytkownika moderatorem
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: topicId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userIdToPromote]
+              properties:
+                userIdToPromote:
+                  type: string
+                  description: ID użytkownika do awansu
+      responses:
+        200:
+          description: Moderator dodany
+        400:
+          description: Użytkownik już jest moderatorem
+        403:
+          description: Brak uprawnień do zarządzania tym tematem
+
+  /api/topics/{topicId}/moderators/revoke:
+    post:
+      tags: [Topics - Moderation]
+      summary: Cofnij awans moderatora
+      description: Wymaga bycia administratorem, twórcą tematu, promotorem danej osoby lub moderatorem nadrzędnym.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: topicId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userIdToTake]
+              properties:
+                userIdToTake:
+                  type: string
+                  description: ID użytkownika, któremu zabieramy uprawnienia
+      responses:
+        200:
+          description: Uprawnienia cofnięte
+        404:
+          description: Użytkownik nie jest moderatorem
+        403:
+          description: Brak uprawnień (np. próba usunięcia kogoś, kogo nie promowałeś)
+
+  /api/topics/{topicId}/block:
+    post:
+      tags: [Topics - Moderation]
+      summary: Zablokuj użytkownika w temacie
+      description: Blokuje użytkownika w tym temacie ORAZ we wszystkich podtematach (dziedziczenie), chyba że zdefiniowano wyjątki.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: topicId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userIdToBlock]
+              properties:
+                userIdToBlock:
+                  type: string
+                  description: ID użytkownika do zablokowania
+                reason:
+                  type: string
+                  description: Powód blokady
+                  example: "Spamowanie i obrażanie"
+                allowedSubtopicsIds:
+                  type: array
+                  items:
+                    type: string
+                  description: Lista ID podtematów, do których zablokowany użytkownik MA mieć dostęp (wyjątki)
+      responses:
+        200:
+          description: Użytkownik zablokowany pomyślnie
+        403:
+          description: Brak uprawnień

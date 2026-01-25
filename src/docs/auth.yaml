@@ -3,6 +3,7 @@ paths:
     post:
       tags: [Auth]
       summary: Rejestracja użytkownika
+      description: Tworzy nowe konto. Konto jest domyślnie nieaktywne i wymaga zgody administratora.
       requestBody:
         required: true
         content:
@@ -11,21 +12,51 @@ paths:
               type: object
               required: [email, username, password, passwordConfirm]
               properties:
-                email: { type: string, format: email, example: jan@test.pl }
-                username: { type: string, example: jankowalski }
-                password: { type: string, format: password, example: Haslo123! }
+                email:
+                  type: string
+                  format: email
+                  example: kowalski@dev.pl
+                username:
+                  type: string
+                  example: jankowalski
+                password:
+                  type: string
+                  format: password
+                  example: TajneHaslo123!
                 passwordConfirm:
-                  { type: string, format: password, example: Haslo123! }
+                  type: string
+                  format: password
+                  example: TajneHaslo123!
       responses:
         201:
-          description: Konto utworzone
+          description: Konto utworzone pomyślnie (oczekuje na akceptację)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Konto zostało utworzone. Czeka na akceptację administratora.
         400:
-          description: Błąd walidacji
+          description: Błąd walidacji (np. email zajęty, hasła różne)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Ten e-mail jest już zajęty
 
   /api/auth/login:
     post:
       tags: [Auth]
       summary: Logowanie
+      description: Wymaga podania hasła ORAZ (emaila LUB nazwy użytkownika).
       requestBody:
         required: true
         content:
@@ -34,11 +65,64 @@ paths:
               type: object
               required: [password]
               properties:
-                email: { type: string, example: jan@test.pl }
-                username: { type: string }
-                password: { type: string, example: Haslo123! }
+                email:
+                  type: string
+                  description: Opcjonalnie (jeśli brak username)
+                  example: kowalski@dev.pl
+                username:
+                  type: string
+                  description: Opcjonalnie (jeśli brak email)
+                  example: jankowalski
+                password:
+                  type: string
+                  format: password
+                  example: TajneHaslo123!
       responses:
         200:
-          description: Zalogowano (Token JWT)
+          description: Zalogowano pomyślnie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  token:
+                    type: string
+                    description: Token JWT (Bearer)
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          email:
+                            type: string
+                          username:
+                            type: string
+                          role:
+                            type: string
+                            enum: [user, admin]
+                  message:
+                    type: string
+                    example: Użytkownik poprawnie zalogowany
+        400:
+          description: Brak danych logowania lub błędny format
         401:
-          description: Błędne dane
+          description: Błędne hasło lub użytkownik nie istnieje
+        403:
+          description: Odmowa dostępu (Konto zablokowane lub nieaktywne)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Twoje konto oczekuje na akceptację administratora.
+                  reason:
+                    type: string
+                    description: Powód blokady (tylko gdy konto jest zablokowane)

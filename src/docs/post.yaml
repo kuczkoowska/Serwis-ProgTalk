@@ -1,0 +1,133 @@
+paths:
+  /api/posts:
+    post:
+      tags: [Posts]
+      summary: Dodaj nowy wpis
+      description: Dodaje wpis do konkretnego tematu. Sprawdza, czy użytkownik nie jest zablokowany w hierarchii tematów.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content, topicId]
+              properties:
+                topicId:
+                  type: string
+                  description: ID tematu
+                  example: 64b1f23a9c9d440012345678
+                content:
+                  type: string
+                  description: Treść wpisu (może zawierać kod w markdown)
+                  example: "Cześć, jak rozwiązać ten problem w Vue?"
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: Lista tagów (opcjonalnie)
+                  example: ["vue", "javascript", "pomoc"]
+      responses:
+        201:
+          description: Wpis dodany pomyślnie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  data:
+                    type: object
+                    properties:
+                      post:
+                        type: object
+                        properties:
+                          _id: { type: string }
+                          content: { type: string }
+                          author: { type: string }
+        400:
+          description: Temat jest zamknięty
+        403:
+          description: Użytkownik jest zablokowany w tym temacie
+        404:
+          description: Temat nie istnieje
+
+  /api/posts/topic/{topicId}:
+    get:
+      tags: [Posts]
+      summary: Pobierz wpisy z tematu (Paginacja)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: topicId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+          description: Numer strony
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10 }
+          description: Ilość wpisów na stronę
+      responses:
+        200:
+          description: Lista wpisów
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  results: { type: integer, description: Ilość na tej stronie }
+                  totalPosts: { type: integer, description: Łącznie w temacie }
+                  totalPages: { type: integer }
+                  currentPage: { type: integer }
+                  data:
+                    type: object
+                    properties:
+                      posts:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            _id: { type: string }
+                            content: { type: string }
+                            author:
+                              type: object
+                              properties:
+                                username: { type: string }
+                            likes:
+                              type: array
+                              items: { type: string }
+                            createdAt: { type: string, format: date-time }
+
+  /api/posts/{postId}/like:
+    post:
+      tags: [Posts]
+      summary: Polub lub odlub wpis (Toggle Like)
+      description: Jeśli użytkownik już lubi wpis, lajk jest usuwany. Jeśli nie - dodawany.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Sukces
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  message: { type: string, example: "Wpis polubiony" }
+                  data:
+                    type: object
+                    properties:
+                      likesCount:
+                        type: integer
+                        description: Aktualna liczba polubień
+        404:
+          description: Wpis nie istnieje
