@@ -41,7 +41,6 @@ export const useTopicsStore = defineStore("topics", {
     },
 
     async createTopic(payload) {
-      payload = { name, description, parentId };
       try {
         await axios.post("/api/topics", payload);
 
