@@ -6,6 +6,8 @@ import router from "./router.js";
 import Aura from "@primeuix/themes/aura";
 import { definePreset } from "@primevue/themes";
 import PrimeVue from "primevue/config";
+import ToastService from "primevue/toastservice";
+import "primeicons/primeicons.css";
 
 import "highlight.js/styles/atom-one-dark.css";
 import hljs from "highlight.js/lib/core";
@@ -14,6 +16,7 @@ import python from "highlight.js/lib/languages/python";
 import css from "highlight.js/lib/languages/css";
 import xml from "highlight.js/lib/languages/xml";
 import hljsVuePlugin from "@highlightjs/vue-plugin";
+import axios from "axios";
 
 hljs.registerLanguage("javascript", javascript);
 hljs.registerLanguage("python", python);
@@ -48,5 +51,12 @@ app.use(PrimeVue, {
 app.use(createPinia());
 app.use(router);
 app.use(hljsVuePlugin);
+app.use(ToastService);
+
+const token = localStorage.getItem("token");
+
+if (token) {
+  axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+}
 
 app.mount("#app");

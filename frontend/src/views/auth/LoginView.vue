@@ -58,12 +58,14 @@
 <script setup>
 import { ref } from "vue";
 import { useAuthStore } from "../../stores/auth";
+import { useRouter } from "vue-router";
 
 const emailOrLogin = ref("");
 const password = ref("");
 const errorMessage = ref("");
 const isLoading = ref(false);
 
+const router = useRouter();
 const authStore = useAuthStore();
 
 const handleLogin = async () => {
@@ -72,19 +74,18 @@ const handleLogin = async () => {
 
   try {
     await authStore.login(emailOrLogin.value, password.value);
-    alert("Zalogowano pomyślnie!");
   } catch (error) {
     errorMessage.value =
       typeof error === "string" ? error : "Wystąpił błąd logowania";
   } finally {
     isLoading.value = false;
+    router.push("/");
   }
 };
 </script>
 
 <style scoped>
 .login-body {
-  background-color: rgb(196, 236, 252);
   display: flex;
   justify-content: center;
   align-items: center;

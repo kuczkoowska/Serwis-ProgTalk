@@ -1,5 +1,4 @@
 import { defineStore } from "pinia";
-import axios from "axios";
 import router from "../router";
 
 export const useAuthStore = defineStore("auth", {
@@ -20,9 +19,6 @@ export const useAuthStore = defineStore("auth", {
         this.user = response.data.data.user;
 
         localStorage.setItem("token", this.token);
-
-        // domyślny nagłówek dla przyszłych zapytań
-        axios.defaults.headers.common["Authorization"] = `Bearer ${this.token}`;
 
         console.log("Zalogowano:", this.user.username);
 
