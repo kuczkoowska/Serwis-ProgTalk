@@ -90,7 +90,6 @@ const showSubtopicDialog = ref(false);
 const currentTopic = computed(() => topicsStore.currentTopic);
 const loading = computed(() => topicsStore.loading || postsStore.loading);
 
-// --- LOGIKA ---
 const loadAllData = async (id) => {
   if (!id) return;
   await topicsStore.fetchTopicDetails(id);
@@ -155,6 +154,7 @@ const refreshData = () => loadAllData(route.params.id);
 }
 
 .main-grid {
+  margin-top: 2rem;
   display: grid;
   grid-template-columns: 1fr 320px;
   gap: 1.5rem;
@@ -191,13 +191,9 @@ const refreshData = () => loadAllData(route.params.id);
   color: #64748b;
 }
 
-@media (max-width: 900px) {
-  .main-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar-column {
-    order: -1;
-  }
+.sidebar-column {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 </style>
