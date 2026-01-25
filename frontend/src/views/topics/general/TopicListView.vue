@@ -29,12 +29,12 @@
           :topic="topic"
           @open="goToTopic(topic._id)"
         />
+      </div>
 
-        <div v-if="topicsStore.rootTopics.length === 0" class="empty-state">
-          <h3>Pusto tutaj...</h3>
-          <p>Bądź legendą i stwórz pierwszy temat!</p>
-          <Button label="Stwórz temat" text @click="showCreateDialog = true" />
-        </div>
+      <div v-if="topicsStore.rootTopics.length === 0" class="empty-state">
+        <h3>Pusto tutaj...</h3>
+        <p>Bądź legendą i stwórz pierwszy temat!</p>
+        <Button label="Stwórz temat" text @click="showCreateDialog = true" />
       </div>
 
       <CreateTopicDialog
