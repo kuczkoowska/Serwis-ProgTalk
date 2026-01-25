@@ -1,13 +1,13 @@
 <template>
   <div class="custom-card post-card mb-3">
     <div class="post-header">
-      <div class="flex align-items-center gap-3">
+      <div>
         <AvatarComponent :username="post.author?.username" />
         <div class="post-meta">
-          <div class="font-bold text-gray-800">
+          <div>
             {{ post.author?.username }}
           </div>
-          <div class="text-xs text-gray-500">
+          <div>
             {{ new Date(post.createdAt).toLocaleString() }}
           </div>
         </div>
@@ -51,12 +51,10 @@ const props = defineProps({
   },
 });
 
-// Definiujemy zdarzenia, które ten komponent wysyła do rodzica
 defineEmits(["like", "reply"]);
 
 const authStore = useAuthStore();
 
-// Sprawdzanie lajka (logika przeniesiona tutaj)
 const isLiked = computed(() => {
   const userId = authStore.user?._id;
   return props.post.likes.some(
@@ -64,7 +62,6 @@ const isLiked = computed(() => {
   );
 });
 
-// Formatowanie tekstu (proste zamienianie enterów na <br>)
 const formatContent = (text) => {
   if (!text) return "";
   return text.replace(/\n/g, "<br>");
