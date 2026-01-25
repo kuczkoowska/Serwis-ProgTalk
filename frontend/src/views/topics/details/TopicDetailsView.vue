@@ -1,0 +1,203 @@
+<template>
+  <div class="layout-wrapper">
+    <Toast />
+
+    <div v-if="loading" class="loading-container">
+      <ProgressSpinner />
+    </div>
+
+    <div v-else class="topic-container">
+      <TopicHeader :topic="currentTopic" />
+
+      <div class="main-grid">
+        <div class="posts-column">
+          <div v-if="postsStore.posts.length > 0" class="posts-list">
+            <TopicPost
+              v-for="post in postsStore.posts"
+              :key="post._id"
+              :post="post"
+              @like="handleLike"
+              @reply="focusEditor"
+            />
+          </div>
+
+          <div v-else class="empty-state custom-card">
+            <div class="empty-icon-circle">
+              <i
+                class="pi pi-comments"
+                style="font-size: 2rem; color: var(--p-primary-color)"
+              ></i>
+            </div>
+            <h3>Cisza w eterze...</h3>
+            <p>Nikt jeszcze nie odpisał. Bądź tą pierwszą osobą!</p>
+          </div>
+
+          <TopicReplyEditor
+            id="reply-form"
+            :loading="sending"
+            @submit="handleAddPost"
+          />
+        </div>
+
+        <div class="sidebar-column">
+          <SubtopicsCard
+            :subtopics="topicsStore.subtopics"
+            @create="showSubtopicDialog = true"
+          />
+
+          <TopicStatsCard :postsCount="postsStore.totalPosts" />
+
+          <Button
+            label="Wróć do listy"
+            icon="pi pi-arrow-left"
+            text
+            class="w-full mt-3 text-gray-500"
+            @click="$router.push('/')"
+          />
+        </div>
+      </div>
+    </div>
+
+    <CreateTopicDialog
+      v-model:visible="showSubtopicDialog"
+      :parentId="route.params.id"
+      @created="refreshData"
+    />
+  </div>
+</template>
+
+<script setup>
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
+import { useToast } from "primevue/usetoast";
+import { useTopicsStore } from "../../../stores/topics.js";
+import { usePostsStore } from "../../../stores/posts.js";
+import CreateTopicDialog from "../components/CreateTopicDialog.vue";
+import TopicStatsCard from "./components/TopicStatsCard.vue";
+import SubtopicsCard from "./components/SubtopicsCard.vue";
+import TopicReplyEditor from "./components/TopicReplyEditor.vue";
+import TopicPost from "../general/components/TopicPost.vue";
+import TopicHeader from "./components/TopicHeader.vue";
+
+const route = useRoute();
+const topicsStore = useTopicsStore();
+const postsStore = usePostsStore();
+const toast = useToast();
+
+const sending = ref(false);
+const showSubtopicDialog = ref(false);
+
+const currentTopic = computed(() => topicsStore.currentTopic);
+const loading = computed(() => topicsStore.loading || postsStore.loading);
+
+// --- LOGIKA ---
+const loadAllData = async (id) => {
+  if (!id) return;
+  await topicsStore.fetchTopicDetails(id);
+  await postsStore.fetchPosts(id);
+};
+
+onMounted(() => loadAllData(route.params.id));
+
+watch(
+  () => route.params.id,
+  (newId) => {
+    loadAllData(newId);
+    window.scrollTo(0, 0);
+  },
+);
+
+const handleLike = async (postId) => {
+  await postsStore.toggleLike(postId);
+};
+
+const handleAddPost = async (content) => {
+  sending.value = true;
+  try {
+    await postsStore.addPost(route.params.id, content);
+    toast.add({
+      severity: "success",
+      summary: "Wysłano",
+      detail: "Post dodany!",
+      life: 3000,
+    });
+  } catch (e) {
+    toast.add({ severity: "error", summary: "Błąd", detail: e, life: 3000 });
+  } finally {
+    sending.value = false;
+  }
+};
+
+const focusEditor = () => {
+  document.getElementById("reply-form").scrollIntoView({ behavior: "smooth" });
+};
+
+const refreshData = () => loadAllData(route.params.id);
+</script>
+
+<style scoped>
+.layout-wrapper {
+  background-color: #f0f2f5;
+  min-height: 100vh;
+  padding-bottom: 3rem;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  padding-top: 5rem;
+}
+
+.topic-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.5rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #eef0f2;
+}
+
+.empty-icon-circle {
+  width: 64px;
+  height: 64px;
+  background: #eff6ff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+  margin: 0;
+  color: #334155;
+}
+
+.empty-state p {
+  color: #64748b;
+}
+
+@media (max-width: 900px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar-column {
+    order: -1;
+  }
+}
+</style>

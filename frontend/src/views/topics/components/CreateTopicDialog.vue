@@ -6,8 +6,14 @@
     :showHeader="false"
   >
     <div class="dialog-header">
-      <h2>Rozpocznij dyskusję</h2>
-      <p class="subtitle">Stwórz nową przestrzeń dla społeczności.</p>
+      <h2>{{ parentId ? "Nowy Podtemat" : "Rozpocznij dyskusję" }}</h2>
+      <p class="subtitle">
+        {{
+          parentId
+            ? "Stwórz dział wewnątrz tego tematu."
+            : "Stwórz nową przestrzeń dla społeczności."
+        }}
+      </p>
     </div>
 
     <div class="form-content">
@@ -74,7 +80,7 @@ import { reactive, ref, computed } from "vue";
 import { useTopicsStore } from "../../../stores/topics";
 import { useToast } from "primevue/usetoast";
 
-const props = defineProps(["visible"]);
+const props = defineProps(["visible", "parentId"]);
 const emit = defineEmits(["update:visible", "created"]);
 
 const topicsStore = useTopicsStore();
@@ -105,6 +111,7 @@ const handleCreate = async () => {
     await topicsStore.createTopic({
       name: form.name,
       description: form.description,
+      parentId: props.parentId || null,
     });
 
     toast.add({
