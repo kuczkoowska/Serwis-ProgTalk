@@ -23,20 +23,14 @@ export const useAuthStore = defineStore("auth", {
 
         if (this.token) {
           localStorage.setItem("token", this.token);
+          if (this.user)
+            localStorage.setItem("user", JSON.stringify(this.user));
           axios.defaults.headers.common["Authorization"] =
             `Bearer ${this.token}`;
         }
-
-        console.log("Zalogowano:", this.user?.username || this.user?.email);
-
         return true;
       } catch (error) {
-        const msg =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Błąd logowania";
-        console.error("Błąd logowania:", msg);
-        throw msg;
+        throw error.response?.data?.message || "Błąd logowania";
       }
     },
 
@@ -55,6 +49,22 @@ export const useAuthStore = defineStore("auth", {
       localStorage.removeItem("token");
       delete axios.defaults.headers.common["Authorization"];
       router.push("/login");
+    },
+
+    restore() {
+      const token = localStorage.getItem("token");
+      const userStr = localStorage.getItem("user");
+      if (token) {
+        this.token = token;
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      }
+      if (userStr) {
+        try {
+          this.user = JSON.parse(userStr);
+        } catch (e) {
+          this.user = null;
+        }
+      }
     },
   },
 });

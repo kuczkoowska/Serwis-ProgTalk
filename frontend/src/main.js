@@ -1,5 +1,6 @@
 import { createApp } from "vue";
 import { createPinia } from "pinia";
+import { useAuthStore } from "./stores/auth";
 import App from "./App.vue";
 import router from "./router.js";
 
@@ -57,6 +58,9 @@ app.use(createPinia());
 app.use(router);
 app.use(hljsVuePlugin);
 app.use(ToastService);
+
+const authStore = useAuthStore();
+authStore.restore();
 
 const token = localStorage.getItem("token");
 
