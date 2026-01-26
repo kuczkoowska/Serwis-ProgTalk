@@ -2,26 +2,6 @@
   text-align: center;
 }
 
-.field {
-  margin-bottom: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.login-card {
-  width: 100%;
-  max-width: 450px;
-  border-radius: 12px;
-}
-
-.login-body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
-
 .mt-3 {
   margin-top: 1rem;
 }
@@ -34,4 +14,43 @@ a {
   color: #f438b2;
   text-decoration: none;
   font-weight: bold;
+}
+
+.header-text h1 {
+  font-size: 2.5rem;
+  color: #2c3e50;
+  margin: 0;
+}
+.header-text p {
+  color: #6c757d;
+  margin: 0.5rem 0 0 0;
+  font-size: 1.1rem;
+}
+
+.layout-container {
+  padding: 2rem;
+}
+
+/* pola w formularzach */
+
+.field {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* login i rejestracja */
+
+.login-card {
+  width: 100%;
+  max-width: 450px;
+  border-radius: 12px;
+}
+
+.login-body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
 }

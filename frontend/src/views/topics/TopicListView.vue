@@ -18,7 +18,6 @@
           rounded
           raised
           @click="showCreateDialog = true"
-          class="create-btn"
         />
       </div>
 
@@ -68,10 +67,6 @@ const goToTopic = (id) => {
 </script>
 
 <style scoped>
-.layout-container {
-  padding: 2rem;
-}
-
 .header-section {
   display: flex;
   justify-content: space-between;
@@ -79,20 +74,6 @@ const goToTopic = (id) => {
   margin-bottom: 3rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid #e9ecef;
-}
-
-.header-text h1 {
-  font-size: 2.5rem;
-  color: #2c3e50;
-  margin: 0;
-}
-.header-text p {
-  color: #6c757d;
-  margin: 0.5rem 0 0 0;
-  font-size: 1.1rem;
-}
-.create-btn {
-  padding: 0.8rem 1.5rem;
 }
 
 .grid-container {
