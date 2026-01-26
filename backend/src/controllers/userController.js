@@ -30,6 +30,64 @@ exports.updatePassword = async (req, res) => {
   }
 };
 
+exports.updateProfile = async (req, res) => {
+  try {
+    const { bio, username } = req.body;
+
+    const user = await User.findById(req.user._id);
+
+    if (req.body.email) {
+      return res.status(400).json({
+        message: "Adres email nie może być zmieniony.",
+      });
+    }
+
+    if (username && username !== user.username) {
+      const existingUser = await User.findOne({ username });
+      if (existingUser) {
+        return res.status(400).json({
+          message: "Ta nazwa użytkownika jest już zajęta.",
+        });
+      }
+      user.username = username;
+    }
+
+    if (bio !== undefined) {
+      user.bio = bio;
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      status: "success",
+      message: "Profil zaktualizowany.",
+      data: {
+        user: {
+          id: user._id,
+          email: user.email,
+          username: user.username,
+          bio: user.bio,
+        },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Błąd serwera", error: error.message });
+  }
+};
+
+exports.getMyProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("-password");
+
+    res.status(200).json({
+      status: "success",
+      data: { user },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Błąd serwera", error: error.message });
+  }
+};
+
 exports.getPendingUsers = async (req, res) => {
   try {
     const users = await User.find({ isActive: false }).select(
@@ -131,6 +189,51 @@ exports.getLastViewedPage = async (req, res) => {
       data: {
         page: lastViewed ? lastViewed.page : 1,
       },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Błąd serwera", error: error.message });
+  }
+};
+
+exports.blockUserGlobally = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { reason } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Użytkownik nie znaleziony." });
+    }
+
+    user.isBlocked = true;
+    user.blockReason = reason || "Brak podanego powodu";
+    await user.save();
+
+    res.status(200).json({
+      status: "success",
+      message: "Użytkownik został zablokowany globalnie.",
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Błąd serwera", error: error.message });
+  }
+};
+
+exports.unblockUserGlobally = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Użytkownik nie znaleziony." });
+    }
+
+    user.isBlocked = false;
+    user.blockReason = null;
+    await user.save();
+
+    res.status(200).json({
+      status: "success",
+      message: "Użytkownik został odblokowany.",
     });
   } catch (error) {
     res.status(500).json({ message: "Błąd serwera", error: error.message });

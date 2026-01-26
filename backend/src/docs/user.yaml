@@ -41,6 +41,50 @@ paths:
         401:
           description: Stare hasło jest nieprawidłowe
 
+  /api/users/profile:
+    patch:
+      tags: [Users]
+      summary: Edycja profilu użytkownika
+      description: Pozwala edytować bio, username i inne elementy profilu, z wyjątkiem adresu email.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: nowylogin
+                  description: Nowa nazwa użytkownika (opcjonalnie)
+                bio:
+                  type: string
+                  example: "Programista JavaScript z 5-letnim doświadczeniem"
+                  description: Opis profilu (opcjonalnie, max 500 znaków)
+      responses:
+        200:
+          description: Profil zaktualizowany
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  message: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        type: object
+                        properties:
+                          id: { type: string }
+                          email: { type: string }
+                          username: { type: string }
+                          bio: { type: string }
+        400:
+          description: Email nie może być zmieniony lub username zajęty
+
   /api/users/pending:
     get:
       tags: [Users - Admin]

@@ -1,0 +1,105 @@
+paths:
+  /api/users/block/{userId}:
+    patch:
+      tags: [Admin - User Management]
+      summary: Zablokuj użytkownika globalnie
+      description: Blokuje użytkownika uniemożliwiając mu dostęp do całego serwisu.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  example: "Łamanie regulaminu"
+                  description: Powód blokady (opcjonalnie)
+      responses:
+        200:
+          description: Użytkownik zablokowany globalnie
+        404:
+          description: Użytkownik nie znaleziony
+        403:
+          description: Brak uprawnień administratora
+
+  /api/users/unblock/{userId}:
+    patch:
+      tags: [Admin - User Management]
+      summary: Odblokuj użytkownika globalnie
+      description: Usuwa globalną blokadę użytkownika.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Użytkownik odblokowany
+        404:
+          description: Użytkownik nie znaleziony
+        403:
+          description: Brak uprawnień administratora
+
+  /api/topics/{topicId}/close:
+    patch:
+      tags: [Admin - Topic Management]
+      summary: Zamknij temat
+      description: Zamyka temat uniemożliwiając dalszą dyskusję (dodawanie nowych wpisów).
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: topicId
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Temat zamknięty
+        404:
+          description: Temat nie znaleziony
+        403:
+          description: Brak uprawnień administratora
+
+  /api/topics/{topicId}/hide:
+    patch:
+      tags: [Admin - Topic Management]
+      summary: Ukryj temat
+      description: Ukrywa temat uniemożliwiając jego przeglądanie przez użytkowników.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: topicId
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Temat ukryty
+        404:
+          description: Temat nie znaleziony
+        403:
+          description: Brak uprawnień administratora
+
+  /api/topics/{topicId}/unhide:
+    patch:
+      tags: [Admin - Topic Management]
+      summary: Odkryj temat
+      description: Cofa ukrycie tematu.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: topicId
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Temat odkryty
+        404:
+          description: Temat nie znaleziony
+        403:
+          description: Brak uprawnień administratora
