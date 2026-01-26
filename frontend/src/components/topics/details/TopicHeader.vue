@@ -1,8 +1,8 @@
 <template>
-  <div class="custom-card header-card mb-4">
-    <div class="header-content">
-      <div class="title-section">
-        <div class="mb-2">
+  <div class="custom-card layout-container mb-3">
+    <div>
+      <div>
+        <div class="mb-3">
           <Tag
             :value="topic?.isClosed ? 'Zamknięty' : 'Otwarty'"
             :severity="topic?.isClosed ? 'danger' : 'success'"
@@ -15,8 +15,8 @@
 
         <div class="meta-info">
           <AvatarComponent :username="topic?.creator?.username" size="normal" />
-          <div class="meta-text">
-            <span class="author-name">{{ topic?.creator?.username }}</span>
+          <div class="user-info-col">
+            <span class="username">{{ topic?.creator?.username }}</span>
             <span class="date">
               utworzono
               {{ new Date(topic?.createdAt).toLocaleDateString() }}
@@ -47,10 +47,6 @@ defineProps({
   border-radius: 12px;
 }
 
-.header-card {
-  padding: 2rem;
-}
-
 .topic-title {
   font-size: 2rem;
   color: #1e293b;
@@ -61,22 +57,6 @@ defineProps({
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.meta-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.author-name {
-  font-weight: 700;
-  color: #334155;
-  font-size: 0.95rem;
-}
-
-.date {
-  font-size: 0.8rem;
-  color: #94a3b8;
 }
 
 .topic-description {

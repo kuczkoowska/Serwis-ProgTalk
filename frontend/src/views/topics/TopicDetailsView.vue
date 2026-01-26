@@ -53,7 +53,8 @@
             label="Wróć do listy"
             icon="pi pi-arrow-left"
             text
-            class="w-full mt-3 text-gray-500"
+            fluid
+            class="mt-3"
             @click="$router.push('/')"
           />
         </div>
@@ -137,12 +138,6 @@ const refreshData = () => loadAllData(route.params.id);
 </script>
 
 <style scoped>
-.layout-wrapper {
-  background-color: #f0f2f5;
-  min-height: 100vh;
-  padding-bottom: 3rem;
-}
-
 .loading-container {
   display: flex;
   justify-content: center;
