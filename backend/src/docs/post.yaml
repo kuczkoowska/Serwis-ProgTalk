@@ -142,3 +142,24 @@ paths:
                         description: Aktualna liczba polubień
         404:
           description: Wpis nie istnieje
+
+  /api/posts/{postId}:
+    delete:
+      tags: [Posts]
+      summary: Usuń własny wpis (soft delete)
+      description: Użytkownik może "usunąć" swój wpis - przestaje być widoczny dla zwykłych użytkowników, ale pozostaje w bazie dla adminów.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Wpis usunięty (soft delete)
+        400:
+          description: Wpis został już usunięty
+        403:
+          description: Możesz usuwać tylko własne wpisy
+        404:
+          description: Wpis nie znaleziony

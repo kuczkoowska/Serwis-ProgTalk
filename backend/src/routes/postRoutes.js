@@ -9,5 +9,6 @@ router.use(authMiddleware.protect);
 router.post("/", postController.createPost);
 router.get("/topic/:topicId", postController.getTopicPosts);
 router.patch("/:postId/like", postController.toggleLike);
+router.delete("/:postId", postController.deleteOwnPost);
 
 module.exports = router;

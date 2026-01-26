@@ -127,3 +127,38 @@ exports.toggleLike = async (req, res) => {
     res.status(500).json({ message: "Błąd serwera", error: error.message });
   }
 };
+
+exports.deleteOwnPost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Wpis nie znaleziony." });
+    }
+
+    if (post.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        message: "Możesz usuwać tylko własne wpisy.",
+      });
+    }
+
+    if (post.isDeleted) {
+      return res.status(400).json({
+        message: "Wpis został już usunięty.",
+      });
+    }
+
+    post.isDeleted = true;
+    post.deletedAt = Date.now();
+    await post.save();
+
+    res.status(200).json({
+      status: "success",
+      message:
+        "Wpis został usunięty (nie jest widoczny dla innych użytkowników).",
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Błąd serwera", error: error.message });
+  }
+};
