@@ -189,3 +189,35 @@ paths:
           description: Użytkownik zablokowany pomyślnie
         403:
           description: Brak uprawnień
+
+  /api/topics/{topicId}/unblock:
+    post:
+      tags: [Topics - Moderation]
+      summary: Odblokuj użytkownika w temacie
+      description: Usuwa blokadę użytkownika w danym temacie.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: topicId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userIdToUnblock]
+              properties:
+                userIdToUnblock:
+                  type: string
+                  description: ID użytkownika do odblokowania
+      responses:
+        200:
+          description: Użytkownik odblokowany pomyślnie
+        400:
+          description: Użytkownik nie był zablokowany w tym temacie
+        403:
+          description: Brak uprawnień
+        404:
+          description: Temat nie znaleziony

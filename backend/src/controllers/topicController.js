@@ -27,9 +27,21 @@ exports.createTopic = async (req, res) => {
         });
       }
 
-      topicData.parent = parentTopic._id;
+      const hasPerm = await canManageTopic(req.user._id, parentId);
+      if (!hasPerm && req.user.role !== "admin") {
+        return res.status(403).json({
+          message: "Tylko moderatorzy mogą tworzyć podtematy.",
+        });
+      }
 
+      topicData.parent = parentTopic._id;
       topicData.ancestors = [...parentTopic.ancestors, parentTopic._id];
+
+      topicData.moderators = parentTopic.moderators.map((mod) => ({
+        user: mod.user,
+        promotedBy: mod.promotedBy,
+        promotedAt: mod.promotedAt,
+      }));
     }
 
     const newTopic = await Topic.create(topicData);
@@ -118,6 +130,9 @@ exports.promoteModerator = async (req, res) => {
     });
 
     await topic.save();
+
+    await moderatorToSubtopics(topicId, userIdToPromote, req.user._id);
+
     res.status(200).json({ message: "Moderator dodany." });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -138,6 +153,12 @@ exports.takeBackModerator = async (req, res) => {
       return res
         .status(404)
         .json({ message: "Ten użytkownik nie jest moderatorem." });
+
+    if (topic.creator.toString() === userIdToTake) {
+      return res.status(403).json({
+        message: "Nie można usunąć moderatora głównego (twórcy tematu).",
+      });
+    }
 
     const isPromoter =
       mod.promotedBy && mod.promotedBy.toString() === req.user._id.toString();
@@ -160,6 +181,8 @@ exports.takeBackModerator = async (req, res) => {
       (m) => m.user.toString() !== userIdToTake,
     );
     await topic.save();
+
+    await removeModeratorFromSubtopics(topicId, userIdToTake);
 
     res.status(200).json({ message: "Uprawnienia cofnięte." });
   } catch (error) {
@@ -200,5 +223,75 @@ exports.blockUserInTopic = async (req, res) => {
     res.status(200).json({ message: "Użytkownik zablokowany." });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+exports.unblockUserInTopic = async (req, res) => {
+  try {
+    const { topicId } = req.params;
+    const { userIdToUnblock } = req.body;
+
+    if (
+      !(await canManageTopic(req.user._id, topicId)) &&
+      req.user.role !== "admin"
+    ) {
+      return res.status(403).json({ message: "Brak uprawnień." });
+    }
+
+    const topic = await Topic.findById(topicId);
+
+    if (!topic) {
+      return res.status(404).json({ message: "Temat nie znaleziony." });
+    }
+
+    const wasBlocked = topic.blockedUsers.some(
+      (b) => b.user.toString() === userIdToUnblock,
+    );
+
+    if (!wasBlocked) {
+      return res
+        .status(400)
+        .json({ message: "Użytkownik nie był zablokowany w tym temacie." });
+    }
+
+    topic.blockedUsers = topic.blockedUsers.filter(
+      (b) => b.user.toString() !== userIdToUnblock,
+    );
+
+    await topic.save();
+    res.status(200).json({ message: "Użytkownik odblokowany." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const moderatorToSubtopics = async (parentTopicId, userId, promotedBy) => {
+  const subtopics = await Topic.find({ parent: parentTopicId });
+
+  for (const subtopic of subtopics) {
+    if (!subtopic.moderators.some((m) => m.user.toString() === userId)) {
+      subtopic.moderators.push({
+        user: userId,
+        promotedBy: promotedBy,
+      });
+      await subtopic.save();
+    }
+
+    await moderatorToSubtopics(subtopic._id, userId, promotedBy);
+  }
+};
+
+const removeModeratorFromSubtopics = async (parentTopicId, userId) => {
+  const subtopics = await Topic.find({ parent: parentTopicId });
+
+  for (const subtopic of subtopics) {
+    if (subtopic.creator.toString() !== userId) {
+      subtopic.moderators = subtopic.moderators.filter(
+        (m) => m.user.toString() !== userId,
+      );
+      await subtopic.save();
+    }
+
+    await removeModeratorFromSubtopics(subtopic._id, userId);
   }
 };

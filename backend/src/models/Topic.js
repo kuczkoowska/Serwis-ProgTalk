@@ -7,7 +7,6 @@ const topicSchema = new mongoose.Schema(
       type: String,
       required: [true, "Temat musi mieć nazwę"],
       trim: true,
-      unique: true,
       maxLength: 30,
     },
     description: {

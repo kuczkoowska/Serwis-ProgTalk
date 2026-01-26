@@ -13,4 +13,5 @@ router.get("/:id", topicController.getTopicDetails); // Szczegóły + podtematy
 router.post("/:topicId/moderators", topicController.promoteModerator);
 router.post("/:topicId/moderators/revoke", topicController.takeBackModerator);
 router.post("/:topicId/block", topicController.blockUserInTopic);
+router.post("/:topicId/unblock", topicController.unblockUserInTopic);
 module.exports = router;
