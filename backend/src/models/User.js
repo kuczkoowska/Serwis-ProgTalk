@@ -38,8 +38,24 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    lastViewedPages: [
+      {
+        topic: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Topic",
+        },
+        page: {
+          type: Number,
+          default: 1,
+        },
+        lastVisit: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 userSchema.pre("save", async function () {

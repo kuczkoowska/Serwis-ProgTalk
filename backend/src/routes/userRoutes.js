@@ -8,6 +8,9 @@ router.use(authMiddleware.protect);
 
 router.patch("/update-password", userController.updatePassword);
 
+router.post("/last-viewed-page", userController.saveLastViewedPage);
+router.get("/last-viewed-page/:topicId", userController.getLastViewedPage);
+
 // admin !!!!
 router.use(authMiddleware.restrictTo("admin"));
 

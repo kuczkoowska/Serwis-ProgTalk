@@ -98,3 +98,55 @@ paths:
           description: Użytkownik nie znaleziony
         403:
           description: Brak uprawnień administratora
+
+  /api/users/last-viewed-page:
+    post:
+      tags: [Users]
+      summary: Zapisz ostatnią przeglądaną stronę dla tematu
+      description: Zapamiętuje numer strony, na której użytkownik zakończył przeglądanie wpisów w danym temacie.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [topicId, page]
+              properties:
+                topicId:
+                  type: string
+                  description: ID tematu
+                page:
+                  type: integer
+                  description: Numer strony
+                  example: 3
+      responses:
+        200:
+          description: Ostatnia strona zapisana
+        400:
+          description: Brak wymaganych parametrów
+
+  /api/users/last-viewed-page/{topicId}:
+    get:
+      tags: [Users]
+      summary: Pobierz ostatnią przeglądaną stronę dla tematu
+      description: Zwraca numer ostatniej strony lub 1 jeśli nie zapisano.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: topicId
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Ostatnia strona
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  data:
+                    type: object
+                    properties:
+                      page: { type: integer, example: 3 }

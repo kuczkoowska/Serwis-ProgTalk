@@ -77,3 +77,62 @@ exports.approveUser = async (req, res) => {
     res.status(500).json({ message: "Błąd serwera", error: error.message });
   }
 };
+
+exports.saveLastViewedPage = async (req, res) => {
+  try {
+    const { topicId, page } = req.body;
+
+    if (!topicId || !page) {
+      return res.status(400).json({
+        message: "topicId i page są wymagane.",
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+
+    const existingIndex = user.lastViewedPages.findIndex(
+      (item) => item.topic.toString() === topicId,
+    );
+
+    if (existingIndex !== -1) {
+      user.lastViewedPages[existingIndex].page = page;
+      user.lastViewedPages[existingIndex].lastVisit = Date.now();
+    } else {
+      user.lastViewedPages.push({
+        topic: topicId,
+        page: page,
+        lastVisit: Date.now(),
+      });
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      status: "success",
+      message: "Ostatnia strona zapisana.",
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Błąd serwera", error: error.message });
+  }
+};
+
+exports.getLastViewedPage = async (req, res) => {
+  try {
+    const { topicId } = req.params;
+
+    const user = await User.findById(req.user._id);
+
+    const lastViewed = user.lastViewedPages.find(
+      (item) => item.topic.toString() === topicId,
+    );
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        page: lastViewed ? lastViewed.page : 1,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Błąd serwera", error: error.message });
+  }
+};
