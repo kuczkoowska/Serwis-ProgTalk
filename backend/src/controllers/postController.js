@@ -4,18 +4,13 @@ const { isUserBlockedInTopic } = require("../utils/permissions");
 
 exports.createPost = async (req, res) => {
   try {
-    const { content, topicId, tags } = req.body;
+    const { content, topicId, tags, replyTo } = req.body;
 
     const topic = await Topic.findById(topicId);
-    if (!topic) {
-      return res.status(404).json({ message: "Temat nie istnieje." });
-    }
-
-    if (topic.isClosed) {
-      return res.status(400).json({
-        message: "Ten temat jest zamknięty. Nie można dodawać wpisów.",
-      });
-    }
+    if (!topic)
+      return res.status(404).json({ message: "Temat nie znaleziony" });
+    if (topic.isClosed)
+      return res.status(403).json({ message: "Temat zamknięty" });
 
     const isBlocked = await isUserBlockedInTopic(req.user._id, topicId);
     if (isBlocked) {
@@ -26,10 +21,14 @@ exports.createPost = async (req, res) => {
 
     const newPost = await Post.create({
       content,
-      topic: topicId,
       author: req.user._id,
+      topic: topicId,
       tags: tags || [],
+      replyTo: replyTo || null,
     });
+
+    await newPost.populate("author", "username");
+    if (replyTo) await newPost.populate("replyTo", "content author");
 
     res.status(201).json({
       status: "success",
@@ -57,6 +56,7 @@ exports.getTopicPosts = async (req, res) => {
 
     const posts = await Post.find({ topic: topicId })
       .populate("author", "username") // Pokaż kto napisał
+      .populate("replyTo", "content author")
       .sort("createdAt")
       .skip(skip) // Pomiń X wpisów z poprzednich stron
       .limit(limit); // Pobierz tylko Y wpisów

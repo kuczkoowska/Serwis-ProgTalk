@@ -27,8 +27,13 @@ const postSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Post",
+      default: null,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Post", postSchema);
