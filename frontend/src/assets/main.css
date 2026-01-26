@@ -67,7 +67,6 @@ a {
   gap: 0.5rem;
 }
 
-/* moze sie uda powtorzyc */
 .user-info {
   display: flex;
   align-items: center;
@@ -91,6 +90,12 @@ a {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.meta-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 /* pola w formularzach */
@@ -118,3 +123,14 @@ a {
 }
 
 /* moze style dla empty i loading???? */
+
+/* listy */
+.subtopics-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+}
+
+.sidebar-content {
+  padding: 1.25rem;
+}

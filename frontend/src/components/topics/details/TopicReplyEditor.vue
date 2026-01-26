@@ -1,7 +1,7 @@
 <template>
-  <div class="custom-card reply-section mt-4" id="reply-form">
-    <div class="reply-header mb-2">
-      <span class="text">Twoja odpowiedź</span>
+  <div class="custom-card reply-section mt-3" id="reply-form">
+    <div class="mb-3">
+      <span>Twoja odpowiedź</span>
     </div>
 
     <Textarea
@@ -13,7 +13,7 @@
       autoResize
     />
 
-    <div class="flex justify-end mt-2">
+    <div class="display-end">
       <Button
         label="Wyślij odpowiedź"
         icon="pi pi-send"
@@ -46,28 +46,13 @@ const handleSubmit = () => {
 </script>
 
 <style scoped>
-.custom-card {
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #eef0f2;
-}
-
 .reply-section {
   padding: 1.5rem;
-  background: #ffffff;
 }
 
-.reply-textarea {
-  background-color: #f8fafc;
-  border-color: #e2e8f0;
-  color: #1e293b;
-}
-
-.reply-textarea:focus {
-  background-color: #fff;
-}
-
-.text {
-  color: #1e293b;
+.display-end {
+  display: flex;
+  justify-content: end;
+  margin-top: 1rem;
 }
 </style>

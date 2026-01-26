@@ -2,13 +2,14 @@
   <div class="custom-card post-card mb-3">
     <div class="post-header">
       <div>
-        <AvatarComponent :username="post.author?.username" />
-        <div class="post-meta">
-          <div>
-            {{ post.author?.username }}
-          </div>
-          <div>
-            {{ new Date(post.createdAt).toLocaleString() }}
+        <div class="meta-info">
+          <AvatarComponent :username="post.author?.username" />
+          <div class="user-info-col">
+            <span class="username">{{ post.author?.username }}</span>
+            <span class="date">
+              utworzono
+              {{ new Date(post.createdAt).toLocaleDateString() }}
+            </span>
           </div>
         </div>
       </div>
@@ -41,7 +42,6 @@
 import { computed } from "vue";
 import { useAuthStore } from "../../../stores/auth";
 import AvatarComponent from "../../AvatarComponent.vue";
-import Button from "primevue/button";
 
 const props = defineProps({
   post: {
@@ -68,15 +68,6 @@ const formatContent = (text) => {
 </script>
 
 <style scoped>
-.custom-card {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.05),
-    0 4px 12px rgba(0, 0, 0, 0.02);
-  border: 1px solid #eef0f2;
-  overflow: hidden;
-}
 .post-card {
   padding: 1.5rem;
   transition: transform 0.2s;
@@ -95,15 +86,5 @@ const formatContent = (text) => {
   gap: 0.5rem;
   padding-top: 0.8rem;
   border-top: 1px solid #f1f5f9;
-}
-.liked-btn {
-  color: #ef4444 !important;
-}
-.action-btn {
-  color: #64748b;
-}
-.action-btn:hover {
-  background-color: #f1f5f9;
-  color: #334155;
 }
 </style>

@@ -50,7 +50,7 @@ import { useTopicsStore } from "../../stores/topics";
 import { useRouter } from "vue-router";
 
 import TopicCard from "../../components/topics/general/TopicCard.vue";
-import CreateTopicDialog from "./components/CreateTopicDialog.vue";
+import CreateTopicDialog from "../../components/topics/shared/CreateTopicDialog.vue";
 
 const topicsStore = useTopicsStore();
 const router = useRouter();

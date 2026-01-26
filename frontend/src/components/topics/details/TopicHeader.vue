@@ -42,21 +42,10 @@ defineProps({
 </script>
 
 <style scoped>
-.custom-card {
-  background: #ffffff;
-  border-radius: 12px;
-}
-
 .topic-title {
   font-size: 2rem;
   color: #1e293b;
   margin: 0.5rem 0 1rem 0;
-}
-
-.meta-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
 .topic-description {

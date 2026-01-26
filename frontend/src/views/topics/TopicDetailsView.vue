@@ -75,11 +75,11 @@ import { useRoute } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useTopicsStore } from "../../stores/topics.js";
 import { usePostsStore } from "../../stores/posts.js";
-import CreateTopicDialog from "./components/CreateTopicDialog.vue";
+import CreateTopicDialog from "../../components/topics/shared/CreateTopicDialog.vue";
 import TopicStatsCard from "../../components/topics/details/TopicStatsCard.vue";
 import SubtopicsCard from "../../components/topics/details/SubtopicsCard.vue";
 import TopicReplyEditor from "../../components/topics/details/TopicReplyEditor.vue";
-import TopicPost from "../../components/topics/general/TopicPost.vue";
+import TopicPost from "../../components/topics/details/TopicPost.vue";
 import TopicHeader from "../../components/topics/details/TopicHeader.vue";
 
 const route = useRoute();

@@ -51,16 +51,6 @@ const goToTopic = (id) => {
 </script>
 
 <style scoped>
-.sidebar-content {
-  padding: 1.25rem;
-}
-
-.subtopics-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
 .subtopics-list li {
   display: flex;
   justify-content: space-between;

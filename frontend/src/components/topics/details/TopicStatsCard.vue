@@ -29,9 +29,6 @@ defineProps({
 </script>
 
 <style scoped>
-.sidebar-content {
-  padding: 1.25rem;
-}
 .stat-row {
   display: flex;
   justify-content: space-between;
