@@ -25,8 +25,12 @@ paths:
                   type: array
                   items:
                     type: string
-                  description: Lista tagów (opcjonalnie)
-                  example: ["vue", "javascript", "pomoc"]
+                  description: Lista ID tagów (muszą istnieć dla tego tematu)
+                  example: ["64b1f5679", "64b15680"]
+                replyTo:
+                  type: string
+                  description: ID wpisu, na który odpowiadamy (opcjonalnie)
+                  example: "64b1f23a9c9d440012345681"
       responses:
         201:
           description: Wpis dodany pomyślnie
@@ -45,8 +49,15 @@ paths:
                           _id: { type: string }
                           content: { type: string }
                           author: { type: string }
+                          tags:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name: { type: string }
+                                color: { type: string }
         400:
-          description: Temat jest zamknięty
+          description: Niektóre tagi nie istnieją dla tego tematu
         403:
           description: Użytkownik jest zablokowany w tym temacie
         404:

@@ -1,5 +1,6 @@
 const Post = require("../models/Post");
 const Topic = require("../models/Topic");
+const Tag = require("../models/Tag");
 const { isUserBlockedInTopic } = require("../utils/permissions");
 
 exports.createPost = async (req, res) => {
@@ -19,15 +20,31 @@ exports.createPost = async (req, res) => {
       });
     }
 
+    let validatedTags = [];
+    if (tags && tags.length > 0) {
+      const existingTags = await Tag.find({
+        _id: { $in: tags },
+        topic: topicId,
+      });
+
+      if (existingTags.length !== tags.length) {
+        return res.status(400).json({
+          message: "Niektóre tagi nie istnieją dla tego tematu.",
+        });
+      }
+      validatedTags = existingTags.map((tag) => tag._id);
+    }
+
     const newPost = await Post.create({
       content,
       author: req.user._id,
       topic: topicId,
-      tags: tags || [],
+      tags: validatedTags,
       replyTo: replyTo || null,
     });
 
     await newPost.populate("author", "username");
+    await newPost.populate("tags", "name color");
     if (replyTo) await newPost.populate("replyTo", "content author");
 
     res.status(201).json({
@@ -54,14 +71,20 @@ exports.getTopicPosts = async (req, res) => {
       return res.status(404).json({ message: "Temat nie istnieje." });
     }
 
-    const posts = await Post.find({ topic: topicId })
+    const filter = { topic: topicId };
+    if (req.user.role !== "admin") {
+      filter.isDeleted = false;
+    }
+
+    const posts = await Post.find(filter)
       .populate("author", "username") // Pokaż kto napisał
+      .populate("tags", "name color")
       .populate("replyTo", "content author")
       .sort("createdAt")
       .skip(skip) // Pomiń X wpisów z poprzednich stron
       .limit(limit); // Pobierz tylko Y wpisów
 
-    const totalPosts = await Post.countDocuments({ topic: topicId });
+    const totalPosts = await Post.countDocuments(filter);
 
     res.status(200).json({
       status: "success",
