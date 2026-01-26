@@ -32,7 +32,7 @@
             />
           </div>
 
-          <Message v-if="errorMessage" severity="error">
+          <Message v-if="errorMessage" severity="error" class="mb-3">
             {{ errorMessage }}
           </Message>
 
@@ -74,12 +74,12 @@ const handleLogin = async () => {
 
   try {
     await authStore.login(emailOrLogin.value, password.value);
+    router.push("/");
   } catch (error) {
     errorMessage.value =
       typeof error === "string" ? error : "Wystąpił błąd logowania";
   } finally {
     isLoading.value = false;
-    router.push("/");
   }
 };
 </script>

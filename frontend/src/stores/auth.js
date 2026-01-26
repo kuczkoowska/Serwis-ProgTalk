@@ -1,5 +1,7 @@
 import { defineStore } from "pinia";
 import router from "../router";
+import axios from "axios";
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
@@ -8,24 +10,33 @@ export const useAuthStore = defineStore("auth", {
   }),
 
   actions: {
-    async login(email, password) {
+    async login(identifier, password) {
       try {
-        const response = await axios.post("/api/auth/login", {
-          email,
-          password,
-        });
+        const payload = emailRegex.test(identifier)
+          ? { email: identifier, password }
+          : { username: identifier, password };
+
+        const response = await axios.post("/api/auth/login", payload);
 
         this.token = response.data.token;
-        this.user = response.data.data.user;
+        this.user = response.data?.data?.user;
 
-        localStorage.setItem("token", this.token);
+        if (this.token) {
+          localStorage.setItem("token", this.token);
+          axios.defaults.headers.common["Authorization"] =
+            `Bearer ${this.token}`;
+        }
 
-        console.log("Zalogowano:", this.user.username);
+        console.log("Zalogowano:", this.user?.username || this.user?.email);
 
         return true;
       } catch (error) {
-        console.error("Błąd logowania:", error.response?.data?.message);
-        throw error.response?.data?.message || "Błąd logowania";
+        const msg =
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Błąd logowania";
+        console.error("Błąd logowania:", msg);
+        throw msg;
       }
     },
 
