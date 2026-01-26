@@ -1,7 +1,7 @@
 <template>
   <Card class="topic-card" @click="$emit('open')">
     <template #header>
-      <div class="card-gradient"></div>
+      <div class="card-gradient gradient"></div>
     </template>
 
     <template #title>
@@ -54,7 +54,6 @@ defineEmits(["open"]);
 }
 .card-gradient {
   height: 6px;
-  background: linear-gradient(90deg, #ef4fa5 0%, #fd90eb 100%);
 }
 .card-title {
   display: flex;
