@@ -29,24 +29,6 @@ defineProps({
 </script>
 
 <style scoped>
-.text-gray {
-  color: #475569;
-}
-.custom-card {
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #eef0f2;
-}
-
-.sidebar-header {
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e2e8f0;
-  font-weight: 700;
-  color: #475569;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
 .sidebar-content {
   padding: 1.25rem;
 }
