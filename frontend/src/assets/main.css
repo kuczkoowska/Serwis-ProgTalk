@@ -31,6 +31,38 @@ a {
   padding: 2rem;
 }
 
+.icon-box {
+  width: 40px;
+  height: 40px;
+  background-color: #fee0f4;
+  color: #e91f98;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* moze sie uda powtorzyc */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.username {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.date {
+  font-size: 0.8rem;
+  color: #adb5bd;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* pola w formularzach */
 
 .field {

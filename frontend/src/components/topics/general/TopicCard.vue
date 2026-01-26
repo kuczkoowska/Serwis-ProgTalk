@@ -46,8 +46,6 @@ defineEmits(["open"]);
   border-radius: 16px;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
-  background: white;
   cursor: pointer;
 }
 .topic-card:hover {
@@ -56,7 +54,7 @@ defineEmits(["open"]);
 }
 .card-gradient {
   height: 6px;
-  background: linear-gradient(90deg, #3b82f6 0%, #06b6d4 100%);
+  background: linear-gradient(90deg, #ef4fa5 0%, #fd90eb 100%);
 }
 .card-title {
   display: flex;
@@ -66,16 +64,6 @@ defineEmits(["open"]);
   font-weight: 700;
   color: #343a40;
 }
-.icon-box {
-  width: 40px;
-  height: 40px;
-  background-color: #e0f2fe;
-  color: #0284c7;
-  border-radius: 10px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
 
 .card-footer {
   display: flex;
@@ -84,22 +72,5 @@ defineEmits(["open"]);
   padding-top: 1rem;
   border-top: 1px solid #f1f5f9;
   margin-top: 1rem;
-}
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.username {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #495057;
-}
-.date {
-  font-size: 0.8rem;
-  color: #adb5bd;
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 </style>
