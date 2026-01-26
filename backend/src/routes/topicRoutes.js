@@ -14,4 +14,23 @@ router.post("/:topicId/moderators", topicController.promoteModerator);
 router.post("/:topicId/moderators/revoke", topicController.takeBackModerator);
 router.post("/:topicId/block", topicController.blockUserInTopic);
 router.post("/:topicId/unblock", topicController.unblockUserInTopic);
+
+router.patch("/:topicId", topicController.updateTopicMetadata);
+
+router.patch(
+  "/:topicId/close",
+  authMiddleware.restrictTo("admin"),
+  topicController.closeTopic,
+);
+router.patch(
+  "/:topicId/hide",
+  authMiddleware.restrictTo("admin"),
+  topicController.hideTopic,
+);
+router.patch(
+  "/:topicId/unhide",
+  authMiddleware.restrictTo("admin"),
+  topicController.unhideTopic,
+);
+
 module.exports = router;

@@ -221,3 +221,32 @@ paths:
           description: Brak uprawnień
         404:
           description: Temat nie znaleziony
+
+  /api/topics/{topicId}:
+    patch:
+      tags: [Topics]
+      summary: Edytuj metadane tematu
+      description: Moderatorzy mogą edytować opis tematu, który moderują.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: topicId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  example: "Nowy opis tematu"
+      responses:
+        200:
+          description: Metadane zaktualizowane
+        403:
+          description: Tylko moderatorzy mogą edytować metadane
+        404:
+          description: Temat nie znaleziony

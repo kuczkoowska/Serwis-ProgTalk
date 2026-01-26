@@ -65,6 +65,10 @@ exports.getAllTopics = async (req, res) => {
       filter.parent = null;
     }
 
+    if (req.user.role !== "admin") {
+      filter.isHidden = false;
+    }
+
     const topics = await Topic.find(filter)
       .populate("creator", "username")
       .sort("-createdAt");
@@ -90,7 +94,18 @@ exports.getTopicDetails = async (req, res) => {
       return res.status(404).json({ message: "Temat nie znaleziony" });
     }
 
-    const subtopics = await Topic.find({ parent: topic._id });
+    if (topic.isHidden && req.user.role !== "admin") {
+      return res.status(403).json({
+        message: "Temat jest ukryty i niedostępny dla użytkowników.",
+      });
+    }
+
+    const subtopicsFilter = { parent: topic._id };
+    if (req.user.role !== "admin") {
+      subtopicsFilter.isHidden = false;
+    }
+
+    const subtopics = await Topic.find(subtopicsFilter);
 
     res.status(200).json({
       status: "success",
@@ -260,6 +275,102 @@ exports.unblockUserInTopic = async (req, res) => {
 
     await topic.save();
     res.status(200).json({ message: "Użytkownik odblokowany." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.closeTopic = async (req, res) => {
+  try {
+    const { topicId } = req.params;
+
+    const topic = await Topic.findById(topicId);
+    if (!topic) {
+      return res.status(404).json({ message: "Temat nie znaleziony." });
+    }
+
+    topic.isClosed = true;
+    await topic.save();
+
+    res.status(200).json({
+      status: "success",
+      message: "Temat został zamknięty.",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.hideTopic = async (req, res) => {
+  try {
+    const { topicId } = req.params;
+
+    const topic = await Topic.findById(topicId);
+    if (!topic) {
+      return res.status(404).json({ message: "Temat nie znaleziony." });
+    }
+
+    topic.isHidden = true;
+    await topic.save();
+
+    res.status(200).json({
+      status: "success",
+      message: "Temat został ukryty.",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.unhideTopic = async (req, res) => {
+  try {
+    const { topicId } = req.params;
+
+    const topic = await Topic.findById(topicId);
+    if (!topic) {
+      return res.status(404).json({ message: "Temat nie znaleziony." });
+    }
+
+    topic.isHidden = false;
+    await topic.save();
+
+    res.status(200).json({
+      status: "success",
+      message: "Temat został odkryty.",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.updateTopicMetadata = async (req, res) => {
+  try {
+    const { topicId } = req.params;
+    const { description } = req.body;
+
+    const topic = await Topic.findById(topicId);
+    if (!topic) {
+      return res.status(404).json({ message: "Temat nie znaleziony." });
+    }
+
+    const hasPerm = await canManageTopic(req.user._id, topicId);
+    if (!hasPerm && req.user.role !== "admin") {
+      return res.status(403).json({
+        message: "Tylko moderatorzy mogą edytować metadane tematu.",
+      });
+    }
+
+    if (description) {
+      topic.description = description;
+    }
+
+    await topic.save();
+
+    res.status(200).json({
+      status: "success",
+      message: "Metadane tematu zaktualizowane.",
+      data: { topic },
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
