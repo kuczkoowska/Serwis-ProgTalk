@@ -9,7 +9,7 @@
       </template>
 
       <template #content>
-        <form @submit.prevent="handleRegister" class="p-fluid">
+        <form @submit.prevent="handleRegister">
           <div class="field">
             <label>Email</label>
             <InputText
@@ -42,7 +42,7 @@
             >
               <template #footer>
                 <Divider />
-                <ul class="pl-2 my-0 leading-normal text-sm">
+                <ul>
                   <li>Przynajmniej jeden znak specjalny</li>
                   <li>Przynajmniej jedna cyfra</li>
                   <li>Minimum 8 znaków</li>
@@ -130,38 +130,3 @@ const handleRegister = async () => {
   }
 };
 </script>
-
-<style scoped>
-.login-body {
-  background-color: rgb(196, 236, 252);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
-
-.login-card {
-  width: 100%;
-  max-width: 450px;
-  border-radius: 12px;
-}
-
-.text-center {
-  text-align: center;
-}
-
-.field {
-  margin-bottom: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.mt-3 {
-  margin-top: 1rem;
-}
-a {
-  color: #428fb8;
-  text-decoration: none;
-  font-weight: bold;
-}
-</style>

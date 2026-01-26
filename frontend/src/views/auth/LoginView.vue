@@ -10,7 +10,7 @@
 
       <template #content>
         <form @submit.prevent="handleLogin">
-          <div class="field mt-1">
+          <div class="field mt-3">
             <label for="username">Email lub Login</label>
             <InputText
               id="username"
@@ -83,43 +83,3 @@ const handleLogin = async () => {
   }
 };
 </script>
-
-<style scoped>
-.login-body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
-
-.login-card {
-  width: 100%;
-  max-width: 450px;
-  border-radius: 12px;
-}
-
-.text-center {
-  text-align: center;
-}
-
-.field {
-  margin-bottom: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.mt-1 {
-  margin-top: 1rem;
-}
-
-.mt-3 {
-  margin-top: 1rem;
-}
-
-a {
-  color: #428fb8;
-  text-decoration: none;
-  font-weight: bold;
-}
-</style>
