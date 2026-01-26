@@ -13,6 +13,7 @@ export const useTopicsStore = defineStore("topics", {
   actions: {
     async fetchRootTopics() {
       this.loading = true;
+      this.error = null;
       try {
         const res = await axios.get("/api/topics?root=true");
         this.rootTopics = res.data.data.topics;

@@ -17,7 +17,7 @@
               :key="post._id"
               :post="post"
               @like="handleLike"
-              @reply="focusEditor"
+              @reply="handleReply"
             />
           </div>
 
@@ -36,7 +36,9 @@
             <TopicReplyEditor
               id="reply-form"
               :loading="sending"
+              :replyToId="replyToId"
               @submit="handleAddPost"
+              @cancel="replyToId = null"
             />
           </div>
         </div>
@@ -89,6 +91,7 @@ const toast = useToast();
 
 const sending = ref(false);
 const showSubtopicDialog = ref(false);
+const replyToId = ref(null);
 
 const currentTopic = computed(() => topicsStore.currentTopic);
 const loading = computed(() => topicsStore.loading || postsStore.loading);
@@ -110,13 +113,30 @@ watch(
 );
 
 const handleLike = async (postId) => {
-  await postsStore.toggleLike(postId);
+  try {
+    await postsStore.toggleLike(postId);
+    await postsStore.fetchPosts(route.params.id);
+  } catch (e) {
+    toast.add({
+      severity: "error",
+      summary: "Błąd",
+      detail: e || "Nie udało się polubić",
+      life: 3000,
+    });
+  }
+};
+
+const handleReply = (postId) => {
+  replyToId.value = postId;
+  focusEditor();
 };
 
 const handleAddPost = async (content) => {
   sending.value = true;
   try {
-    await postsStore.addPost(route.params.id, content);
+    await postsStore.addPost(route.params.id, content, replyToId.value);
+    await postsStore.fetchPosts(route.params.id);
+    replyToId.value = null;
     toast.add({
       severity: "success",
       summary: "Wysłano",
@@ -124,7 +144,12 @@ const handleAddPost = async (content) => {
       life: 3000,
     });
   } catch (e) {
-    toast.add({ severity: "error", summary: "Błąd", detail: e, life: 3000 });
+    toast.add({
+      severity: "error",
+      summary: "Błąd",
+      detail: e || "Błąd wysyłania",
+      life: 3000,
+    });
   } finally {
     sending.value = false;
   }

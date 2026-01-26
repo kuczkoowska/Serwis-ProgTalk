@@ -1,26 +1,23 @@
 <template>
   <div class="custom-card reply-section mt-3" id="reply-form">
-    <div class="mb-3">
-      <span>Twoja odpowiedź</span>
+    <div v-if="replyToId" class="replying-to">
+      <i class="pi pi-reply"></i>
+      <span>Odpowiadasz na wybrany post</span>
+      <Button
+        icon="pi pi-times"
+        class="p-button-text p-button-sm"
+        @click="$emit('cancel')"
+      />
     </div>
 
     <Textarea
       v-model="content"
       rows="3"
       fluid
-      placeholder="Napisz coś mądrego..."
-      class="reply-textarea"
-      autoResize
+      placeholder="Napisz odpowiedź..."
     />
-
     <div class="display-end">
-      <Button
-        label="Wyślij odpowiedź"
-        icon="pi pi-send"
-        @click="handleSubmit"
-        :loading="loading"
-        rounded
-      />
+      <Button :loading="loading" label="Wyślij" @click="handleSubmit" rounded />
     </div>
   </div>
 </template>
@@ -28,19 +25,16 @@
 <script setup>
 import { ref } from "vue";
 
-defineProps({
+const props = defineProps({
   loading: Boolean,
+  replyToId: String,
 });
-
-const emit = defineEmits(["submit"]);
-
+const emit = defineEmits(["submit", "cancel"]);
 const content = ref("");
 
 const handleSubmit = () => {
   if (!content.value.trim()) return;
-
-  emit("submit", content.value);
-
+  emit("submit", content.value.trim());
   content.value = "";
 };
 </script>
@@ -48,11 +42,35 @@ const handleSubmit = () => {
 <style scoped>
 .reply-section {
   padding: 1.5rem;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.replying-to {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #eff6ff;
+  border-left: 3px solid var(--p-primary-color);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.replying-to i {
+  color: var(--p-primary-color);
+}
+
+.replying-to span {
+  flex: 1;
 }
 
 .display-end {
   display: flex;
-  justify-content: end;
+  justify-content: flex-end;
   margin-top: 1rem;
 }
 </style>

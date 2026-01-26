@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import axios from "axios";
+import { useAuthStore } from "./auth";
 
 export const usePostsStore = defineStore("posts", {
   state: () => ({
@@ -39,43 +40,42 @@ export const usePostsStore = defineStore("posts", {
       }
     },
 
-    async addPost(topicId, content) {
+    async addPost(topicId, content, replyTo = null) {
       try {
-        await axios.post("/api/posts", {
-          content,
-          topicId,
-          tags: [],
-        });
-
-        await this.fetchPosts(topicId, this.pagination.page);
-
-        return true;
+        const payload = { content, topicId, replyTo };
+        const res = await axios.post("/api/posts", payload);
+        return res.data;
       } catch (err) {
-        throw err.response?.data?.message || "Błąd dodawania wpisu";
+        console.error(
+          "Błąd dodawania postu:",
+          err.response?.data || err.message || err,
+        );
+        throw err.response?.data?.message || "Błąd dodawania postu";
       }
     },
+
     async toggleLike(postId) {
-      const authStore = useAuthStore();
-      const userId = authStore.user?._id;
-
-      if (!userId) return;
-
       try {
         const res = await axios.patch(`/api/posts/${postId}/like`);
 
         const postIndex = this.posts.findIndex((p) => p._id === postId);
         if (postIndex !== -1) {
           const post = this.posts[postIndex];
-          const isLiked = post.likes.includes(userId);
 
-          if (isLiked) {
-            post.likes = post.likes.filter((id) => id !== userId);
-          } else {
-            post.likes.push(userId);
+          const serverLikes = res?.data?.data?.post?.likes || null;
+
+          if (serverLikes) {
+            post.likes = serverLikes;
           }
         }
+
+        return res.data;
       } catch (err) {
-        console.error("Błąd lajkowania:", err);
+        console.error(
+          "Błąd lajkowania:",
+          err.response?.data || err.message || err,
+        );
+        throw err.response?.data?.message || "Błąd lajkowania";
       }
     },
   },
