@@ -1,7 +1,5 @@
-<!-- nie wiem jeszcze czy uzyje ale mzoe byc fajna opcja?? moze tylko dla admina -->
-
 <template>
-  <div class="custom-card mt-3">
+  <div class="custom-card mt-3" v-if="isAdmin">
     <div class="sidebar-header">
       <i class="pi pi-chart-bar text-primary"></i>
       <span>Statystyki</span>
@@ -20,11 +18,21 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from "vue";
+import { useAuthStore } from "../../../stores/auth.js";
+
+const props = defineProps({
   postsCount: {
     type: Number,
     default: 0,
   },
+});
+
+const authStore = useAuthStore();
+
+const isAdmin = computed(() => {
+  if (!authStore.user) return false;
+  if (authStore.user.role === "admin") return true;
 });
 </script>
 
