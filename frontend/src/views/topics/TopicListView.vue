@@ -30,15 +30,19 @@
         />
       </div>
 
-      <div v-if="topicsStore.rootTopics.length === 0" class="empty-state">
-        <h3>Pusto tutaj...</h3>
-        <p>Bądź legendą i stwórz pierwszy temat!</p>
-        <Button label="Stwórz temat" text @click="showCreateDialog = true" />
+      <div v-if="topicsStore.rootTopics.length === 0">
+        <BaseEmptyState
+          title="Pusto tutaj..."
+          description="Bądź legendą i stwórz pierwszy temat w tej kategorii!"
+          icon="pi-folder-open"
+        >
+          <Button label="Stwórz temat" @click="showCreateDialog = true" />
+        </BaseEmptyState>
       </div>
 
       <CreateTopicDialog
         v-model:visible="showCreateDialog"
-        @created="refreshData"
+        @created="topicsStore.fetchRootTopics()"
       />
     </div>
   </div>
@@ -51,6 +55,7 @@ import { useRouter } from "vue-router";
 
 import TopicCard from "../../components/topics/general/TopicCard.vue";
 import CreateTopicDialog from "../../components/topics/shared/CreateTopicDialog.vue";
+import BaseEmptyState from "../../components/shared/BaseEmptyState.vue";
 
 const topicsStore = useTopicsStore();
 const router = useRouter();
@@ -80,22 +85,5 @@ const goToTopic = (id) => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 2rem;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 4rem 2rem;
-  background: white;
-  border-radius: 16px;
-  border: 2px dashed #dee2e6;
-}
-
-.empty-state h3 {
-  margin: 0;
-  color: #343a40;
-}
-.empty-state p {
-  color: #6c757d;
-  margin-bottom: 2rem;
 }
 </style>

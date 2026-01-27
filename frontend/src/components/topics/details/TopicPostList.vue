@@ -10,16 +10,12 @@
     />
   </div>
 
-  <div v-else class="empty-state">
-    <div class="empty-icon-circle">
-      <i
-        class="pi pi-comments"
-        style="font-size: 2rem; color: var(--p-primary-color)"
-      ></i>
-    </div>
-    <h3>Cisza w eterze...</h3>
-    <p>Nikt jeszcze nie odpisał. Bądź tą pierwszą osobą!</p>
-  </div>
+  <BaseEmptyState
+    v-else
+    title="Cisza w eterze..."
+    description="Nikt jeszcze nie odpisał. Bądź tą pierwszą osobą!"
+    icon="pi-comments"
+  />
 
   <div class="topic">
     <TopicReplyEditor
@@ -35,6 +31,7 @@
 <script setup>
 import TopicPost from "./TopicPost.vue";
 import TopicReplyEditor from "./TopicReplyEditor.vue";
+import BaseEmptyState from "../../shared/BaseEmptyState.vue";
 
 defineProps({
   posts: { type: Array, default: () => [] },
@@ -45,35 +42,4 @@ defineProps({
 
 defineEmits(["like", "reply", "delete", "submit", "update:replyToId"]);
 </script>
-<style scoped>
-.empty-state {
-  text-align: center;
-  padding: 3rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid #eef0f2;
-}
-
-.empty-icon-circle {
-  width: 64px;
-  height: 64px;
-  background: #eff6ff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 1rem;
-}
-
-.empty-state h3 {
-  margin: 0;
-  color: #334155;
-}
-
-.empty-state p {
-  color: #64748b;
-}
-</style>
+<style scoped></style>
