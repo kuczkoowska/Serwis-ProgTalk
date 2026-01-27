@@ -9,8 +9,9 @@
     <AdminStatsCard :stats="stats" />
 
     <TabView v-model:activeIndex="activeTab" class="admin-tabs">
-      <TabPanel header="Oczekujący użytkownicy"> </TabPanel>
-
+      <TabPanel header="Oczekujący użytkownicy">
+        <PendingUsersTab ref="pendingTabRef" @status-changed="fetchStats" />
+      </TabPanel>
       <TabPanel header="Wszyscy użytkownicy"> </TabPanel>
 
       <TabPanel header="Wszystkie tematy"> </TabPanel>
@@ -24,9 +25,12 @@ import axios from "axios";
 import io from "socket.io-client";
 
 import AdminStatsCard from "../../components/admin/AdminStatsCard.vue";
+import PendingUsersTab from "../../components/admin/PendingUsersTab.vue";
 
 const stats = ref(null);
 const activeTab = ref(0);
+
+const pendingTabRef = ref(null);
 
 const fetchStats = async () => {
   const res = await axios.get("/api/admin/stats");
@@ -35,6 +39,17 @@ const fetchStats = async () => {
 
 const connectSocket = () => {
   const socket = io("https://localhost:3000", {});
+
+  socket.on("new_user_registration", (data) => {
+    toast.add({
+      severity: "info",
+      summary: "Nowa rejestracja",
+      detail: data.message,
+      life: 5000,
+    });
+    fetchStats();
+    pendingTabRef.value?.refresh();
+  });
 };
 
 onMounted(() => {
