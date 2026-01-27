@@ -2,6 +2,17 @@
   <div class="layout-wrapper">
     <Toast />
 
+    <div class="back-button">
+      <Button
+        label="Wróć do listy"
+        icon="pi pi-arrow-left"
+        text
+        fluid
+        class="mt-3"
+        @click="$router.push('/')"
+      />
+    </div>
+
     <div v-if="loading" class="loading-container">
       <ProgressSpinner />
     </div>
@@ -195,5 +206,9 @@ const showError = (error, defaultMsg) => {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+}
+
+.back-button {
+  max-width: 200px;
 }
 </style>
