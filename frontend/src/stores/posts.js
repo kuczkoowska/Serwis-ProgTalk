@@ -16,13 +16,13 @@ export const usePostsStore = defineStore("posts", {
   }),
 
   actions: {
-    async fetchPosts(topicId, page = 1) {
+    async fetchPosts(topicId, page = 1, limit = 10) {
       this.loading = true;
       this.error = null;
 
       try {
         const res = await axios.get(`/api/posts/topic/${topicId}`, {
-          params: { page, limit: 10 },
+          params: { page, limit },
         });
 
         this.posts = res.data.data.posts;

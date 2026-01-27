@@ -9,6 +9,16 @@
     <div v-else class="topic-container">
       <TopicHeader :topic="currentTopic" />
 
+      <div class="pagination-container">
+        <Paginator
+          :rows="rowsPerPage"
+          :totalRecords="postsStore.pagination.totalPosts"
+          :rowsPerPageOptions="[5, 10, 20]"
+          :first="currentFirstIndex"
+          @page="onPageChange"
+        />
+      </div>
+
       <div class="main-grid">
         <div class="posts-column">
           <div v-if="postsStore.posts.length > 0" class="posts-list">
@@ -18,6 +28,7 @@
               :post="post"
               @like="handleLike"
               @reply="handleReply"
+              @delete="handleDelete"
             />
           </div>
 
@@ -37,6 +48,7 @@
               id="reply-form"
               :loading="sending"
               :replyToId="replyToId"
+              :availableTags="tagsStore.tags"
               @submit="handleAddPost"
               @cancel="replyToId = null"
             />
@@ -47,6 +59,11 @@
           <SubtopicsCard
             :subtopics="topicsStore.subtopics"
             @create="showSubtopicDialog = true"
+          />
+
+          <TagManagementCard
+            :topicId="route.params.id"
+            :moderators="currentTopic?.moderators || []"
           />
 
           <TopicStatsCard :postsCount="postsStore.totalPosts" />
@@ -77,29 +94,38 @@ import { useRoute } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useTopicsStore } from "../../stores/topics.js";
 import { usePostsStore } from "../../stores/posts.js";
+import { useTagsStore } from "../../stores/tags.js";
 import CreateTopicDialog from "../../components/topics/shared/CreateTopicDialog.vue";
 import TopicStatsCard from "../../components/topics/details/TopicStatsCard.vue";
 import SubtopicsCard from "../../components/topics/details/SubtopicsCard.vue";
 import TopicReplyEditor from "../../components/topics/details/TopicReplyEditor.vue";
 import TopicPost from "../../components/topics/details/TopicPost.vue";
 import TopicHeader from "../../components/topics/details/TopicHeader.vue";
+import TagManagementCard from "../../components/topics/details/TagManagementCard.vue";
 
 const route = useRoute();
 const topicsStore = useTopicsStore();
 const postsStore = usePostsStore();
+const tagsStore = useTagsStore();
 const toast = useToast();
 
 const sending = ref(false);
 const showSubtopicDialog = ref(false);
 const replyToId = ref(null);
+const rowsPerPage = ref(10);
 
 const currentTopic = computed(() => topicsStore.currentTopic);
 const loading = computed(() => topicsStore.loading || postsStore.loading);
+const currentFirstIndex = computed(() => {
+  const page = postsStore.pagination.page || 1;
+  return (page - 1) * rowsPerPage.value;
+});
 
 const loadAllData = async (id) => {
   if (!id) return;
   await topicsStore.fetchTopicDetails(id);
   await postsStore.fetchPosts(id);
+  await tagsStore.fetchTagsForTopic(id);
 };
 
 onMounted(() => loadAllData(route.params.id));
@@ -131,10 +157,42 @@ const handleReply = (postId) => {
   focusEditor();
 };
 
-const handleAddPost = async (content) => {
+const onPageChange = (event) => {
+  const newPage = event.page + 1;
+
+  rowsPerPage.value = event.rows;
+
+  postsStore.fetchPosts(route.params.id, newPage, rowsPerPage.value);
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+const handleDelete = async (postId) => {
+  try {
+    await postsStore.deletePost(postId);
+    await postsStore.fetchPosts(route.params.id);
+    toast.add({
+      severity: "success",
+      summary: "Usunięto",
+      detail: "Post został usunięty",
+      life: 3000,
+    });
+  } catch (e) {
+    toast.add({
+      severity: "error",
+      summary: "Błąd",
+      detail: e || "Nie udało się usunąć posta",
+      life: 3000,
+    });
+  }
+};
+
+const handleAddPost = async (data) => {
   sending.value = true;
   try {
-    await postsStore.addPost(route.params.id, content, replyToId.value);
+    const content = typeof data === "string" ? data : data.content;
+    const tags = typeof data === "object" ? data.tags : [];
+    await postsStore.addPost(route.params.id, content, replyToId.value, tags);
     await postsStore.fetchPosts(route.params.id);
     replyToId.value = null;
     toast.add({
@@ -221,5 +279,11 @@ const refreshData = () => loadAllData(route.params.id);
   display: flex;
   flex-direction: column;
   gap: 2rem;
+}
+
+.pagination-container {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
 }
 </style>
