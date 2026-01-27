@@ -1,36 +1,28 @@
 import { defineStore } from "pinia";
 import router from "../router";
 import axios from "axios";
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const getError = (err) => err.response?.data?.message || "Błąd autoryzacji";
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
-    user: null,
+    user: JSON.parse(localStorage.getItem("user") || "null"),
     token: localStorage.getItem("token") || null,
   }),
 
   actions: {
     async login(identifier, password) {
       try {
-        const payload = emailRegex.test(identifier)
-          ? { email: identifier, password }
-          : { username: identifier, password };
+        const payload = {
+          [identifier.includes("@") ? "email" : "username"]: identifier,
+          password,
+        };
 
-        const response = await axios.post("/api/auth/login", payload);
+        const { data } = await axios.post("/api/auth/login", payload);
 
-        this.token = response.data.token;
-        this.user = response.data?.data?.user;
-
-        if (this.token) {
-          localStorage.setItem("token", this.token);
-          if (this.user)
-            localStorage.setItem("user", JSON.stringify(this.user));
-          axios.defaults.headers.common["Authorization"] =
-            `Bearer ${this.token}`;
-        }
+        this.setAuth(data.token, data.data.user);
         return true;
       } catch (error) {
-        throw error.response?.data?.message || "Błąd logowania";
+        throw getError(error);
       }
     },
 
@@ -39,31 +31,33 @@ export const useAuthStore = defineStore("auth", {
         await axios.post("/api/auth/register", payload);
         return true;
       } catch (error) {
-        throw error.response?.data?.message || "Błąd rejestracji";
+        throw getError(error);
       }
     },
 
     logout() {
-      this.user = null;
-      this.token = null;
-      localStorage.removeItem("token");
-      delete axios.defaults.headers.common["Authorization"];
+      this.setAuth(null, null);
       router.push("/login");
     },
 
     restore() {
-      const token = localStorage.getItem("token");
-      const userStr = localStorage.getItem("user");
-      if (token) {
-        this.token = token;
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      if (this.token) {
+        axios.defaults.headers.common["Authorization"] = `Bearer ${this.token}`;
       }
-      if (userStr) {
-        try {
-          this.user = JSON.parse(userStr);
-        } catch (e) {
-          this.user = null;
-        }
+    },
+
+    setAuth(token, user) {
+      this.token = token;
+      this.user = user;
+
+      if (token) {
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      } else {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        delete axios.defaults.headers.common["Authorization"];
       }
     },
   },

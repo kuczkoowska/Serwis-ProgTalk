@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 
+const getError = (err) => err.response?.data?.message || "Błąd operacji";
+
 export const useTopicsStore = defineStore("topics", {
   state: () => ({
     rootTopics: [], // dla strony głównej
@@ -35,7 +37,6 @@ export const useTopicsStore = defineStore("topics", {
         this.rootTopics = res.data.data.topics;
       } catch (err) {
         this.error = "Błąd pobierania tematów.";
-        console.error(err);
       } finally {
         this.loading = false;
       }
@@ -68,7 +69,7 @@ export const useTopicsStore = defineStore("topics", {
         }
         return true;
       } catch (err) {
-        throw err.response?.data?.message || "Błąd tworzenia tematu";
+        throw getError(err);
       }
     },
 
@@ -82,7 +83,7 @@ export const useTopicsStore = defineStore("topics", {
         await this.fetchTopicDetails(topicId);
         return true;
       } catch (err) {
-        throw err.response?.data?.message || "Błąd zmiany statusu tematu";
+        throw getError(err);
       }
     },
 
@@ -97,7 +98,7 @@ export const useTopicsStore = defineStore("topics", {
         await this.fetchTopicDetails(topicId);
         return true;
       } catch (err) {
-        throw err.response?.data?.message || "Błąd blokowania użytkownika";
+        throw getError(err);
       }
     },
 
@@ -110,7 +111,7 @@ export const useTopicsStore = defineStore("topics", {
         await this.fetchTopicDetails(topicId);
         return true;
       } catch (err) {
-        throw err.response?.data?.message || "Błąd odblokowania użytkownika";
+        throw getError(err);
       }
     },
   },

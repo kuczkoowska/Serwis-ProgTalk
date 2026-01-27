@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 
+const getError = (err) => err.response?.data?.message || "Błąd operacji";
+
 export const usePostsStore = defineStore("posts", {
   state: () => ({
     posts: [],
@@ -26,14 +28,10 @@ export const usePostsStore = defineStore("posts", {
 
         this.posts = res.data.data.posts;
 
-        this.pagination = {
-          page: res.data.currentPage,
-          totalPages: res.data.totalPages,
-          totalPosts: res.data.totalPosts,
-        };
+        const { currentPage, totalPages, totalPosts } = res.data;
+        this.pagination = { page: currentPage, totalPages, totalPosts };
       } catch (err) {
         this.error = "Nie udało się pobrać wpisów.";
-        console.error(err);
       } finally {
         this.loading = false;
       }
@@ -41,40 +39,29 @@ export const usePostsStore = defineStore("posts", {
 
     async addPost(topicId, content, replyTo = null, tags = []) {
       try {
-        const payload = { content, topicId, replyTo, tags };
-        const res = await axios.post("/api/posts", payload);
-        return res.data;
+        const { data } = await axios.post("/api/posts", {
+          content,
+          topicId,
+          replyTo,
+          tags,
+        });
+        return data;
       } catch (err) {
-        console.error(
-          "Błąd dodawania postu:",
-          err.response?.data || err.message || err,
-        );
-        throw err.response?.data?.message || "Błąd dodawania postu";
+        throw getError(err);
       }
     },
 
     async toggleLike(postId) {
       try {
-        const res = await axios.patch(`/api/posts/${postId}/like`);
+        const { data } = await axios.patch(`/api/posts/${postId}/like`);
 
-        const postIndex = this.posts.findIndex((p) => p._id === postId);
-        if (postIndex !== -1) {
-          const post = this.posts[postIndex];
-
-          const serverLikes = res?.data?.data?.post?.likes || null;
-
-          if (serverLikes) {
-            post.likes = serverLikes;
-          }
+        const post = this.posts.find((p) => p._id === postId);
+        if (post && data.data?.post?.likes) {
+          post.likes = data.data.post.likes;
         }
-
-        return res.data;
+        return data;
       } catch (err) {
-        console.error(
-          "Błąd lajkowania:",
-          err.response?.data || err.message || err,
-        );
-        throw err.response?.data?.message || "Błąd lajkowania";
+        throw getError(err);
       }
     },
 
@@ -83,11 +70,7 @@ export const usePostsStore = defineStore("posts", {
         const res = await axios.delete(`/api/posts/${postId}`);
         return res.data;
       } catch (err) {
-        console.error(
-          "Błąd usuwania:",
-          err.response?.data || err.message || err,
-        );
-        throw err.response?.data?.message || "Błąd usuwania postu";
+        throw getError(err);
       }
     },
   },

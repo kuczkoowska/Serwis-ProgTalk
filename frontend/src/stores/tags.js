@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 
+const getError = (err) => err.response?.data?.message || "Błąd operacji";
+
 export const useTagsStore = defineStore("tags", {
   state: () => ({
     tags: [],
@@ -34,11 +36,7 @@ export const useTagsStore = defineStore("tags", {
         await this.fetchTagsForTopic(topicId);
         return res.data;
       } catch (err) {
-        console.error(
-          "Błąd tworzenia tagu:",
-          err.response?.data || err.message || err,
-        );
-        throw err.response?.data?.message || "Błąd tworzenia tagu";
+        throw getError(err);
       }
     },
 
@@ -47,11 +45,7 @@ export const useTagsStore = defineStore("tags", {
         await axios.delete(`/api/tags/${tagId}`);
         await this.fetchTagsForTopic(topicId);
       } catch (err) {
-        console.error(
-          "Błąd usuwania tagu:",
-          err.response?.data || err.message || err,
-        );
-        throw err.response?.data?.message || "Błąd usuwania tagu";
+        throw getError(err);
       }
     },
   },
