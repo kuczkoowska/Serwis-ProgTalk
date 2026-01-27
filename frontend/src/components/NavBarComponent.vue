@@ -1,5 +1,5 @@
 <template>
-  <div class="navbar-wrapper">
+  <div class="navbar-wrapper" v-if="isActive">
     <Menubar :model="items" class="custom-menubar">
       <template #start>
         <router-link to="/" class="logo-link">
@@ -44,7 +44,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 
@@ -64,21 +64,39 @@ const items = ref([
   //   },
 ]);
 
-const userMenuItems = ref([
-  {
-    label: "Mój Profil",
-    icon: "pi pi-user",
-    command: () => router.push("/profile"),
-  },
-  {
-    separator: true,
-  },
-  {
-    label: "Wyloguj",
-    icon: "pi pi-sign-out",
-    command: () => handleLogout(),
-  },
-]);
+const isAdmin = computed(() => authStore.user?.role === "admin");
+const isActive = computed(() => authStore.user?.isActive !== false);
+
+const userMenuItems = computed(() => {
+  const menuItems = [
+    {
+      label: "Mój Profil",
+      icon: "pi pi-user",
+      command: () => router.push("/profile"),
+    },
+  ];
+
+  if (isAdmin.value) {
+    menuItems.push({
+      label: "Panel Admina",
+      icon: "pi pi-shield",
+      command: () => router.push("/admin"),
+    });
+  }
+
+  menuItems.push(
+    {
+      separator: true,
+    },
+    {
+      label: "Wyloguj",
+      icon: "pi pi-sign-out",
+      command: () => handleLogout(),
+    },
+  );
+
+  return menuItems;
+});
 
 const toggleMenu = (event) => {
   menu.value.toggle(event);
