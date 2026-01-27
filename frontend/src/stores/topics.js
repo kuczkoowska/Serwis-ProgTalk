@@ -22,7 +22,7 @@ export const useTopicsStore = defineStore("topics", {
       }
 
       return (
-        state.currentTopic.moderators?.some((mod) => mod.user._id === userId) ||
+        state.currentTopic.moderators?.some((mod) => mod.user === userId) ||
         false
       );
     },
