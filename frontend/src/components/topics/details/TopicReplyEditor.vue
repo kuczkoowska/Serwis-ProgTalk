@@ -16,6 +16,27 @@
       fluid
       placeholder="Napisz odpowiedź..."
     />
+
+    <div v-if="availableTags.length > 0" class="tags-selector">
+      <label>Tagi (opcjonalnie):</label>
+      <div class="tags-chips">
+        <Chip
+          v-for="tag in availableTags"
+          :key="tag._id"
+          :label="tag.name"
+          :style="{
+            background: selectedTags.includes(tag._id)
+              ? tag.color
+              : 'transparent',
+            color: selectedTags.includes(tag._id) ? 'white' : tag.color,
+            border: `2px solid ${tag.color}`,
+          }"
+          @click="toggleTag(tag._id)"
+          class="tag-chip"
+        />
+      </div>
+    </div>
+
     <div class="display-end">
       <Button :loading="loading" label="Wyślij" @click="handleSubmit" rounded />
     </div>
@@ -28,14 +49,29 @@ import { ref } from "vue";
 const props = defineProps({
   loading: Boolean,
   replyToId: String,
+  availableTags: { type: Array, default: () => [] },
 });
 const emit = defineEmits(["submit", "cancel"]);
 const content = ref("");
+const selectedTags = ref([]);
+
+const toggleTag = (tagId) => {
+  const index = selectedTags.value.indexOf(tagId);
+  if (index > -1) {
+    selectedTags.value.splice(index, 1);
+  } else {
+    selectedTags.value.push(tagId);
+  }
+};
 
 const handleSubmit = () => {
   if (!content.value.trim()) return;
-  emit("submit", content.value.trim());
+  emit("submit", {
+    content: content.value.trim(),
+    tags: selectedTags.value,
+  });
   content.value = "";
+  selectedTags.value = [];
 };
 </script>
 
@@ -66,6 +102,34 @@ const handleSubmit = () => {
 
 .replying-to span {
   flex: 1;
+}
+
+.tags-selector {
+  margin-top: 1rem;
+}
+
+.tags-selector label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #334155;
+}
+
+.tags-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag-chip {
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.tag-chip:hover {
+  transform: scale(1.05);
 }
 
 .display-end {
