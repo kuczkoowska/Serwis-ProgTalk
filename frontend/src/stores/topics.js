@@ -15,17 +15,13 @@ export const useTopicsStore = defineStore("topics", {
     canManageTopic: (state) => (userId) => {
       if (!state.currentTopic || !userId) return false;
 
-      if (
-        state.currentTopic.creator._id === userId ||
-        state.currentTopic.creator === userId
-      ) {
+      if (state.currentTopic.creator._id === userId) {
         return true;
       }
 
       return (
-        state.currentTopic.moderators?.some(
-          (mod) => mod.user === userId || mod.user._id === userId,
-        ) || false
+        state.currentTopic.moderators?.some((mod) => mod.user._id === userId) ||
+        false
       );
     },
   },

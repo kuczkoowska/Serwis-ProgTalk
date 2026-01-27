@@ -58,6 +58,7 @@ import { computed, ref } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useTagsStore } from "../../../stores/tags.js";
 import { useAuthStore } from "../../../stores/auth.js";
+import { useTopicsStore } from "../../../stores/topics.js";
 import TagDialog from "./TagDialog.vue";
 
 const props = defineProps({
@@ -67,6 +68,7 @@ const props = defineProps({
 
 const tagsStore = useTagsStore();
 const authStore = useAuthStore();
+const topicsStore = useTopicsStore();
 const toast = useToast();
 
 const showDialog = ref(false);
@@ -74,7 +76,8 @@ const showDialog = ref(false);
 const canManage = computed(() => {
   if (!authStore.user) return false;
   if (authStore.user.role === "admin") return true;
-  //moderatorzy
+
+  return topicsStore.canManageTopic(authStore.user.id);
 });
 
 const refreshTags = async () => {

@@ -19,6 +19,7 @@
       <div v-else class="mb-3">Brak podtematów.</div>
 
       <Button
+        v-if="canCreate"
         label="Utwórz podtemat"
         size="small"
         severity="secondary"
@@ -32,7 +33,10 @@
 </template>
 
 <script setup>
+import { computed } from "vue";
 import { useRouter } from "vue-router";
+import { useAuthStore } from "../../../stores/auth.js";
+import { useTopicsStore } from "../../../stores/topics.js";
 
 defineProps({
   subtopics: {
@@ -44,6 +48,15 @@ defineProps({
 defineEmits(["create"]);
 
 const router = useRouter();
+const authStore = useAuthStore();
+const topicsStore = useTopicsStore();
+
+const canCreate = computed(() => {
+  if (!authStore.user) return false;
+  if (authStore.user.role === "admin") return true;
+
+  return topicsStore.canManageTopic(authStore.user.id);
+});
 
 const goToTopic = (id) => {
   router.push(`/topic/${id}`);
