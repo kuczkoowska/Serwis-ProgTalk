@@ -14,6 +14,7 @@ const topicRoutes = require("./routes/topicRoutes");
 const postRoutes = require("./routes/postRoutes");
 const userRoutes = require("./routes/userRoutes");
 const tagRoutes = require("./routes/tagRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use("/api/topics", topicRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/tags", tagRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/", (req, res) => {
   res.send("Serwer ProgTalk działa!");
