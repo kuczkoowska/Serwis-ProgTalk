@@ -1,5 +1,14 @@
 <template>
-  <div class="custom-card post-card mb-3" :data-post-id="post._id">
+  <div
+    class="custom-card post-card mb-3"
+    :data-post-id="post._id"
+    :class="{ 'deleted-post': post.isDeleted }"
+  >
+    <div v-if="post.isDeleted" class="deleted-badge">
+      <i class="pi pi-trash"></i>
+      <span>Post usunięty</span>
+    </div>
+
     <div class="post-header">
       <div>
         <div class="meta-info">
@@ -26,6 +35,20 @@
 
     <div class="post-content">{{ post.content }}</div>
 
+    <div v-if="post.tags && post.tags.length > 0" class="post-tags">
+      <span
+        v-for="tag in post.tags"
+        :key="tag._id"
+        class="tag-badge"
+        :style="{
+          background: tag.color,
+          boxShadow: `0 2px 8px ${tag.color}40`,
+        }"
+      >
+        {{ tag.name }}
+      </span>
+    </div>
+
     <div class="post-footer">
       <Button class="p-button-text" @click="$emit('like', post._id)">
         <i :class="isLiked ? 'pi pi-heart-fill' : 'pi pi-heart'"></i>
@@ -34,6 +57,14 @@
       <Button class="p-button-text" @click="$emit('reply', post._id)">
         <i class="pi pi-reply"></i>
         <span>Odpowiedz</span>
+      </Button>
+      <Button
+        v-if="isAuthor"
+        class="p-button-text p-button-danger"
+        @click="$emit('delete', post._id)"
+      >
+        <i class="pi pi-trash"></i>
+        <span>Usuń</span>
       </Button>
     </div>
   </div>
@@ -45,7 +76,7 @@ import AvatarComponent from "../../AvatarComponent.vue";
 import { useAuthStore } from "../../../stores/auth.js";
 
 const props = defineProps({ post: { required: true } });
-defineEmits(["like", "reply"]);
+defineEmits(["like", "reply", "delete"]);
 
 const authStore = useAuthStore();
 
@@ -54,6 +85,25 @@ const isLiked = computed(() => {
   return props.post.likes.some(
     (like) => like._id === authStore.user._id || like === authStore.user._id,
   );
+});
+
+const isAuthor = computed(() => {
+  if (!authStore.user || !props.post.author) return false;
+
+  const authorId =
+    typeof props.post.author === "string"
+      ? props.post.author
+      : props.post.author._id;
+
+  const userId = authStore.user._id || authStore.user.id;
+
+  console.log("jest autorem??:", {
+    authorId,
+    userId,
+    match: authorId === userId,
+  });
+
+  return authorId === userId;
 });
 
 const scrollToPost = (postId) => {
@@ -85,16 +135,61 @@ const scrollToPost = (postId) => {
 .post-card {
   padding: 1.5rem;
   transition: transform 0.2s;
+  position: relative;
 }
+
+.deleted-post {
+  opacity: 0.6;
+  background: #fef2f2;
+  border: 1px dashed #fca5a5;
+}
+
+.deleted-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: #dc2626;
+  color: white;
+  padding: 0.35rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  z-index: 10;
+}
+
+.deleted-badge i {
+  font-size: 0.75rem;
+}
+
 .post-header {
   margin-bottom: 1rem;
 }
+
 .post-content {
   font-size: 1rem;
   color: #1e293b;
   line-height: 1.6;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
+
+/* zrobić z tagow komponent */
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.tag-badge {
+  padding: 0.35rem 0.85rem;
+  border-radius: 16px;
+  color: white;
+  font-size: 0.85rem;
+}
+
 .post-footer {
   display: flex;
   gap: 0.5rem;

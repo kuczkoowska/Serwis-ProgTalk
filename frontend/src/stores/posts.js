@@ -40,9 +40,9 @@ export const usePostsStore = defineStore("posts", {
       }
     },
 
-    async addPost(topicId, content, replyTo = null) {
+    async addPost(topicId, content, replyTo = null, tags = []) {
       try {
-        const payload = { content, topicId, replyTo };
+        const payload = { content, topicId, replyTo, tags };
         const res = await axios.post("/api/posts", payload);
         return res.data;
       } catch (err) {
@@ -76,6 +76,19 @@ export const usePostsStore = defineStore("posts", {
           err.response?.data || err.message || err,
         );
         throw err.response?.data?.message || "Błąd lajkowania";
+      }
+    },
+
+    async deletePost(postId) {
+      try {
+        const res = await axios.delete(`/api/posts/${postId}`);
+        return res.data;
+      } catch (err) {
+        console.error(
+          "Błąd usuwania:",
+          err.response?.data || err.message || err,
+        );
+        throw err.response?.data?.message || "Błąd usuwania postu";
       }
     },
   },

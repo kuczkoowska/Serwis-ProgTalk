@@ -16,7 +16,7 @@
         </li>
       </ul>
 
-      <div v-else>Brak poddziałów.</div>
+      <div v-else class="mb-3">Brak podtematów.</div>
 
       <Button
         label="Utwórz podtemat"
