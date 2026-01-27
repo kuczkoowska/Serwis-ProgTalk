@@ -99,12 +99,6 @@ exports.login = async (req, res) => {
       });
     }
 
-    if (!user.isActive) {
-      return res.status(403).json({
-        message: "Twoje konto oczekuje na akceptację administratora.",
-      });
-    }
-
     await SystemLogs.create({
       performer: user._id,
       actionType: "LOGIN_SUCCESS",
@@ -122,6 +116,7 @@ exports.login = async (req, res) => {
           email: user.email,
           username: user.username,
           role: user.role,
+          isActive: user.isActive,
         },
       },
       message: "Użytkownik poprawnie zalogowany",
