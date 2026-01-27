@@ -42,4 +42,3 @@ defineProps({
 
 defineEmits(["like", "reply", "delete", "submit", "update:replyToId"]);
 </script>
-<style scoped></style>

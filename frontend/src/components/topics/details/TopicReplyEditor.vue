@@ -20,19 +20,13 @@
     <div v-if="availableTags.length > 0" class="tags-selector">
       <label>Tagi (opcjonalnie):</label>
       <div class="tags-chips">
-        <Chip
+        <TagBadge
           v-for="tag in availableTags"
           :key="tag._id"
-          :label="tag.name"
-          :style="{
-            background: selectedTags.includes(tag._id)
-              ? tag.color
-              : 'transparent',
-            color: selectedTags.includes(tag._id) ? 'white' : tag.color,
-            border: `2px solid ${tag.color}`,
-          }"
-          @click="toggleTag(tag._id)"
-          class="tag-chip"
+          :tag="tag"
+          clickable
+          :selected="selectedTags.includes(tag._id)"
+          @click="toggleTag"
         />
       </div>
     </div>
@@ -45,6 +39,7 @@
 
 <script setup>
 import { ref } from "vue";
+import TagBadge from "../../shared/TagBadge.vue";
 
 const props = defineProps({
   loading: Boolean,
@@ -120,16 +115,6 @@ const handleSubmit = () => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-}
-
-.tag-chip {
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-}
-
-.tag-chip:hover {
-  transform: scale(1.05);
 }
 
 .display-end {

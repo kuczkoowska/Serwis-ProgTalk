@@ -10,16 +10,16 @@
     </div>
 
     <div class="post-header">
-      <div>
-        <div class="meta-info">
-          <AvatarComponent :username="post.author?.username" />
-          <div class="user-info-col">
-            <span class="username">{{ post.author?.username }}</span>
-            <span class="date">
-              utworzono
-              {{ new Date(post.createdAt).toLocaleDateString() }}
-            </span>
-          </div>
+      <div class="meta-info">
+        <AvatarComponent :username="post.author?.username" />
+        <div class="user-info-col">
+          <span class="username">{{
+            post.author?.username || "Użytkownik usunięty"
+          }}</span>
+          <span class="date">
+            utworzono
+            {{ formatDate(post.createdAt) }}
+          </span>
         </div>
       </div>
     </div>
@@ -35,22 +35,16 @@
 
     <div class="post-content">{{ post.content }}</div>
 
-    <div v-if="post.tags && post.tags.length > 0" class="post-tags">
-      <span
-        v-for="tag in post.tags"
-        :key="tag._id"
-        class="tag-badge"
-        :style="{
-          background: tag.color,
-          boxShadow: `0 2px 8px ${tag.color}40`,
-        }"
-      >
-        {{ tag.name }}
-      </span>
+    <div v-if="post.tags?.length" class="post-tags">
+      <TagBadge v-for="tag in post.tags" :key="tag._id" :tag="tag" />
     </div>
 
     <div class="post-footer">
-      <Button class="p-button-text" @click="$emit('like', post._id)">
+      <Button
+        class="p-button-text action-btn"
+        :class="{ 'like-active': isLiked }"
+        @click="$emit('like', post._id)"
+      >
         <i :class="isLiked ? 'pi pi-heart-fill' : 'pi pi-heart'"></i>
         <span>{{ post.likes?.length || 0 }}</span>
       </Button>
@@ -72,13 +66,17 @@
 
 <script setup>
 import { computed } from "vue";
-import AvatarComponent from "../../AvatarComponent.vue";
+
 import { useAuthStore } from "../../../stores/auth.js";
 
-const props = defineProps({ post: { required: true } });
-defineEmits(["like", "reply", "delete"]);
+import AvatarComponent from "../../AvatarComponent.vue";
+import TagBadge from "../../shared/TagBadge.vue";
 
 const authStore = useAuthStore();
+
+const props = defineProps({ post: { required: true } });
+
+defineEmits(["like", "reply", "delete"]);
 
 const isLiked = computed(() => {
   if (!authStore.user || !props.post.likes) return false;
@@ -97,12 +95,6 @@ const isAuthor = computed(() => {
 
   const userId = authStore.user._id || authStore.user.id;
 
-  console.log("jest autorem??:", {
-    authorId,
-    userId,
-    match: authorId === userId,
-  });
-
   return authorId === userId;
 });
 
@@ -112,7 +104,20 @@ const scrollToPost = (postId) => {
     element.scrollIntoView({ behavior: "smooth", block: "center" });
     element.classList.add("highlight-post");
     setTimeout(() => element.classList.remove("highlight-post"), 2000);
+  } else {
+    console.warn("Post znajduje sie na innej stronie");
   }
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+  return new Date(dateString).toLocaleString("pl-PL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 </script>
 
@@ -173,21 +178,15 @@ const scrollToPost = (postId) => {
   color: #1e293b;
   line-height: 1.6;
   margin-bottom: 1rem;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-/* zrobić z tagow komponent */
 .post-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 1rem;
-}
-
-.tag-badge {
-  padding: 0.35rem 0.85rem;
-  border-radius: 16px;
-  color: white;
-  font-size: 0.85rem;
 }
 
 .post-footer {
