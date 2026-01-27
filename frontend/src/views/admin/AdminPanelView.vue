@@ -12,8 +12,9 @@
       <TabPanel header="Oczekujący użytkownicy">
         <PendingUsersTab ref="pendingTabRef" @status-changed="fetchStats" />
       </TabPanel>
-      <TabPanel header="Wszyscy użytkownicy"> </TabPanel>
-
+      <TabPanel header="Wszyscy użytkownicy">
+        <UsersTableTab ref="usersTabRef" @status-changed="fetchStats" />
+      </TabPanel>
       <TabPanel header="Wszystkie tematy"> </TabPanel>
     </TabView>
   </div>
@@ -26,19 +27,38 @@ import io from "socket.io-client";
 
 import AdminStatsCard from "../../components/admin/AdminStatsCard.vue";
 import PendingUsersTab from "../../components/admin/PendingUsersTab.vue";
+import UsersTableTab from "../../components/admin/UsersTableTab.vue";
 
+import { useToast } from "primevue/usetoast";
+
+const toast = useToast();
 const stats = ref(null);
 const activeTab = ref(0);
 
 const pendingTabRef = ref(null);
+const usersTabRef = ref(null);
 
 const fetchStats = async () => {
-  const res = await axios.get("/api/admin/stats");
-  stats.value = res.data.data;
+  try {
+    const res = await axios.get("/api/admin/stats");
+    stats.value = res.data.data;
+  } catch (err) {
+    console.error("Błąd pobierania statystyk:", err);
+  }
 };
 
 const connectSocket = () => {
-  const socket = io("https://localhost:3000", {});
+  const socket = io("https://localhost:3000", {
+    transports: ["websocket"],
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
+  });
+
+  socket.on("connect", () => {
+    console.log("Socket połączony:", socket.id);
+    socket.emit("join_admin_room");
+  });
 
   socket.on("new_user_registration", (data) => {
     toast.add({
@@ -49,6 +69,36 @@ const connectSocket = () => {
     });
     fetchStats();
     pendingTabRef.value?.refresh();
+  });
+
+  socket.on("user_blocked", (data) => {
+    toast.add({
+      severity: "warn",
+      summary: "Użytkownik zablokowany",
+      detail: `${data.username} został zablokowany przez ${data.blockedBy}`,
+      life: 5000,
+    });
+    fetchStats();
+    usersTabRef.value?.refresh();
+  });
+
+  socket.on("user_unblocked", (data) => {
+    toast.add({
+      severity: "success",
+      summary: "Użytkownik odblokowany",
+      detail: `${data.username} został odblokowany przez ${data.unblockedBy}`,
+      life: 5000,
+    });
+    fetchStats();
+    usersTabRef.value?.refresh();
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Socket rozłączony");
+  });
+
+  socket.on("connect_error", (error) => {
+    console.error("Błąd połączenia socket:", error);
   });
 };
 

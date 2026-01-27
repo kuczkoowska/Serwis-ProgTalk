@@ -88,54 +88,6 @@ exports.getMyProfile = async (req, res) => {
   }
 };
 
-exports.getPendingUsers = async (req, res) => {
-  try {
-    const users = await User.find({ isActive: false }).select(
-      "email username createdAt",
-    );
-
-    res.status(200).json({
-      status: "success",
-      results: users.length,
-      data: { users },
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Błąd serwera", error: error.message });
-  }
-};
-
-exports.approveUser = async (req, res) => {
-  try {
-    const userId = req.params.id;
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "Użytkownik nie znaleziony" });
-    }
-
-    user.isActive = true;
-    await user.save({ validateBeforeSave: false });
-
-    // powiadamiam reszte adminów
-    const io = req.app.get("socketio");
-    if (io) {
-      io.to("admins").emit("user_approved", {
-        userId: user._id,
-        username: user.username,
-        message: `Użytkownik ${user.username} został zaakceptowany.`,
-      });
-
-      // mail na pocztę - konto jest już aktywne
-    }
-
-    res
-      .status(200)
-      .json({ status: "success", message: "Użytkownik został aktywowany." });
-  } catch (error) {
-    res.status(500).json({ message: "Błąd serwera", error: error.message });
-  }
-};
-
 exports.saveLastViewedPage = async (req, res) => {
   try {
     const { topicId, page } = req.body;
@@ -189,51 +141,6 @@ exports.getLastViewedPage = async (req, res) => {
       data: {
         page: lastViewed ? lastViewed.page : 1,
       },
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Błąd serwera", error: error.message });
-  }
-};
-
-exports.blockUserGlobally = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { reason } = req.body;
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "Użytkownik nie znaleziony." });
-    }
-
-    user.isBlocked = true;
-    user.blockReason = reason || "Brak podanego powodu";
-    await user.save();
-
-    res.status(200).json({
-      status: "success",
-      message: "Użytkownik został zablokowany globalnie.",
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Błąd serwera", error: error.message });
-  }
-};
-
-exports.unblockUserGlobally = async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "Użytkownik nie znaleziony." });
-    }
-
-    user.isBlocked = false;
-    user.blockReason = null;
-    await user.save();
-
-    res.status(200).json({
-      status: "success",
-      message: "Użytkownik został odblokowany.",
     });
   } catch (error) {
     res.status(500).json({ message: "Błąd serwera", error: error.message });
