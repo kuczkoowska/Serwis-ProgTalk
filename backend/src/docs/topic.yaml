@@ -250,3 +250,165 @@ paths:
           description: Tylko moderatorzy mogą edytować metadane
         404:
           description: Temat nie znaleziony
+
+  /api/topics/{topicId}/close:
+    patch:
+      tags: [Topics - Moderation]
+      summary: Zamknij temat
+      description: Moderatorzy i administratorzy mogą zamknąć temat (blokuje tworzenie nowych wpisów).
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: topicId
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Temat został zamknięty
+        403:
+          description: Brak uprawnień
+        404:
+          description: Temat nie znaleziony
+
+  /api/topics/{topicId}/open:
+    patch:
+      tags: [Topics - Moderation]
+      summary: Otwórz temat
+      description: Moderatorzy i administratorzy mogą otworzyć zamknięty temat (umożliwia tworzenie nowych wpisów).
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: topicId
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Temat został otwarty
+        403:
+          description: Brak uprawnień
+        404:
+          description: Temat nie znaleziony
+
+  /api/topics/{topicId}/moderator-applications:
+    post:
+      tags: [Topics - Moderation]
+      summary: Aplikuj na moderatora tematu
+      description: Pozwala użytkownikowi aplikować na stanowisko moderatora tematu.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: topicId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motivation]
+              properties:
+                motivation:
+                  type: string
+                  description: Motywacja (min. 50 znaków)
+                  example: "Jestem aktywny w tym temacie i chcę pomagać w jego moderacji..."
+                experience:
+                  type: string
+                  description: Doświadczenie (opcjonalnie)
+                  example: "Moderowałem forum X przez 2 lata"
+                availability:
+                  type: string
+                  enum: [occasional, moderate, daily, frequent]
+                  description: Deklarowana dostępność
+                  example: "moderate"
+      responses:
+        201:
+          description: Aplikacja została wysłana pomyślnie
+        400:
+          description: Użytkownik jest już moderatorem lub ma oczekującą aplikację
+        404:
+          description: Temat nie znaleziony
+
+    get:
+      tags: [Topics - Moderation]
+      summary: Pobierz aplikacje na moderatora
+      description: Moderatorzy mogą przeglądać aplikacje na moderatora swojego tematu.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: topicId
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Lista aplikacji pobrana pomyślnie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  results: { type: integer }
+                  data:
+                    type: object
+                    properties:
+                      applications:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            _id: { type: string }
+                            applicant:
+                              type: object
+                              properties:
+                                username: { type: string }
+                                email: { type: string }
+                            motivation: { type: string }
+                            experience: { type: string }
+                            availability: { type: string }
+                            status:
+                              {
+                                type: string,
+                                enum: [pending, approved, rejected],
+                              }
+                            createdAt: { type: string, format: date-time }
+        403:
+          description: Brak uprawnień
+
+  /api/topics/moderator-applications/{applicationId}:
+    patch:
+      tags: [Topics - Moderation]
+      summary: Rozpatrz aplikację na moderatora
+      description: Moderatorzy mogą zaakceptować lub odrzucić aplikację na moderatora.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: applicationId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [approved, rejected]
+                  description: Decyzja o aplikacji
+                  example: "approved"
+                reviewNotes:
+                  type: string
+                  description: Notatki do decyzji (opcjonalnie)
+                  example: "Świetna motywacja i doświadczenie"
+      responses:
+        200:
+          description: Aplikacja została rozpatrzona
+        400:
+          description: Nieprawidłowy status lub aplikacja już rozpatrzona
+        403:
+          description: Brak uprawnień
+        404:
+          description: Aplikacja nie znaleziona
