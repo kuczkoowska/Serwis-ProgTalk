@@ -21,38 +21,17 @@
 
       <div class="main-grid">
         <div class="posts-column">
-          <div v-if="postsStore.posts.length > 0" class="posts-list">
-            <TopicPost
-              v-for="post in postsStore.posts"
-              :key="post._id"
-              :post="post"
-              @like="handleLike"
-              @reply="handleReply"
-              @delete="handleDelete"
-            />
-          </div>
-
-          <div v-else class="empty-state">
-            <div class="empty-icon-circle">
-              <i
-                class="pi pi-comments"
-                style="font-size: 2rem; color: var(--p-primary-color)"
-              ></i>
-            </div>
-            <h3>Cisza w eterze...</h3>
-            <p>Nikt jeszcze nie odpisał. Bądź tą pierwszą osobą!</p>
-          </div>
-
-          <div class="topic">
-            <TopicReplyEditor
-              id="reply-form"
-              :loading="sending"
-              :replyToId="replyToId"
-              :availableTags="tagsStore.tags"
-              @submit="handleAddPost"
-              @cancel="replyToId = null"
-            />
-          </div>
+          <TopicPostList
+            :posts="postsStore.posts"
+            :tags="tagsStore.tags"
+            :sending="sending"
+            :replyToId="replyToId"
+            @like="handleLike"
+            @reply="handleReply"
+            @delete="handleDelete"
+            @submit="handleAddPost"
+            @update:replyToId="replyToId = $event"
+          />
         </div>
 
         <div class="sidebar-column">
@@ -102,6 +81,7 @@ import TopicReplyEditor from "../../components/topics/details/TopicReplyEditor.v
 import TopicPost from "../../components/topics/details/TopicPost.vue";
 import TopicHeader from "../../components/topics/details/TopicHeader.vue";
 import TagManagementCard from "../../components/topics/details/TagManagementCard.vue";
+import TopicPostList from "../../components/topics/details/TopicPostList.vue";
 
 const route = useRoute();
 const topicsStore = useTopicsStore();
@@ -240,39 +220,8 @@ const refreshData = () => loadAllData(route.params.id);
   gap: 1.5rem;
 }
 
-.empty-state {
-  text-align: center;
-  padding: 3rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid #eef0f2;
-}
-
-.empty-icon-circle {
-  width: 64px;
-  height: 64px;
-  background: #eff6ff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 1rem;
-}
-
 .topic {
   margin-top: 2rem;
-}
-
-.empty-state h3 {
-  margin: 0;
-  color: #334155;
-}
-
-.empty-state p {
-  color: #64748b;
 }
 
 .sidebar-column {
