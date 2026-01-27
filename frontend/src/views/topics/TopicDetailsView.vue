@@ -6,7 +6,7 @@
       <ProgressSpinner />
     </div>
 
-    <div v-else class="topic-container">
+    <div v-else class="main-container">
       <TopicHeader :topic="currentTopic" />
 
       <div class="pagination-container">
@@ -19,7 +19,7 @@
         />
       </div>
 
-      <div class="main-grid">
+      <div class="layout-with-sidebar">
         <div class="posts-column">
           <TopicPostList
             :posts="postsStore.posts"
@@ -71,23 +71,24 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useToast } from "primevue/usetoast";
+
 import { useTopicsStore } from "../../stores/topics.js";
 import { usePostsStore } from "../../stores/posts.js";
 import { useTagsStore } from "../../stores/tags.js";
+
 import CreateTopicDialog from "../../components/topics/shared/CreateTopicDialog.vue";
 import TopicStatsCard from "../../components/topics/details/TopicStatsCard.vue";
 import SubtopicsCard from "../../components/topics/details/SubtopicsCard.vue";
-import TopicReplyEditor from "../../components/topics/details/TopicReplyEditor.vue";
-import TopicPost from "../../components/topics/details/TopicPost.vue";
 import TopicHeader from "../../components/topics/details/TopicHeader.vue";
 import TagManagementCard from "../../components/topics/details/TagManagementCard.vue";
 import TopicPostList from "../../components/topics/details/TopicPostList.vue";
 
 const route = useRoute();
+const toast = useToast();
+
 const topicsStore = useTopicsStore();
 const postsStore = usePostsStore();
 const tagsStore = useTagsStore();
-const toast = useToast();
 
 const sending = ref(false);
 const showSubtopicDialog = ref(false);
@@ -108,6 +109,8 @@ const loadAllData = async (id) => {
   await tagsStore.fetchTagsForTopic(id);
 };
 
+const refreshData = () => loadAllData(route.params.id);
+
 onMounted(() => loadAllData(route.params.id));
 
 watch(
@@ -118,25 +121,6 @@ watch(
   },
 );
 
-const handleLike = async (postId) => {
-  try {
-    await postsStore.toggleLike(postId);
-    await postsStore.fetchPosts(route.params.id);
-  } catch (e) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail: e || "Nie udało się polubić",
-      life: 3000,
-    });
-  }
-};
-
-const handleReply = (postId) => {
-  replyToId.value = postId;
-  focusEditor();
-};
-
 const onPageChange = (event) => {
   const newPage = event.page + 1;
 
@@ -145,6 +129,23 @@ const onPageChange = (event) => {
   postsStore.fetchPosts(route.params.id, newPage, rowsPerPage.value);
 
   window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+const focusEditor = () => {
+  document.getElementById("reply-form").scrollIntoView({ behavior: "smooth" });
+};
+
+const handleReply = (postId) => {
+  replyToId.value = postId;
+  focusEditor();
+};
+
+const handleLike = async (postId) => {
+  try {
+    await postsStore.toggleLike(postId);
+  } catch (e) {
+    showError(e, "Nie udało się polubić");
+  }
 };
 
 const handleDelete = async (postId) => {
@@ -158,12 +159,7 @@ const handleDelete = async (postId) => {
       life: 3000,
     });
   } catch (e) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail: e || "Nie udało się usunąć posta",
-      life: 3000,
-    });
+    showError(e, "Nie udało się usunąć posta");
   }
 };
 
@@ -182,57 +178,22 @@ const handleAddPost = async (data) => {
       life: 3000,
     });
   } catch (e) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail: e || "Błąd wysyłania",
-      life: 3000,
-    });
+    showError(e, "Błąd wysyłania");
   } finally {
     sending.value = false;
   }
 };
 
-const focusEditor = () => {
-  document.getElementById("reply-form").scrollIntoView({ behavior: "smooth" });
+const showError = (error, defaultMsg) => {
+  const msg = error?.response?.data?.message || error?.message || defaultMsg;
+  toast.add({ severity: "error", summary: "Błąd", detail: msg, life: 3000 });
 };
-
-const refreshData = () => loadAllData(route.params.id);
 </script>
 
 <style scoped>
-.loading-container {
-  display: flex;
-  justify-content: center;
-  padding-top: 5rem;
-}
-
-.topic-container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
-.main-grid {
-  margin-top: 2rem;
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 1.5rem;
-}
-
-.topic {
-  margin-top: 2rem;
-}
-
 .sidebar-column {
   display: flex;
   flex-direction: column;
   gap: 2rem;
-}
-
-.pagination-container {
-  margin-top: 2rem;
-  display: flex;
-  justify-content: center;
 }
 </style>

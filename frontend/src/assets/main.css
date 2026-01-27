@@ -98,6 +98,29 @@ a {
   gap: 12px;
 }
 
+/* glówny kontener */
+.main-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* ładowanie */
+.loading-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 5rem;
+  width: 100%;
+}
+
+/* paginacja */
+.pagination-center {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
 /* pola w formularzach */
 
 .field {
@@ -122,8 +145,6 @@ a {
   min-height: 100vh;
 }
 
-/* moze style dla empty i loading???? */
-
 /* listy */
 .subtopics-list {
   list-style: none;
@@ -133,4 +154,12 @@ a {
 
 .sidebar-content {
   padding: 1.25rem;
+}
+
+/* layout */
+.layout-with-sidebar {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.5rem;
+  margin-top: 2rem;
 }
