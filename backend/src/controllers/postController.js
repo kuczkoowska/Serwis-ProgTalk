@@ -77,7 +77,7 @@ exports.getTopicPosts = async (req, res) => {
     }
 
     const posts = await Post.find(filter)
-      .populate("author", "username") // Pokaż kto napisał
+      .populate("author", "username _id")
       .populate("tags", "name color")
       .populate("replyTo", "content author")
       .sort("createdAt")
@@ -121,7 +121,9 @@ exports.toggleLike = async (req, res) => {
     res.status(200).json({
       status: "success",
       message: isLiked ? "Polubienie usunięte" : "Wpis polubiony",
-      data: { likesCount: post.likes.length },
+      data: {
+        post: post,
+      },
     });
   } catch (error) {
     res.status(500).json({ message: "Błąd serwera", error: error.message });
