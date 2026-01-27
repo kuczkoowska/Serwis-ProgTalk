@@ -15,7 +15,9 @@
       <TabPanel header="Wszyscy użytkownicy">
         <UsersTableTab ref="usersTabRef" @status-changed="fetchStats" />
       </TabPanel>
-      <TabPanel header="Wszystkie tematy"> </TabPanel>
+      <TabPanel header="Wszystkie tematy">
+        <TopicsTableTab ref="topicsTabRef" @status-changed="fetchStats" />
+      </TabPanel>
     </TabView>
   </div>
 </template>
@@ -28,7 +30,7 @@ import io from "socket.io-client";
 import AdminStatsCard from "../../components/admin/AdminStatsCard.vue";
 import PendingUsersTab from "../../components/admin/PendingUsersTab.vue";
 import UsersTableTab from "../../components/admin/UsersTableTab.vue";
-
+import TopicsTableTab from "../../components/admin/TopicsTableTab.vue";
 import { useToast } from "primevue/usetoast";
 
 const toast = useToast();
