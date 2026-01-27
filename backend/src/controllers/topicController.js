@@ -1,4 +1,5 @@
 const Topic = require("../models/Topic");
+const ModeratorApplication = require("../models/ModeratorApplication");
 const { canManageTopic } = require("../utils/permissions");
 
 exports.createTopic = async (req, res) => {
@@ -284,6 +285,13 @@ exports.closeTopic = async (req, res) => {
   try {
     const { topicId } = req.params;
 
+    if (
+      !(await canManageTopic(req.user._id, topicId)) &&
+      req.user.role !== "admin"
+    ) {
+      return res.status(403).json({ message: "Brak uprawnień." });
+    }
+
     const topic = await Topic.findById(topicId);
     if (!topic) {
       return res.status(404).json({ message: "Temat nie znaleziony." });
@@ -295,6 +303,34 @@ exports.closeTopic = async (req, res) => {
     res.status(200).json({
       status: "success",
       message: "Temat został zamknięty.",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.openTopic = async (req, res) => {
+  try {
+    const { topicId } = req.params;
+
+    if (
+      !(await canManageTopic(req.user._id, topicId)) &&
+      req.user.role !== "admin"
+    ) {
+      return res.status(403).json({ message: "Brak uprawnień." });
+    }
+
+    const topic = await Topic.findById(topicId);
+    if (!topic) {
+      return res.status(404).json({ message: "Temat nie znaleziony." });
+    }
+
+    topic.isClosed = false;
+    await topic.save();
+
+    res.status(200).json({
+      status: "success",
+      message: "Temat został otwarty.",
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

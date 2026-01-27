@@ -17,11 +17,8 @@ router.post("/:topicId/unblock", topicController.unblockUserInTopic);
 
 router.patch("/:topicId", topicController.updateTopicMetadata);
 
-router.patch(
-  "/:topicId/close",
-  authMiddleware.restrictTo("admin"),
-  topicController.closeTopic,
-);
+router.patch("/:topicId/close", topicController.closeTopic);
+router.patch("/:topicId/open", topicController.openTopic);
 router.patch(
   "/:topicId/hide",
   authMiddleware.restrictTo("admin"),
