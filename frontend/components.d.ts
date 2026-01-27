@@ -11,25 +11,33 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AdminStatsCard: typeof import('./src/components/admin/AdminStatsCard.vue')['default']
     Avatar: typeof import('primevue/avatar')['default']
     AvatarComponent: typeof import('./src/components/AvatarComponent.vue')['default']
+    Badge: typeof import('primevue/badge')['default']
     BaseEmptyState: typeof import('./src/components/shared/BaseEmptyState.vue')['default']
+    BlockUserDialog: typeof import('./src/components/admin/BlockUserDialog.vue')['default']
     Button: typeof import('primevue/button')['default']
     Card: typeof import('primevue/card')['default']
     Chip: typeof import('primevue/chip')['default']
     ColorPicker: typeof import('primevue/colorpicker')['default']
+    Column: typeof import('primevue/column')['default']
     CreateTopicDialog: typeof import('./src/components/topics/shared/CreateTopicDialog.vue')['default']
+    DataTable: typeof import('primevue/datatable')['default']
     Dialog: typeof import('primevue/dialog')['default']
     Divider: typeof import('primevue/divider')['default']
+    Dropdown: typeof import('primevue/dropdown')['default']
     IconField: typeof import('primevue/iconfield')['default']
     InputIcon: typeof import('primevue/inputicon')['default']
     InputText: typeof import('primevue/inputtext')['default']
     Menu: typeof import('primevue/menu')['default']
     Menubar: typeof import('primevue/menubar')['default']
     Message: typeof import('primevue/message')['default']
+    ModerationCard: typeof import('./src/components/topics/details/ModerationCard.vue')['default']
     NavBarComponent: typeof import('./src/components/NavBarComponent.vue')['default']
     Paginator: typeof import('primevue/paginator')['default']
     Password: typeof import('primevue/password')['default']
+    PendingUsersTab: typeof import('./src/components/admin/PendingUsersTab.vue')['default']
     ProfileHeader: typeof import('./src/components/profile/ProfileHeader.vue')['default']
     ProfileSettings: typeof import('./src/components/profile/ProfileSettings.vue')['default']
     ProgressSpinner: typeof import('primevue/progressspinner')['default']
@@ -42,6 +50,7 @@ declare module 'vue' {
     TabPanel: typeof import('primevue/tabpanel')['default']
     TabPanels: typeof import('primevue/tabpanels')['default']
     Tabs: typeof import('primevue/tabs')['default']
+    TabView: typeof import('primevue/tabview')['default']
     Tag: typeof import('primevue/tag')['default']
     TagBadge: typeof import('./src/components/shared/TagBadge.vue')['default']
     TagComponent: typeof import('./src/components/shared/TagComponent.vue')['default']
@@ -54,6 +63,11 @@ declare module 'vue' {
     TopicPost: typeof import('./src/components/topics/details/TopicPost.vue')['default']
     TopicPostList: typeof import('./src/components/topics/details/TopicPostList.vue')['default']
     TopicReplyEditor: typeof import('./src/components/topics/details/TopicReplyEditor.vue')['default']
+    TopicsTableTab: typeof import('./src/components/admin/TopicsTableTab.vue')['default']
     TopicStatsCard: typeof import('./src/components/topics/details/TopicStatsCard.vue')['default']
+    UsersTableTab: typeof import('./src/components/admin/UsersTableTab.vue')['default']
+  }
+  export interface GlobalDirectives {
+    Tooltip: typeof import('primevue/tooltip')['default']
   }
 }

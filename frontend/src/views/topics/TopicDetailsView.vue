@@ -4,12 +4,16 @@
 
     <div class="back-button">
       <Button
-        label="Wróć do listy"
+        :label="
+          route.query.returnTo === 'admin'
+            ? 'Wróć do panelu admina'
+            : 'Wróć do listy'
+        "
         icon="pi pi-arrow-left"
         text
         fluid
         class="mt-3"
-        @click="$router.push('/')"
+        @click="goBack"
       />
     </div>
 
@@ -51,6 +55,8 @@
             @create="showSubtopicDialog = true"
           />
 
+          <ModerationCard :topic="currentTopic" />
+
           <TagManagementCard
             :topicId="route.params.id"
             :moderators="currentTopic?.moderators || []"
@@ -80,21 +86,15 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 
 import { useTopicsStore } from "../../stores/topics.js";
 import { usePostsStore } from "../../stores/posts.js";
 import { useTagsStore } from "../../stores/tags.js";
 
-import CreateTopicDialog from "../../components/topics/shared/CreateTopicDialog.vue";
-import TopicStatsCard from "../../components/topics/details/TopicStatsCard.vue";
-import SubtopicsCard from "../../components/topics/details/SubtopicsCard.vue";
-import TopicHeader from "../../components/topics/details/TopicHeader.vue";
-import TagManagementCard from "../../components/topics/details/TagManagementCard.vue";
-import TopicPostList from "../../components/topics/details/TopicPostList.vue";
-
 const route = useRoute();
+const router = useRouter();
 const toast = useToast();
 
 const topicsStore = useTopicsStore();
@@ -118,6 +118,14 @@ const loadAllData = async (id) => {
   await topicsStore.fetchTopicDetails(id);
   await postsStore.fetchPosts(id);
   await tagsStore.fetchTagsForTopic(id);
+};
+
+const goBack = () => {
+  if (route.query.returnTo === "admin") {
+    router.push("/admin");
+  } else {
+    router.push("/");
+  }
 };
 
 const refreshData = () => loadAllData(route.params.id);
