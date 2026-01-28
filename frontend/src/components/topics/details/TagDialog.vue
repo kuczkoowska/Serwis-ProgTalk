@@ -55,7 +55,7 @@ const toast = useToast();
 const creating = ref(false);
 const newTag = ref({
   name: "",
-  color: "#3498db",
+  color: "3498db",
 });
 
 const handleCreate = async () => {
@@ -84,7 +84,7 @@ const handleCreate = async () => {
     });
     emit("update:visible", false);
     emit("created");
-    newTag.value = { name: "", color: "#3498db" };
+    newTag.value = { name: "", color: "3498db" };
   } catch (err) {
     toast.add({
       severity: "error",
