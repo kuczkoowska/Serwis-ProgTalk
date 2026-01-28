@@ -1,6 +1,9 @@
 const Topic = require("../models/Topic");
 const ModeratorApplication = require("../models/ModeratorApplication");
-const { canManageTopic } = require("../utils/permissions");
+const {
+  canManageTopic,
+  isUserBlockedInTopic,
+} = require("../utils/permissions");
 
 exports.createTopic = async (req, res) => {
   try {
@@ -101,7 +104,8 @@ exports.getTopicDetails = async (req, res) => {
   try {
     const topic = await Topic.findById(req.params.id)
       .populate("creator", "username")
-      .populate("blockedUsers.user", "username email");
+      .populate("blockedUsers.user", "username email")
+      .populate("moderators.user", "username email");
 
     if (!topic) {
       return res.status(404).json({ message: "Temat nie znaleziony" });
@@ -120,11 +124,20 @@ exports.getTopicDetails = async (req, res) => {
 
     const subtopics = await Topic.find(subtopicsFilter);
 
+    const isBlocked = await isUserBlockedInTopic(req.user._id, topic._id);
+    const canPost = !topic.isClosed && !isBlocked;
+
+    const canManage =
+      (await canManageTopic(req.user._id, topic._id)) ||
+      req.user.role === "admin";
+
     res.status(200).json({
       status: "success",
       data: {
         topic,
         subtopics,
+        canPost,
+        canManage,
       },
     });
   } catch (error) {

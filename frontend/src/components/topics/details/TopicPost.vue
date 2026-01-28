@@ -48,7 +48,11 @@
         <i :class="isLiked ? 'pi pi-heart-fill' : 'pi pi-heart'"></i>
         <span>{{ post.likes?.length || 0 }}</span>
       </Button>
-      <Button class="p-button-text" @click="$emit('reply', post._id)">
+      <Button
+        v-if="canPost"
+        class="p-button-text"
+        @click="$emit('reply', post._id)"
+      >
         <i class="pi pi-reply"></i>
         <span>Odpowiedz</span>
       </Button>
@@ -71,7 +75,10 @@ import { useAuthStore } from "../../../stores/auth.js";
 
 const authStore = useAuthStore();
 
-const props = defineProps({ post: { required: true } });
+const props = defineProps({
+  post: { required: true },
+  canPost: { type: Boolean, default: true },
+});
 
 defineEmits(["like", "reply", "delete"]);
 

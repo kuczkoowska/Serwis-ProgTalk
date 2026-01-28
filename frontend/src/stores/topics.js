@@ -8,6 +8,8 @@ export const useTopicsStore = defineStore("topics", {
     rootTopics: [], // dla strony głównej
     currentTopic: null,
     subtopics: [],
+    canPost: false,
+    canManage: false,
     loading: false,
     error: null,
   }),
@@ -51,6 +53,8 @@ export const useTopicsStore = defineStore("topics", {
         const res = await axios.get(`/api/topics/${id}`);
         this.currentTopic = res.data.data.topic;
         this.subtopics = res.data.data.subtopics;
+        this.canPost = res.data.data.canPost;
+        this.canManage = res.data.data.canManage;
       } catch (err) {
         this.error = "Nie udało się pobrać tematu.";
       } finally {

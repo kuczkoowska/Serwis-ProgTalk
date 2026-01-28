@@ -41,6 +41,8 @@
             :tags="tagsStore.tags"
             :sending="sending"
             :replyToId="replyToId"
+            :canPost="topicsStore.canPost"
+            :topicClosed="currentTopic?.isClosed || false"
             @like="handleLike"
             @reply="handleReply"
             @delete="handleDelete"
