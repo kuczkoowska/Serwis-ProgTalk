@@ -91,6 +91,20 @@ export const useTopicsStore = defineStore("topics", {
       }
     },
 
+    async toggleTopicHidden(topicId) {
+      try {
+        const isHidden = this.currentTopic?.isHidden;
+        const endpoint = isHidden ? "unhide" : "hide";
+
+        await axios.patch(`/api/topics/${topicId}/${endpoint}`);
+
+        await this.fetchTopicDetails(topicId);
+        return true;
+      } catch (err) {
+        throw getError(err);
+      }
+    },
+
     async blockUser(topicId, userId, reason = "", allowedSubtopicsIds = []) {
       try {
         await axios.post(`/api/topics/${topicId}/block`, {
@@ -110,6 +124,32 @@ export const useTopicsStore = defineStore("topics", {
       try {
         await axios.post(`/api/topics/${topicId}/unblock`, {
           userIdToUnblock: userId,
+        });
+
+        await this.fetchTopicDetails(topicId);
+        return true;
+      } catch (err) {
+        throw getError(err);
+      }
+    },
+
+    async promoteModerator(topicId, userId) {
+      try {
+        await axios.post(`/api/topics/${topicId}/moderators`, {
+          userIdToPromote: userId,
+        });
+
+        await this.fetchTopicDetails(topicId);
+        return true;
+      } catch (err) {
+        throw getError(err);
+      }
+    },
+
+    async revokeModerator(topicId, userId) {
+      try {
+        await axios.post(`/api/topics/${topicId}/moderators/revoke`, {
+          userIdToTake: userId,
         });
 
         await this.fetchTopicDetails(topicId);

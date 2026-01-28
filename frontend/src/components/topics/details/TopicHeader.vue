@@ -8,7 +8,13 @@
             :severity="topic?.isClosed ? 'danger' : 'success'"
             rounded
           />
-          <!-- moze osobny komponent??? i mzoe przeniesc w prawy grony rog????? -->
+          <Tag
+            v-if="topic?.isHidden"
+            value="Ukryty"
+            severity="warning"
+            rounded
+            class="ml-2"
+          />
         </div>
 
         <h1 class="topic-title">{{ topic?.name }}</h1>
@@ -52,5 +58,9 @@ defineProps({
   font-size: 1.05rem;
   color: #475569;
   margin-top: 1rem;
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
 }
 </style>

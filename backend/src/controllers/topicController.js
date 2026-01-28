@@ -59,6 +59,18 @@ exports.createTopic = async (req, res) => {
         promotedBy: mod.promotedBy,
         promotedAt: mod.promotedAt,
       }));
+
+      const creatorAlreadyModerator = topicData.moderators.some(
+        (mod) => mod.user.toString() === parentTopic.creator.toString(),
+      );
+
+      if (!creatorAlreadyModerator) {
+        topicData.moderators.push({
+          user: parentTopic.creator,
+          promotedBy: parentTopic.creator,
+          promotedAt: parentTopic.createdAt || Date.now(),
+        });
+      }
     }
 
     const newTopic = await Topic.create(topicData);
@@ -372,11 +384,12 @@ exports.hideTopic = async (req, res) => {
     }
 
     topic.isHidden = true;
+    topic.isClosed = true;
     await topic.save();
 
     res.status(200).json({
       status: "success",
-      message: "Temat został ukryty.",
+      message: "Temat został ukryty i zamknięty.",
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
