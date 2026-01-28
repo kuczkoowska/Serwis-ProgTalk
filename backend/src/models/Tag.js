@@ -5,7 +5,6 @@ const tagSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
       lowercase: true,
     },
@@ -26,5 +25,7 @@ const tagSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+tagSchema.index({ name: 1, topic: 1 }, { unique: true });
 
 module.exports = mongoose.model("Tag", tagSchema);

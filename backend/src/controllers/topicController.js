@@ -6,6 +6,19 @@ exports.createTopic = async (req, res) => {
   try {
     const { name, description, parentId } = req.body;
 
+    const existingTopic = await Topic.findOne({
+      name: name.trim(),
+      parent: parentId || null,
+    });
+
+    if (existingTopic) {
+      return res.status(400).json({
+        message: parentId
+          ? "Podtemat o tej nazwie już istnieje w tym temacie nadrzędnym."
+          : "Temat główny o tej nazwie już istnieje.",
+      });
+    }
+
     const topicData = {
       name,
       description,
