@@ -55,7 +55,7 @@ const canCreate = computed(() => {
   if (!authStore.user) return false;
   if (authStore.user.role === "admin") return true;
 
-  return topicsStore.canManageTopic(authStore.user.id);
+  return topicsStore.canManage;
 });
 
 const goToTopic = (id) => {
