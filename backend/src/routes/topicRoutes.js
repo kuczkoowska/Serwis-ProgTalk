@@ -10,24 +10,6 @@ router.post("/", topicController.createTopic); // Tworzenie
 router.get("/", topicController.getAllTopics); // Lista
 router.get("/:id", topicController.getTopicDetails); // Szczegóły + podtematy
 
-router.post("/:topicId/moderators", topicController.promoteModerator);
-router.post("/:topicId/moderators/revoke", topicController.takeBackModerator);
-router.post("/:topicId/block", topicController.blockUserInTopic);
-router.post("/:topicId/unblock", topicController.unblockUserInTopic);
-
-router.post(
-  "/:topicId/moderator-applications",
-  topicController.createModeratorApplication,
-);
-router.get(
-  "/:topicId/moderator-applications",
-  topicController.getModeratorApplications,
-);
-router.patch(
-  "/moderator-applications/:applicationId",
-  topicController.reviewModeratorApplication,
-);
-
 router.patch("/:topicId", topicController.updateTopicMetadata);
 
 router.patch("/:topicId/close", topicController.closeTopic);
