@@ -107,7 +107,7 @@ export const useTopicsStore = defineStore("topics", {
 
     async blockUser(topicId, userId, reason = "", allowedSubtopicsIds = []) {
       try {
-        await axios.post(`/api/topics/${topicId}/block`, {
+        await axios.post(`/api/moderators/${topicId}/block`, {
           userIdToBlock: userId,
           reason,
           allowedSubtopicsIds,
@@ -122,7 +122,7 @@ export const useTopicsStore = defineStore("topics", {
 
     async unblockUser(topicId, userId) {
       try {
-        await axios.post(`/api/topics/${topicId}/unblock`, {
+        await axios.post(`/api/moderators/${topicId}/unblock`, {
           userIdToUnblock: userId,
         });
 
@@ -135,7 +135,7 @@ export const useTopicsStore = defineStore("topics", {
 
     async promoteModerator(topicId, userId) {
       try {
-        await axios.post(`/api/topics/${topicId}/moderators`, {
+        await axios.post(`/api/moderators/${topicId}/moderators`, {
           userIdToPromote: userId,
         });
 
@@ -148,7 +148,7 @@ export const useTopicsStore = defineStore("topics", {
 
     async revokeModerator(topicId, userId) {
       try {
-        await axios.post(`/api/topics/${topicId}/moderators/revoke`, {
+        await axios.post(`/api/moderators/${topicId}/moderators/revoke`, {
           userIdToTake: userId,
         });
 
