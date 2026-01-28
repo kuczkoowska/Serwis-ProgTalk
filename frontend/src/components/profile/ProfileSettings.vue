@@ -39,9 +39,6 @@
 
 <script setup>
 import { reactive, ref } from "vue";
-import InputText from "primevue/inputtext";
-import Textarea from "primevue/textarea";
-import Button from "primevue/button";
 import { useToast } from "primevue/usetoast";
 
 const props = defineProps(["user"]);

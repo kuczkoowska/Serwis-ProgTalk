@@ -27,10 +27,6 @@ import { ref, onMounted } from "vue";
 import axios from "axios";
 import io from "socket.io-client";
 
-import AdminStatsCard from "../../components/admin/AdminStatsCard.vue";
-import PendingUsersTab from "../../components/admin/PendingUsersTab.vue";
-import UsersTableTab from "../../components/admin/UsersTableTab.vue";
-import TopicsTableTab from "../../components/admin/TopicsTableTab.vue";
 import { useToast } from "primevue/usetoast";
 
 const toast = useToast();

@@ -53,10 +53,6 @@ import { ref, onMounted } from "vue";
 import { useTopicsStore } from "../../stores/topics";
 import { useRouter } from "vue-router";
 
-import TopicCard from "../../components/topics/general/TopicCard.vue";
-import CreateTopicDialog from "../../components/topics/shared/CreateTopicDialog.vue";
-import BaseEmptyState from "../../components/shared/BaseEmptyState.vue";
-
 const topicsStore = useTopicsStore();
 const router = useRouter();
 

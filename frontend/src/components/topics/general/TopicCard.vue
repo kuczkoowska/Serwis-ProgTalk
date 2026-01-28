@@ -31,7 +31,6 @@
   </Card>
 </template>
 <script setup>
-import AvatarComponent from "../../AvatarComponent.vue";
 defineProps({
   topic: {
     required: true,

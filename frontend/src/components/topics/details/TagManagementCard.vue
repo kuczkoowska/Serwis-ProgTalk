@@ -59,7 +59,6 @@ import { useToast } from "primevue/usetoast";
 import { useTagsStore } from "../../../stores/tags.js";
 import { useAuthStore } from "../../../stores/auth.js";
 import { useTopicsStore } from "../../../stores/topics.js";
-import TagDialog from "./TagDialog.vue";
 
 const props = defineProps({
   topicId: { type: String, required: true },

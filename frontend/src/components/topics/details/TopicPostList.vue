@@ -29,10 +29,6 @@
   </div>
 </template>
 <script setup>
-import TopicPost from "./TopicPost.vue";
-import TopicReplyEditor from "./TopicReplyEditor.vue";
-import BaseEmptyState from "../../shared/BaseEmptyState.vue";
-
 defineProps({
   posts: { type: Array, default: () => [] },
   tags: { type: Array, default: () => [] },

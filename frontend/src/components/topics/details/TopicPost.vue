@@ -69,9 +69,6 @@ import { computed } from "vue";
 
 import { useAuthStore } from "../../../stores/auth.js";
 
-import AvatarComponent from "../../AvatarComponent.vue";
-import TagBadge from "../../shared/TagBadge.vue";
-
 const authStore = useAuthStore();
 
 const props = defineProps({ post: { required: true } });

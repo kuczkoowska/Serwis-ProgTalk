@@ -37,8 +37,6 @@
 </template>
 
 <script setup>
-import AvatarComponent from "../AvatarComponent.vue";
-
 defineProps({
   user: {
     type: Object,

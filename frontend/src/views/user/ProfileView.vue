@@ -39,8 +39,6 @@
 
 <script setup>
 import { useAuthStore } from "../../stores/auth";
-import ProfileHeader from "../../components/profile/ProfileHeader.vue";
-import ProfileSettings from "../../components/profile/ProfileSettings.vue";
 
 const authStore = useAuthStore();
 </script>

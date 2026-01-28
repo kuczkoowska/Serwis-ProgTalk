@@ -58,7 +58,6 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import axios from "axios";
-import BlockUserDialog from "./BlockUserDialog.vue";
 import { useToast } from "primevue/usetoast";
 
 const toast = useToast();

@@ -52,7 +52,6 @@
 import { ref, onMounted } from "vue";
 import axios from "axios";
 import { useToast } from "primevue/usetoast";
-import BaseEmptyState from "../shared/BaseEmptyState.vue";
 
 const toast = useToast();
 const users = ref([]);
