@@ -55,7 +55,8 @@ const canCreate = computed(() => {
   if (!authStore.user) return false;
   if (authStore.user.role === "admin") return true;
 
-  return topicsStore.canManage;
+  // Użytkownik musi być moderatorem I nie być zablokowanym
+  return topicsStore.canManage && topicsStore.canPost;
 });
 
 const goToTopic = (id) => {
