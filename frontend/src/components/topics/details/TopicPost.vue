@@ -30,10 +30,10 @@
       @click="scrollToPost(post.replyTo._id)"
     >
       <i class="pi pi-reply"></i>
-      <span>Odpowiedź na: {{ post.replyTo.content?.substring(0, 60) }}...</span>
+      <span>Odpowiedź na: {{ getPreviewText(post.replyTo.content) }}</span>
     </div>
 
-    <div class="post-content">{{ post.content }}</div>
+    <FormattedContent :content="post.content" class="post-content" />
 
     <div v-if="post.tags?.length" class="post-tags">
       <TagBadge v-for="tag in post.tags" :key="tag._id" :tag="tag" />
@@ -105,6 +105,13 @@ const isAuthor = computed(() => {
 const canDelete = computed(() => {
   return authStore.user?.role === "admin" || isAuthor.value;
 });
+
+const getPreviewText = (content) => {
+  if (!content) return "";
+  let text = content.replace(/```[\s\S]*?```/g, "[kod]");
+  text = text.replace(/`[^`]+`/g, "[kod]");
+  return text.substring(0, 60) + (text.length > 60 ? "..." : "");
+};
 
 const scrollToPost = (postId) => {
   const element = document.querySelector(`[data-post-id="${postId}"]`);

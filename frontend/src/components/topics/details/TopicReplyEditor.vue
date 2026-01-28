@@ -12,10 +12,18 @@
 
     <Textarea
       v-model="content"
-      rows="3"
+      rows="5"
       fluid
       placeholder="Napisz odpowiedź..."
     />
+
+    <div class="code-hint">
+      <small class="text-muted">
+        <i class="pi pi-info-circle"></i>
+        Możesz używać bloków kodu: <code>`kod inline`</code> lub
+        <code>```javascript kod wielolinijkowy```</code>
+      </small>
+    </div>
 
     <div v-if="availableTags.length > 0" class="tags-selector">
       <label>Tagi (opcjonalnie):</label>
@@ -115,6 +123,29 @@ const handleSubmit = () => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.code-hint {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.code-hint .text-muted {
+  color: #6c757d;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.code-hint code {
+  background: #e9ecef;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  font-family: "Courier New", monospace;
+  font-size: 0.8rem;
 }
 
 .display-end {
