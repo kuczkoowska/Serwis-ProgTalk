@@ -40,6 +40,7 @@
 import { ref } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useTopicsStore } from "../../../stores/topics";
+import BlockUserDialog from "./BlockUserDialog.vue";
 
 const props = defineProps({
   topic: { type: Object, required: true },
