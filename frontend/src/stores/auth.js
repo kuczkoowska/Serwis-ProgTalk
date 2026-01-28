@@ -63,7 +63,7 @@ export const useAuthStore = defineStore("auth", {
 
     async updateProfile(bio, username) {
       try {
-        const { data } = await axios.put("/api/users/profile", {
+        const { data } = await axios.patch("/api/users/profile", {
           bio,
           username,
         });
@@ -79,7 +79,7 @@ export const useAuthStore = defineStore("auth", {
 
     async updatePassword(currentPassword, newPassword, newPasswordConfirm) {
       try {
-        const { data } = await axios.put("/api/users/password", {
+        const { data } = await axios.patch("/api/users/update-password", {
           currentPassword,
           newPassword,
           newPasswordConfirm,
