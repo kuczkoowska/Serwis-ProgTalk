@@ -57,7 +57,7 @@
         <span>Odpowiedz</span>
       </Button>
       <Button
-        v-if="isAuthor"
+        v-if="canDelete"
         class="p-button-text p-button-danger"
         @click="$emit('delete', post._id)"
       >
@@ -100,6 +100,10 @@ const isAuthor = computed(() => {
   const userId = authStore.user._id || authStore.user.id;
 
   return authorId === userId;
+});
+
+const canDelete = computed(() => {
+  return authStore.user?.role === "admin" || isAuthor.value;
 });
 
 const scrollToPost = (postId) => {

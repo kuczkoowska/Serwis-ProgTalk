@@ -139,7 +139,10 @@ exports.deleteOwnPost = async (req, res) => {
       return res.status(404).json({ message: "Wpis nie znaleziony." });
     }
 
-    if (post.author.toString() !== req.user._id.toString()) {
+    const isAdmin = req.user.role === "admin";
+    const isAuthor = post.author.toString() === req.user._id.toString();
+
+    if (!isAdmin && !isAuthor) {
       return res.status(403).json({
         message: "Możesz usuwać tylko własne wpisy.",
       });
