@@ -1,38 +1,70 @@
 <template>
   <div>
     <h4>Moderatorzy</h4>
-    <div v-if="topic.moderators && topic.moderators.length > 0">
-      <div v-for="mod in topic.moderators" :key="mod.user._id">
-        <div>
-          <div>
-            <i class="pi pi-user"></i>
-            <span>{{ mod.user.username }}</span>
-            <span v-if="isTopicCreator(mod.user._id)">(Twórca)</span>
-          </div>
-          <Button
-            v-if="canRemoveModerator(mod.user._id)"
-            icon="pi pi-times"
-            severity="danger"
-            text
+
+    <div
+      v-if="topic.moderators && topic.moderators.length > 0"
+      class="moderators-list"
+    >
+      <div
+        v-for="mod in topic.moderators"
+        :key="mod._id"
+        class="moderator-item"
+      >
+        <div class="moderator-info">
+          <Avatar
+            :label="mod.user?.username?.charAt(0).toUpperCase() || 'U'"
+            shape="circle"
             size="small"
-            @click="handleRemoveModerator(mod.user._id)"
+            style="background-color: #ece9fc; color: #2a1261"
           />
+
+          <div class="flex flex-column ml-2">
+            <span class="font-bold">{{
+              mod.user?.username || "Nieznany"
+            }}</span>
+            <small class="text-secondary" style="font-size: 0.75rem">
+              Dodany: {{ new Date(mod.promotedAt).toLocaleDateString() }}
+            </small>
+          </div>
+
+          <span v-if="isTopicCreator(getId(mod.user))" class="creator-badge">
+            (Twórca)
+          </span>
         </div>
+
+        <Button
+          v-if="canRemoveModerator(getId(mod.user), mod)"
+          icon="pi pi-trash"
+          severity="danger"
+          text
+          rounded
+          v-tooltip="'Usuń uprawnienia'"
+          @click="handleRemoveModerator(getId(mod.user))"
+        />
       </div>
     </div>
-    <p v-else>Brak dodatkowych moderatorów</p>
 
-    <Button
-      label="Promuj użytkownika"
-      icon="pi pi-user-plus"
-      severity="secondary"
-      size="small"
-      @click="showPromoteDialog = true"
-    />
+    <div v-else class="empty-state">
+      <p>Brak dodatkowych moderatorów.</p>
+    </div>
+
+    <div class="mt-3">
+      <Button
+        label="Mianuj moderatora"
+        icon="pi pi-user-plus"
+        severity="secondary"
+        outlined
+        size="small"
+        fluid
+        @click="showPromoteDialog = true"
+      />
+    </div>
 
     <PromoteUserDialog
       v-model:visible="showPromoteDialog"
       :topic-id="topic._id"
+      @promoted="topicsStore.fetchTopicDetails(topic._id)"
     />
   </div>
 </template>
@@ -42,6 +74,7 @@ import { ref, computed } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useTopicsStore } from "../../../stores/topics";
 import { useAuthStore } from "../../../stores/auth";
+import PromoteUserDialog from "./PromoteUserDialog.vue";
 
 const props = defineProps({
   topic: { type: Object, required: true },
@@ -54,15 +87,32 @@ const authStore = useAuthStore();
 const showPromoteDialog = ref(false);
 
 const isAdmin = computed(() => authStore.user?.role === "admin");
+const currentUserId = computed(() => authStore.user?._id || authStore.user?.id);
+
+const getId = (field) => (typeof field === "object" ? field?._id : field);
 
 const isTopicCreator = (userId) => {
-  return props.topic.creator._id === userId || props.topic.creator === userId;
+  return getId(props.topic.creator) === userId;
 };
 
-const canRemoveModerator = (userId) => {
-  if (isTopicCreator(userId)) return false;
+const isCurrentUserCreator = computed(() => {
+  return isTopicCreator(currentUserId.value);
+});
+
+const canRemoveModerator = (targetUserId, moderatorObject) => {
+  if (isTopicCreator(targetUserId)) return false;
+
+  if (targetUserId === currentUserId.value) return false;
+
   if (isAdmin.value) return true;
-  if (isTopicCreator(authStore.user?._id)) return true;
+
+  if (isCurrentUserCreator.value) return true;
+
+  const promotedById = getId(moderatorObject.promotedBy);
+  if (promotedById === currentUserId.value) {
+    return true;
+  }
+
   return false;
 };
 
@@ -71,19 +121,63 @@ const handleRemoveModerator = async (userId) => {
     await topicsStore.revokeModerator(props.topic._id, userId);
     toast.add({
       severity: "success",
-      summary: "Sukces",
-      detail: "Uprawnienia moderatora zostały cofnięte",
+      summary: "Usunięto",
+      detail: "Użytkownik nie jest już moderatorem",
       life: 3000,
     });
   } catch (error) {
     toast.add({
       severity: "error",
       summary: "Błąd",
-      detail: error || "Nie udało się usunąć moderatora",
+      detail: error || "Operacja nieudana",
       life: 3000,
     });
   }
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.moderators-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.moderator-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background-color: #fff;
+  border: 1px solid #eef0f2;
+  transition: background-color 0.2s;
+}
+
+.moderator-item:hover {
+  background-color: #f8fafc;
+}
+
+.moderator-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.creator-badge {
+  font-size: 0.75rem;
+  color: var(--p-primary-color);
+  font-weight: 600;
+  background: var(--p-primary-50);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.empty-state {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+</style>
