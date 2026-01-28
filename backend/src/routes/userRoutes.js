@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.use(authMiddleware.protect);
 
+router.get("/search", userController.searchUsers);
 router.patch("/update-password", userController.updatePassword);
 router.patch("/profile", userController.updateProfile);
 router.get("/profile", userController.getMyProfile);

@@ -1,6 +1,36 @@
 const User = require("../models/User");
 const { signToken } = require("../utils/jwtHelper");
 
+exports.searchUsers = async (req, res) => {
+  try {
+    const { query } = req.query;
+
+    const searchFilter = {
+      isActive: true,
+      isBlocked: false,
+    };
+
+    if (query) {
+      searchFilter.$or = [
+        { username: { $regex: query, $options: "i" } },
+        { email: { $regex: query, $options: "i" } },
+      ];
+    }
+
+    const users = await User.find(searchFilter)
+      .select("username email")
+      .limit(20)
+      .sort("username");
+
+    res.status(200).json({
+      status: "success",
+      data: { users },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Błąd serwera", error: error.message });
+  }
+};
+
 exports.updatePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword, newPasswordConfirm } = req.body;
