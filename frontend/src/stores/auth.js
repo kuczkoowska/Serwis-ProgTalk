@@ -60,5 +60,39 @@ export const useAuthStore = defineStore("auth", {
         delete axios.defaults.headers.common["Authorization"];
       }
     },
+
+    async updateProfile(bio, username) {
+      try {
+        const { data } = await axios.put("/api/users/profile", {
+          bio,
+          username,
+        });
+
+        this.user = { ...this.user, ...data.data.user };
+        localStorage.setItem("user", JSON.stringify(this.user));
+
+        return true;
+      } catch (error) {
+        throw getError(error);
+      }
+    },
+
+    async updatePassword(currentPassword, newPassword, newPasswordConfirm) {
+      try {
+        const { data } = await axios.put("/api/users/password", {
+          currentPassword,
+          newPassword,
+          newPasswordConfirm,
+        });
+
+        if (data.token) {
+          this.setAuth(data.token, this.user);
+        }
+
+        return true;
+      } catch (error) {
+        throw getError(error);
+      }
+    },
   },
 });

@@ -158,5 +158,18 @@ export const useTopicsStore = defineStore("topics", {
         throw getError(err);
       }
     },
+
+    async updateTopicMetadata(topicId, description) {
+      try {
+        await axios.patch(`/api/topics/${topicId}`, {
+          description,
+        });
+
+        await this.fetchTopicDetails(topicId);
+        return true;
+      } catch (err) {
+        throw getError(err);
+      }
+    },
   },
 });
