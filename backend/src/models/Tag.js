@@ -7,6 +7,7 @@ const tagSchema = new mongoose.Schema(
       required: true,
       trim: true,
       lowercase: true,
+      unique: true,
     },
     color: {
       type: String,
@@ -17,15 +18,14 @@ const tagSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    topic: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Topic",
-      required: true,
+    usageCount: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true },
 );
 
-tagSchema.index({ name: 1, topic: 1 }, { unique: true });
+tagSchema.index({ name: 1 }, { unique: true });
 
 module.exports = mongoose.model("Tag", tagSchema);

@@ -1,8 +1,10 @@
 const Topic = require("../models/Topic");
+const SystemLogs = require("../models/SystemLogs");
 const {
   canManageTopic,
   isUserBlockedInTopic,
 } = require("../utils/permissions");
+const { ACTION_TYPES } = require("../utils/constants/actionTypes");
 
 exports.createTopic = async (req, res) => {
   try {
@@ -82,6 +84,28 @@ exports.createTopic = async (req, res) => {
 
     const newTopic = await Topic.create(topicData);
 
+    await newTopic.populate("creator", "username");
+    await newTopic.populate("tags", "name color");
+
+    await SystemLogs.create({
+      performer: req.user._id,
+      actionType: ACTION_TYPES.TOPIC_CREATE,
+      targetTopic: newTopic._id,
+    });
+
+    const io = req.app.get("socketio");
+    if (io) {
+      if (parentId) {
+        io.to(`topic_${parentId}`).emit("new_subtopic", {
+          topic: newTopic,
+        });
+      } else {
+        io.to("topics_list").emit("new_topic", {
+          topic: newTopic,
+        });
+      }
+    }
+
     res.status(201).json({
       status: "success",
       data: { topic: newTopic },
@@ -95,24 +119,47 @@ exports.createTopic = async (req, res) => {
 
 exports.getAllTopics = async (req, res) => {
   try {
-    // root=true - zwróć tylko tematy główne
     const filter = {};
-    if (req.query.root === "true") {
-      filter.parent = null;
+    if (req.query.root === "true") filter.parent = null;
+    if (req.user.role !== "admin") filter.isHidden = false;
+
+    if (req.query.search) {
+      filter.name = { $regex: req.query.search, $options: "i" };
     }
 
-    if (req.user.role !== "admin") {
-      filter.isHidden = false;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+
+    let sortOption = "-createdAt";
+    if (req.query.sort === "name") {
+      sortOption = "name";
+    } else if (req.query.sort === "oldest") {
+      sortOption = "createdAt";
     }
 
     const topics = await Topic.find(filter)
       .populate("creator", "username")
-      .sort("-createdAt");
+      .populate("tags", "name color")
+      .sort(sortOption)
+      .skip(skip)
+      .limit(limit + 1);
+
+    const hasNextPage = topics.length > limit;
+
+    const results = hasNextPage ? topics.slice(0, -1) : topics;
 
     res.status(200).json({
       status: "success",
-      results: topics.length,
-      data: { topics },
+      results: results.length,
+      data: {
+        topics: results,
+        pagination: {
+          page,
+          limit,
+          hasNextPage,
+        },
+      },
     });
   } catch (error) {
     res.status(500).json({ message: "Błąd serwera", error: error.message });
@@ -124,7 +171,8 @@ exports.getTopicDetails = async (req, res) => {
     const topic = await Topic.findById(req.params.id)
       .populate("creator", "username")
       .populate("blockedUsers.user", "username email")
-      .populate("moderators.user", "username email");
+      .populate("moderators.user", "username email")
+      .populate("ancestors", "name _id");
 
     if (!topic) {
       return res.status(404).json({ message: "Temat nie znaleziony" });
@@ -183,6 +231,12 @@ exports.closeTopic = async (req, res) => {
     topic.isClosed = true;
     await topic.save();
 
+    await SystemLogs.create({
+      performer: req.user._id,
+      actionType: ACTION_TYPES.TOPIC_CLOSE,
+      targetTopic: topicId,
+    });
+
     res.status(200).json({
       status: "success",
       message: "Temat został zamknięty.",
@@ -211,6 +265,12 @@ exports.openTopic = async (req, res) => {
     topic.isClosed = false;
     await topic.save();
 
+    await SystemLogs.create({
+      performer: req.user._id,
+      actionType: ACTION_TYPES.TOPIC_OPEN,
+      targetTopic: topicId,
+    });
+
     res.status(200).json({
       status: "success",
       message: "Temat został otwarty.",
@@ -233,6 +293,12 @@ exports.hideTopic = async (req, res) => {
     topic.isClosed = true;
     await topic.save();
 
+    await SystemLogs.create({
+      performer: req.user._id,
+      actionType: ACTION_TYPES.TOPIC_HIDE,
+      targetTopic: topicId,
+    });
+
     res.status(200).json({
       status: "success",
       message: "Temat został ukryty i zamknięty.",
@@ -253,6 +319,12 @@ exports.unhideTopic = async (req, res) => {
 
     topic.isHidden = false;
     await topic.save();
+
+    await SystemLogs.create({
+      performer: req.user._id,
+      actionType: ACTION_TYPES.TOPIC_UNHIDE,
+      targetTopic: topicId,
+    });
 
     res.status(200).json({
       status: "success",

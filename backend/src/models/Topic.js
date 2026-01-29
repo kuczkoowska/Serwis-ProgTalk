@@ -54,6 +54,12 @@ const topicSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    tags: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Tag",
+      },
+    ],
   },
   { timestamps: true },
 );
