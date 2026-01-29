@@ -1,4 +1,6 @@
 const User = require("../models/User");
+const Topic = require("../models/Topic");
+const Post = require("../models/Post");
 const { signToken } = require("../utils/jwtHelper");
 
 exports.searchUsers = async (req, res) => {
@@ -109,9 +111,27 @@ exports.getMyProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
 
+    const topicsCreated = await Topic.countDocuments({ creator: req.user._id });
+    const postsCount = await Post.countDocuments({
+      author: req.user._id,
+      isDeleted: false,
+    });
+    const likesReceived = await Post.aggregate([
+      { $match: { author: req.user._id, isDeleted: false } },
+      { $project: { likesCount: { $size: "$likes" } } },
+      { $group: { _id: null, total: { $sum: "$likesCount" } } },
+    ]);
+
     res.status(200).json({
       status: "success",
-      data: { user },
+      data: {
+        user,
+        stats: {
+          topics: topicsCreated,
+          posts: postsCount,
+          likes: likesReceived[0]?.total || 0,
+        },
+      },
     });
   } catch (error) {
     res.status(500).json({ message: "Błąd serwera", error: error.message });
