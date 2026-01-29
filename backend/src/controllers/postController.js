@@ -45,7 +45,25 @@ exports.createPost = async (req, res) => {
 
     await newPost.populate("author", "username");
     await newPost.populate("tags", "name color");
-    if (replyTo) await newPost.populate("replyTo", "content author");
+    if (replyTo) {
+      await newPost.populate({
+        path: "replyTo",
+        select: "content author",
+        populate: {
+          path: "author",
+          select: "username",
+        },
+      });
+    }
+
+    const io = req.app.get("socketio");
+    if (io) {
+      const roomName = `topic_${topicId}`;
+
+      io.to(roomName).emit("new_post", {
+        post: newPost,
+      });
+    }
 
     res.status(201).json({
       status: "success",
@@ -81,18 +99,19 @@ exports.getTopicPosts = async (req, res) => {
       .populate("tags", "name color")
       .populate("replyTo", "content author")
       .sort("createdAt")
-      .skip(skip) // Pomiń X wpisów z poprzednich stron
-      .limit(limit); // Pobierz tylko Y wpisów
+      .skip(skip)
+      .limit(limit + 1);
 
     const totalPosts = await Post.countDocuments(filter);
 
+    const hasNextPage = posts.length > limit;
+    const results = hasNextPage ? posts.slice(0, -1) : posts;
+
     res.status(200).json({
       status: "success",
-      results: posts.length,
+      results: results.length,
       totalPosts,
-      totalPages: Math.ceil(totalPosts / limit),
-      currentPage: page,
-      data: { posts },
+      data: { posts: results, hasNextPage },
     });
   } catch (error) {
     res.status(500).json({ message: "Błąd serwera", error: error.message });
@@ -118,6 +137,16 @@ exports.toggleLike = async (req, res) => {
     }
 
     await post.save();
+
+    const io = req.app.get("socketio");
+    if (io) {
+      io.to(`topic_${post.topic}`).emit("post_liked", {
+        postId: post._id,
+        likesCount: post.likes.length,
+        isLiked: !isLiked,
+      });
+    }
+
     res.status(200).json({
       status: "success",
       message: isLiked ? "Polubienie usunięte" : "Wpis polubiony",
