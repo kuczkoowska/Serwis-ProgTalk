@@ -8,6 +8,7 @@ router.use(authMiddleware.protect);
 router.use(authMiddleware.restrictTo("admin"));
 
 router.get("/stats", adminController.getAdminStats);
+router.get("/logs", adminController.getSystemLogs);
 
 router.get("/users/pending", adminController.getPendingUsers);
 router.get("/users", adminController.getAllUsers);

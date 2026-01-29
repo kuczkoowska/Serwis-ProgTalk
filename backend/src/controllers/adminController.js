@@ -1,5 +1,11 @@
 const User = require("../models/User");
 const Topic = require("../models/Topic");
+const Post = require("../models/Post");
+const SystemLogs = require("../models/SystemLogs");
+const {
+  ACTION_TYPES,
+  ACTION_LABELS,
+} = require("../utils/constants/actionTypes");
 
 exports.getPendingUsers = async (req, res) => {
   try {
@@ -35,6 +41,12 @@ exports.approveUser = async (req, res) => {
     user.isActive = true;
     await user.save();
 
+    await SystemLogs.create({
+      performer: req.user._id,
+      actionType: ACTION_TYPES.USER_APPROVE,
+      targetUser: user._id,
+    });
+
     const io = req.app.get("socketio");
     if (io) {
       io.to("admins").emit("user_approved", {
@@ -64,6 +76,13 @@ exports.rejectUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "Użytkownik nie znaleziony." });
     }
+
+    await SystemLogs.create({
+      performer: req.user._id,
+      actionType: ACTION_TYPES.USER_REJECT,
+      performerEmailSnapshot: user.email,
+      reason: reason || "Brak powodu",
+    });
 
     await User.findByIdAndDelete(userId);
 
@@ -128,6 +147,13 @@ exports.blockUser = async (req, res) => {
     user.blockReason = reason || "Zablokowany przez administratora";
     await user.save();
 
+    await SystemLogs.create({
+      performer: req.user._id,
+      actionType: ACTION_TYPES.USER_BLOCK_GLOBAL,
+      targetUser: user._id,
+      reason: user.blockReason,
+    });
+
     const io = req.app.get("socketio");
     if (io) {
       io.to("admins").emit("user_blocked", {
@@ -166,6 +192,12 @@ exports.unblockUser = async (req, res) => {
     user.isBlocked = false;
     user.blockReason = null;
     await user.save();
+
+    await SystemLogs.create({
+      performer: req.user._id,
+      actionType: ACTION_TYPES.USER_UNBLOCK_GLOBAL,
+      targetUser: user._id,
+    });
 
     const io = req.app.get("socketio");
     if (io) {
@@ -227,6 +259,53 @@ exports.getAdminStats = async (req, res) => {
           closed: closedTopics,
           hidden: hiddenTopics,
         },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getSystemLogs = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const filter = {};
+    if (req.query.actionType) filter.actionType = req.query.actionType;
+    if (req.query.performer) filter.performer = req.query.performer;
+
+    const totalLogs = await SystemLogs.countDocuments(filter);
+    const logs = await SystemLogs.find(filter)
+      .populate("performer", "username email")
+      .populate("targetUser", "username email")
+      .populate("targetTopic", "name")
+      .sort("-createdAt")
+      .skip(skip)
+      .limit(limit + 1)
+      .lean();
+
+    const hasNextPage = logs.length > limit;
+    const results = hasNextPage ? logs.slice(0, -1) : logs;
+
+    const logsWithLabels = results.map((log) => ({
+      ...log,
+      actionLabel: ACTION_LABELS[log.actionType] || log.actionType,
+    }));
+
+    res.status(200).json({
+      status: "success",
+      results: logsWithLabels.length,
+      data: {
+        logs: logsWithLabels,
+        pagination: {
+          page,
+          limit,
+          hasNextPage,
+        },
+        actionTypes: ACTION_TYPES,
+        actionLabels: ACTION_LABELS,
       },
     });
   } catch (error) {
