@@ -8,18 +8,44 @@ const ACTION_TYPES = {
   USER_UNBLOCK_TOPIC: "USER_UNBLOCK_TOPIC",
 
   // Zarządzanie tematami
-  CREATE_TOPIC: "CREATE_TOPIC",
+  TOPIC_CREATE: "TOPIC_CREATE",
   TOPIC_CLOSE: "TOPIC_CLOSE",
+  TOPIC_OPEN: "TOPIC_OPEN",
   TOPIC_HIDE: "TOPIC_HIDE",
+  TOPIC_UNHIDE: "TOPIC_UNHIDE",
+
+  // Zarządzanie moderatorami
+  MODERATOR_ADD: "MODERATOR_ADD",
+  MODERATOR_REMOVE: "MODERATOR_REMOVE",
 
   // Administracja użytkownikami
   USER_APPROVE: "USER_APPROVE",
+  USER_REJECT: "USER_REJECT",
 
   // Bezpieczeństwo
   LOGIN_FAILED: "LOGIN_FAILED",
   LOGIN_SUCCESS: "LOGIN_SUCCESS",
 };
 
+const ACTION_LABELS = {
+  USER_BLOCK_GLOBAL: "Globalna blokada użytkownika",
+  USER_UNBLOCK_GLOBAL: "Odblokowanie użytkownika (globalnie)",
+  USER_BLOCK_TOPIC: "Blokada użytkownika w temacie",
+  USER_UNBLOCK_TOPIC: "Odblokowanie użytkownika w temacie",
+  TOPIC_CREATE: "Utworzenie tematu",
+  TOPIC_CLOSE: "Zamknięcie tematu",
+  TOPIC_OPEN: "Otwarcie tematu",
+  TOPIC_HIDE: "Ukrycie tematu",
+  TOPIC_UNHIDE: "Odkrycie tematu",
+  MODERATOR_ADD: "Dodanie moderatora",
+  MODERATOR_REMOVE: "Usunięcie moderatora",
+  USER_APPROVE: "Zatwierdzenie użytkownika",
+  USER_REJECT: "Odrzucenie użytkownika",
+  LOGIN_FAILED: "Nieudane logowanie",
+  LOGIN_SUCCESS: "Udane logowanie",
+};
+
 module.exports = {
   ACTION_TYPES,
+  ACTION_LABELS,
 };
