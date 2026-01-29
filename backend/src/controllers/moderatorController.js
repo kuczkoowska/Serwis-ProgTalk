@@ -1,5 +1,7 @@
 const Topic = require("../models/Topic");
+const SystemLogs = require("../models/SystemLogs");
 const { canManageTopic } = require("../utils/permissions");
+const { ACTION_TYPES } = require("../utils/constants/actionTypes");
 
 exports.promoteModerator = async (req, res) => {
   try {
@@ -29,6 +31,13 @@ exports.promoteModerator = async (req, res) => {
     await topic.save();
 
     await moderatorToSubtopics(topicId, userIdToPromote, req.user._id);
+
+    await SystemLogs.create({
+      performer: req.user._id,
+      actionType: ACTION_TYPES.MODERATOR_ADD,
+      targetUser: userIdToPromote,
+      targetTopic: topicId,
+    });
 
     res.status(200).json({ message: "Moderator dodany." });
   } catch (error) {
@@ -80,6 +89,13 @@ exports.takeBackModerator = async (req, res) => {
     await topic.save();
 
     await removeModeratorFromSubtopics(topicId, userIdToTake);
+
+    await SystemLogs.create({
+      performer: req.user._id,
+      actionType: ACTION_TYPES.MODERATOR_REMOVE,
+      targetUser: userIdToTake,
+      targetTopic: topicId,
+    });
 
     res.status(200).json({ message: "Uprawnienia cofnięte." });
   } catch (error) {
@@ -147,6 +163,15 @@ exports.blockUserInTopic = async (req, res) => {
     }
 
     await topic.save();
+
+    await SystemLogs.create({
+      performer: req.user._id,
+      actionType: ACTION_TYPES.USER_BLOCK_TOPIC,
+      targetUser: userIdToBlock,
+      targetTopic: topicId,
+      reason: reason || "",
+    });
+
     res.status(200).json({ message: "Użytkownik zablokowany." });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -186,6 +211,14 @@ exports.unblockUserInTopic = async (req, res) => {
     );
 
     await topic.save();
+
+    await SystemLogs.create({
+      performer: req.user._id,
+      actionType: ACTION_TYPES.USER_UNBLOCK_TOPIC,
+      targetUser: userIdToUnblock,
+      targetTopic: topicId,
+    });
+
     res.status(200).json({ message: "Użytkownik odblokowany." });
   } catch (error) {
     res.status(500).json({ message: error.message });
