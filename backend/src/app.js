@@ -64,6 +64,7 @@ const options = {
 
 const httpsServer = https.createServer(options, app);
 const socketHandler = require("./socket");
+const notificationService = require("./services/notificationService");
 
 const io = new Server(httpsServer, {
   cors: {
@@ -71,10 +72,10 @@ const io = new Server(httpsServer, {
   },
 });
 
-app.set("socketio", io);
+notificationService.setSocketIO(io);
 socketHandler(io);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 httpsServer.listen(PORT, () => {
   console.log(`Serwer nasłuchuje na https://localhost:${PORT}`);
   console.log(`Dokumentacja: https://localhost:${PORT}/api-docs`);
