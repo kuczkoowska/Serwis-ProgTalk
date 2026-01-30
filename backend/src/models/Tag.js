@@ -26,6 +26,4 @@ const tagSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-tagSchema.index({ name: 1 }, { unique: true });
-
-module.exports = mongoose.model("Tag", tagSchema);
+module.exports = mongoose.models.Tag || mongoose.model("Tag", tagSchema);
