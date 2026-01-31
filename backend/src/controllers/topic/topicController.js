@@ -1,10 +1,11 @@
-const Topic = require("../models/Topic");
-const SystemLogs = require("../models/SystemLogs");
+const Topic = require("../../models/Topic");
 const {
   canManageTopic,
   isUserBlockedInTopic,
-} = require("../utils/permissions");
-const { ACTION_TYPES } = require("../utils/constants/actionTypes");
+} = require("../../utils/permissions");
+const authService = require("../../services/authorizationService");
+const notificationService = require("../../services/notificationService");
+const paginationService = require("../../services/paginationService");
 
 exports.createTopic = async (req, res) => {
   try {
@@ -54,7 +55,7 @@ exports.createTopic = async (req, res) => {
       }
 
       const hasPerm = await canManageTopic(req.user._id, parentId);
-      if (!hasPerm && req.user.role !== "admin") {
+      if (!hasPerm && !authService.isAdmin(req.user)) {
         return res.status(403).json({
           message: "Tylko moderatorzy mogą tworzyć podtematy.",
         });
@@ -93,18 +94,7 @@ exports.createTopic = async (req, res) => {
       targetTopic: newTopic._id,
     });
 
-    const io = req.app.get("socketio");
-    if (io) {
-      if (parentId) {
-        io.to(`topic_${parentId}`).emit("new_subtopic", {
-          topic: newTopic,
-        });
-      } else {
-        io.to("topics_list").emit("new_topic", {
-          topic: newTopic,
-        });
-      }
-    }
+    notificationService.notifyNewTopic(newTopic, parentId);
 
     res.status(201).json({
       status: "success",
@@ -127,16 +117,12 @@ exports.getAllTopics = async (req, res) => {
       filter.name = { $regex: req.query.search, $options: "i" };
     }
 
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 12;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = paginationService.getPaginationParams(
+      req.query,
+      12,
+    );
 
-    let sortOption = "-createdAt";
-    if (req.query.sort === "name") {
-      sortOption = "name";
-    } else if (req.query.sort === "oldest") {
-      sortOption = "createdAt";
-    }
+    const sortOption = paginationService.getSortOption(req.query);
 
     const topics = await Topic.find(filter)
       .populate("creator", "username")
@@ -145,20 +131,18 @@ exports.getAllTopics = async (req, res) => {
       .skip(skip)
       .limit(limit + 1);
 
-    const hasNextPage = topics.length > limit;
-
-    const results = hasNextPage ? topics.slice(0, -1) : topics;
+    const { items: results, pagination } = paginationService.formatResponse(
+      topics,
+      page,
+      limit,
+    );
 
     res.status(200).json({
       status: "success",
       results: results.length,
       data: {
         topics: results,
-        pagination: {
-          page,
-          limit,
-          hasNextPage,
-        },
+        pagination,
       },
     });
   } catch (error) {
@@ -178,14 +162,14 @@ exports.getTopicDetails = async (req, res) => {
       return res.status(404).json({ message: "Temat nie znaleziony" });
     }
 
-    if (topic.isHidden && req.user.role !== "admin") {
+    if (topic.isHidden && !authService.isAdmin(req.user)) {
       return res.status(403).json({
         message: "Temat jest ukryty i niedostępny dla użytkowników.",
       });
     }
 
     const subtopicsFilter = { parent: topic._id };
-    if (req.user.role !== "admin") {
+    if (!authService.isAdmin(req.user)) {
       subtopicsFilter.isHidden = false;
     }
 
@@ -196,7 +180,7 @@ exports.getTopicDetails = async (req, res) => {
 
     const canManage =
       (await canManageTopic(req.user._id, topic._id)) ||
-      req.user.role === "admin";
+      authService.isAdmin(req.user);
 
     res.status(200).json({
       status: "success",
@@ -209,129 +193,6 @@ exports.getTopicDetails = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Błąd serwera", error: error.message });
-  }
-};
-
-exports.closeTopic = async (req, res) => {
-  try {
-    const { topicId } = req.params;
-
-    if (
-      !(await canManageTopic(req.user._id, topicId)) &&
-      req.user.role !== "admin"
-    ) {
-      return res.status(403).json({ message: "Brak uprawnień." });
-    }
-
-    const topic = await Topic.findById(topicId);
-    if (!topic) {
-      return res.status(404).json({ message: "Temat nie znaleziony." });
-    }
-
-    topic.isClosed = true;
-    await topic.save();
-
-    await SystemLogs.create({
-      performer: req.user._id,
-      actionType: ACTION_TYPES.TOPIC_CLOSE,
-      targetTopic: topicId,
-    });
-
-    res.status(200).json({
-      status: "success",
-      message: "Temat został zamknięty.",
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-exports.openTopic = async (req, res) => {
-  try {
-    const { topicId } = req.params;
-
-    if (
-      !(await canManageTopic(req.user._id, topicId)) &&
-      req.user.role !== "admin"
-    ) {
-      return res.status(403).json({ message: "Brak uprawnień." });
-    }
-
-    const topic = await Topic.findById(topicId);
-    if (!topic) {
-      return res.status(404).json({ message: "Temat nie znaleziony." });
-    }
-
-    topic.isClosed = false;
-    await topic.save();
-
-    await SystemLogs.create({
-      performer: req.user._id,
-      actionType: ACTION_TYPES.TOPIC_OPEN,
-      targetTopic: topicId,
-    });
-
-    res.status(200).json({
-      status: "success",
-      message: "Temat został otwarty.",
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-exports.hideTopic = async (req, res) => {
-  try {
-    const { topicId } = req.params;
-
-    const topic = await Topic.findById(topicId);
-    if (!topic) {
-      return res.status(404).json({ message: "Temat nie znaleziony." });
-    }
-
-    topic.isHidden = true;
-    topic.isClosed = true;
-    await topic.save();
-
-    await SystemLogs.create({
-      performer: req.user._id,
-      actionType: ACTION_TYPES.TOPIC_HIDE,
-      targetTopic: topicId,
-    });
-
-    res.status(200).json({
-      status: "success",
-      message: "Temat został ukryty i zamknięty.",
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-exports.unhideTopic = async (req, res) => {
-  try {
-    const { topicId } = req.params;
-
-    const topic = await Topic.findById(topicId);
-    if (!topic) {
-      return res.status(404).json({ message: "Temat nie znaleziony." });
-    }
-
-    topic.isHidden = false;
-    await topic.save();
-
-    await SystemLogs.create({
-      performer: req.user._id,
-      actionType: ACTION_TYPES.TOPIC_UNHIDE,
-      targetTopic: topicId,
-    });
-
-    res.status(200).json({
-      status: "success",
-      message: "Temat został odkryty.",
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
   }
 };
 
