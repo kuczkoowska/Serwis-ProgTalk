@@ -7,7 +7,11 @@ const emailService = require("../../services/emailService");
 
 exports.getPendingUsers = async (req, res) => {
   try {
-    const pendingUsers = await User.find({ isActive: false, isBlocked: false })
+    const pendingUsers = await User.find({
+      isActive: false,
+      isBlocked: false,
+      isEmailVerified: true,
+    })
       .select("email username createdAt")
       .sort("-createdAt");
 

@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const { USER_ROLES } = require("../utils/constants/userRoles");
+const crypto = require("crypto");
 
 const userSchema = new mongoose.Schema(
   {
@@ -59,9 +60,28 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
+    emailVerificationToken: String,
+    emailVerificationExpires: Date,
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true },
 );
+
+userSchema.methods.createEmailVerificationToken = function () {
+  const verificationToken = crypto.randomBytes(32).toString("hex");
+
+  this.emailVerificationToken = crypto
+    .createHash("sha256")
+    .update(verificationToken)
+    .digest("hex");
+
+  this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+
+  return verificationToken;
+};
 
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;

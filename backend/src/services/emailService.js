@@ -50,6 +50,30 @@ class EmailService {
       console.error("Błąd wysyłania maila:", error);
     }
   }
+
+  async sendVerificationEmail(toEmail, verificationToken) {
+    const verificationUrl = `https://localhost:5173/verify-email/${verificationToken}`;
+
+    const message = `
+      <h1>Weryfikacja adresu e-mail w ProgTalk</h1>
+      <p>Dziękujemy za rejestrację!</p>
+      <p>Kliknij w poniższy link, aby potwierdzić swój adres e-mail:</p>
+      <a href="${verificationUrl}">POTWIERDŹ E-MAIL</a>
+      <p>Link jest ważny przez 24 godziny.</p>
+    `;
+
+    try {
+      await transporter.sendMail({
+        from: `"ProgTalk" <${process.env.GMAIL_EMAIL}>`,
+        to: toEmail,
+        subject: "Potwierdź swój adres e-mail (ProgTalk)",
+        html: message,
+      });
+      console.log("Mail weryfikacyjny wysłany");
+    } catch (error) {
+      console.error("Błąd wysyłania maila:", error);
+    }
+  }
 }
 
 module.exports = new EmailService();
