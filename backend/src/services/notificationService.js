@@ -75,6 +75,18 @@ class NotificationService {
       isLiked,
     });
   }
+
+  notifyNewMessage(recipientId, senderId, messageData) {
+    this.emitToRoom(`user_${recipientId}`, "new_message", {
+      message: messageData,
+    });
+  }
+
+  notifySupportMessage(messageData) {
+    this.emitToRoom("admins", "new_support_message", {
+      message: messageData,
+    });
+  }
 }
 
 module.exports = new NotificationService();
