@@ -3,6 +3,7 @@ const authService = require("../../services/authorizationService");
 const notificationService = require("../../services/notificationService");
 const SystemLogs = require("../../models/SystemLogs");
 const { ACTION_TYPES } = require("../../utils/constants/actionTypes");
+const emailService = require("../../services/emailService");
 
 exports.getPendingUsers = async (req, res) => {
   try {
@@ -44,6 +45,7 @@ exports.approveUser = async (req, res) => {
       targetUser: user._id,
     });
     notificationService.notifyUserApproved(user, req.user);
+    emailService.sendApprovalEmail(user.email, user.username);
 
     res.status(200).json({
       status: "success",
@@ -75,6 +77,7 @@ exports.rejectUser = async (req, res) => {
     await User.findByIdAndDelete(userId);
 
     notificationService.notifyUserRejected(user.username, req.user, reason);
+    emailService.sendRejectionEmail(user.email, user.username, reason);
 
     res.status(200).json({
       status: "success",
