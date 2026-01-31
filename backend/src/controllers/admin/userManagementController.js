@@ -1,11 +1,8 @@
-const User = require("../models/User");
-const Topic = require("../models/Topic");
-const Post = require("../models/Post");
-const SystemLogs = require("../models/SystemLogs");
-const {
-  ACTION_TYPES,
-  ACTION_LABELS,
-} = require("../utils/constants/actionTypes");
+const User = require("../../models/User");
+const authService = require("../../services/authorizationService");
+const notificationService = require("../../services/notificationService");
+const SystemLogs = require("../../models/SystemLogs");
+const { ACTION_TYPES } = require("../../utils/constants/actionTypes");
 
 exports.getPendingUsers = async (req, res) => {
   try {
@@ -46,16 +43,7 @@ exports.approveUser = async (req, res) => {
       actionType: ACTION_TYPES.USER_APPROVE,
       targetUser: user._id,
     });
-
-    const io = req.app.get("socketio");
-    if (io) {
-      io.to("admins").emit("user_approved", {
-        userId: user._id,
-        username: user.username,
-        approvedBy: req.user.username,
-        message: `Użytkownik ${user.username} został zaakceptowany przez ${req.user.username}`,
-      });
-    }
+    notificationService.notifyUserApproved(user, req.user);
 
     res.status(200).json({
       status: "success",
@@ -86,15 +74,7 @@ exports.rejectUser = async (req, res) => {
 
     await User.findByIdAndDelete(userId);
 
-    const io = req.app.get("socketio");
-    if (io) {
-      io.to("admins").emit("user_rejected", {
-        username: user.username,
-        rejectedBy: req.user.username,
-        reason: reason || "Brak powodu",
-        message: `Użytkownik ${user.username} został odrzucony przez ${req.user.username}`,
-      });
-    }
+    notificationService.notifyUserRejected(user.username, req.user, reason);
 
     res.status(200).json({
       status: "success",
@@ -131,7 +111,7 @@ exports.blockUser = async (req, res) => {
       return res.status(404).json({ message: "Użytkownik nie znaleziony." });
     }
 
-    if (user.role === "admin") {
+    if (authService.isAdmin(user)) {
       return res
         .status(403)
         .json({ message: "Nie możesz zablokować administratora." });
@@ -153,16 +133,6 @@ exports.blockUser = async (req, res) => {
       targetUser: user._id,
       reason: user.blockReason,
     });
-
-    const io = req.app.get("socketio");
-    if (io) {
-      io.to("admins").emit("user_blocked", {
-        userId: user._id,
-        username: user.username,
-        blockedBy: req.user.username,
-        reason: user.blockReason,
-      });
-    }
 
     res.status(200).json({
       status: "success",
@@ -199,114 +169,12 @@ exports.unblockUser = async (req, res) => {
       targetUser: user._id,
     });
 
-    const io = req.app.get("socketio");
-    if (io) {
-      io.to("admins").emit("user_unblocked", {
-        userId: user._id,
-        username: user.username,
-        unblockedBy: req.user.username,
-      });
-    }
+    notificationService.notifyUserUnblocked(user, req.user);
 
     res.status(200).json({
       status: "success",
       message: "Użytkownik został odblokowany.",
       data: { user },
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-exports.getAllTopics = async (req, res) => {
-  try {
-    const topics = await Topic.find()
-      .populate("creator", "username")
-      .sort("-createdAt");
-
-    res.status(200).json({
-      status: "success",
-      results: topics.length,
-      data: { topics },
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-exports.getAdminStats = async (req, res) => {
-  try {
-    const totalUsers = await User.countDocuments({ isActive: true });
-    const pendingUsers = await User.countDocuments({
-      isActive: false,
-      isBlocked: false,
-    });
-    const blockedUsers = await User.countDocuments({ isBlocked: true });
-    const totalTopics = await Topic.countDocuments();
-    const closedTopics = await Topic.countDocuments({ isClosed: true });
-    const hiddenTopics = await Topic.countDocuments({ isHidden: true });
-
-    res.status(200).json({
-      status: "success",
-      data: {
-        users: {
-          total: totalUsers,
-          pending: pendingUsers,
-          blocked: blockedUsers,
-        },
-        topics: {
-          total: totalTopics,
-          closed: closedTopics,
-          hidden: hiddenTopics,
-        },
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-exports.getSystemLogs = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
-
-    const filter = {};
-    if (req.query.actionType) filter.actionType = req.query.actionType;
-    if (req.query.performer) filter.performer = req.query.performer;
-
-    const totalLogs = await SystemLogs.countDocuments(filter);
-    const logs = await SystemLogs.find(filter)
-      .populate("performer", "username email")
-      .populate("targetUser", "username email")
-      .populate("targetTopic", "name")
-      .sort("-createdAt")
-      .skip(skip)
-      .limit(limit + 1)
-      .lean();
-
-    const hasNextPage = logs.length > limit;
-    const results = hasNextPage ? logs.slice(0, -1) : logs;
-
-    const logsWithLabels = results.map((log) => ({
-      ...log,
-      actionLabel: ACTION_LABELS[log.actionType] || log.actionType,
-    }));
-
-    res.status(200).json({
-      status: "success",
-      results: logsWithLabels.length,
-      data: {
-        logs: logsWithLabels,
-        pagination: {
-          page,
-          limit,
-          hasNextPage,
-        },
-        actionTypes: ACTION_TYPES,
-        actionLabels: ACTION_LABELS,
-      },
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

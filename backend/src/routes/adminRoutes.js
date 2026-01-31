@@ -1,5 +1,7 @@
 const express = require("express");
-const adminController = require("../controllers/adminController");
+const userManagementController = require("../controllers/admin/userManagementController");
+const systemLogsController = require("../controllers/admin/systemLogsController");
+const adminStatsController = require("../controllers/admin/adminStatsController");
 const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -7,16 +9,16 @@ const router = express.Router();
 router.use(authMiddleware.protect);
 router.use(authMiddleware.restrictTo("admin"));
 
-router.get("/stats", adminController.getAdminStats);
-router.get("/logs", adminController.getSystemLogs);
+router.get("/stats", adminStatsController.getAdminStats);
+router.get("/topics", adminStatsController.getAllTopics);
 
-router.get("/users/pending", adminController.getPendingUsers);
-router.get("/users", adminController.getAllUsers);
-router.patch("/users/:userId/approve", adminController.approveUser);
-router.delete("/users/:userId/reject", adminController.rejectUser);
-router.patch("/users/:userId/block", adminController.blockUser);
-router.patch("/users/:userId/unblock", adminController.unblockUser);
+router.get("/logs", systemLogsController.getSystemLogs);
 
-router.get("/topics", adminController.getAllTopics);
+router.get("/users/pending", userManagementController.getPendingUsers);
+router.get("/users", userManagementController.getAllUsers);
+router.patch("/users/:userId/approve", userManagementController.approveUser);
+router.delete("/users/:userId/reject", userManagementController.rejectUser);
+router.patch("/users/:userId/block", userManagementController.blockUser);
+router.patch("/users/:userId/unblock", userManagementController.unblockUser);
 
 module.exports = router;
