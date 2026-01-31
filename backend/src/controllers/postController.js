@@ -29,7 +29,6 @@ exports.createPost = async (req, res) => {
     if (tags && tags.length > 0) {
       const existingTags = await Tag.find({
         _id: { $in: tags },
-        topic: topicId,
       });
 
       if (existingTags.length !== tags.length) {
