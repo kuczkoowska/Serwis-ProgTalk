@@ -1,6 +1,7 @@
 const Topic = require("../models/Topic");
 const ModeratorApplication = require("../models/ModeratorApplication");
 const authService = require("../services/authorizationService");
+const { moderatorToSubtopics } = require("../utils/moderatorHelper");
 
 exports.createModeratorApplication = async (req, res) => {
   try {

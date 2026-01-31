@@ -5,7 +5,7 @@ const paginationService = require("../../services/paginationService");
 
 exports.createTopic = async (req, res) => {
   try {
-    const { name, description, parentId } = req.body;
+    const { name, description, parentId, tags } = req.body;
 
     const existingTopic = await Topic.findOne({
       name: name.trim(),
@@ -25,6 +25,7 @@ exports.createTopic = async (req, res) => {
       description,
       creator: req.user._id,
       ancestors: [],
+      tags: tags || [],
     };
 
     if (parentId) {
