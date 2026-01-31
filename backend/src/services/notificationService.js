@@ -13,6 +13,14 @@ class NotificationService {
     }
   }
 
+  notifyNewUserRegistration(user) {
+    this.emitToRoom("admins", "new_user_registration", {
+      email: user.email,
+      id: user._id,
+      message: "Nowy użytkownik oczekuje na akceptację",
+    });
+  }
+
   notifyUserApproved(user, approver) {
     this.emitToRoom("admins", "user_approved", {
       userId: user._id,
@@ -67,7 +75,6 @@ class NotificationService {
       isLiked,
     });
   }
-
 }
 
 module.exports = new NotificationService();

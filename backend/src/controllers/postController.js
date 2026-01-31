@@ -99,8 +99,6 @@ exports.getTopicPosts = async (req, res) => {
       .skip(skip)
       .limit(limit + 1);
 
-    const totalPosts = await Post.countDocuments(filter);
-
     const { items: results, pagination } = paginationService.formatResponse(
       posts,
       page,
@@ -110,7 +108,6 @@ exports.getTopicPosts = async (req, res) => {
     res.status(200).json({
       status: "success",
       results: results.length,
-      totalPosts,
       data: { posts: results, hasNextPage: pagination.hasNextPage },
     });
   } catch (error) {

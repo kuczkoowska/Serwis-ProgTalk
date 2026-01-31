@@ -39,15 +39,7 @@ exports.register = async (req, res) => {
       password,
     });
 
-    const io = req.app.get("socketio");
-    if (io) {
-      io.to("admins").emit("new_user_registration", {
-        email: newUser.email,
-        id: newUser._id,
-        message: "Nowy użytkownik oczekuje na akceptację",
-      });
-      console.log(`Wysłano powiadomienie do adminów o: ${newUser.email}`);
-    }
+    notificationService.notifyNewUserRegistration(newUser);
 
     res.status(201).json({
       status: "success",

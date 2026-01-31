@@ -1,5 +1,5 @@
 const express = require("express");
-const moderatorApplication = require("../controllers/moderatorApplication");
+const moderatorApplication = require("../controllers/moderator/moderatorApplication");
 const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();

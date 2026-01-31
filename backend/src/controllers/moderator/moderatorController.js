@@ -1,9 +1,9 @@
-const Topic = require("../models/Topic");
-const authService = require("../services/authorizationService");
+const Topic = require("../../models/Topic");
+const authService = require("../../services/authorizationService");
 const {
   moderatorToSubtopics,
   removeModeratorFromSubtopics,
-} = require("../utils/moderatorHelper");
+} = require("../../utils/moderatorHelper");
 
 exports.promoteModerator = async (req, res) => {
   try {
