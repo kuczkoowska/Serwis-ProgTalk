@@ -1,7 +1,6 @@
 const Post = require("../models/Post");
 const Topic = require("../models/Topic");
 const Tag = require("../models/Tag");
-const { isUserBlockedInTopic } = require("../utils/permissions"); // do dodania
 const authService = require("../services/authorizationService");
 const notificationService = require("../services/notificationService");
 const paginationService = require("../services/paginationService");
@@ -16,7 +15,10 @@ exports.createPost = async (req, res) => {
     if (topic.isClosed)
       return res.status(403).json({ message: "Temat zamknięty" });
 
-    const isBlocked = await isUserBlockedInTopic(req.user._id, topicId);
+    const isBlocked = await authService.isUserBlockedInTopic(
+      req.user._id,
+      topicId,
+    );
     if (isBlocked) {
       return res.status(403).json({
         message: "Jesteś zablokowany w tym temacie",

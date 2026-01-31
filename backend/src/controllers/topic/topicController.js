@@ -1,8 +1,4 @@
 const Topic = require("../../models/Topic");
-const {
-  canManageTopic,
-  isUserBlockedInTopic,
-} = require("../../utils/permissions");
 const authService = require("../../services/authorizationService");
 const notificationService = require("../../services/notificationService");
 const paginationService = require("../../services/paginationService");
@@ -46,7 +42,10 @@ exports.createTopic = async (req, res) => {
         });
       }
 
-      const isBlocked = await isUserBlockedInTopic(req.user._id, parentId);
+      const isBlocked = await authService.isUserBlockedInTopic(
+        req.user._id,
+        parentId,
+      );
       if (isBlocked) {
         return res.status(403).json({
           message:
@@ -54,8 +53,12 @@ exports.createTopic = async (req, res) => {
         });
       }
 
-      const hasPerm = await canManageTopic(req.user._id, parentId);
-      if (!hasPerm && !authService.isAdmin(req.user)) {
+      const hasPerm = await authService.canManageTopic(
+        req.user._id,
+        parentId,
+        req.user.role,
+      );
+      if (!hasPerm) {
         return res.status(403).json({
           message: "Tylko moderatorzy mogą tworzyć podtematy.",
         });
@@ -175,12 +178,18 @@ exports.getTopicDetails = async (req, res) => {
 
     const subtopics = await Topic.find(subtopicsFilter);
 
-    const isBlocked = await isUserBlockedInTopic(req.user._id, topic._id);
+    const isBlocked = await authService.isUserBlockedInTopic(
+      req.user._id,
+      topic._id,
+    );
     const canPost = !topic.isClosed && !isBlocked;
 
     const canManage =
-      (await canManageTopic(req.user._id, topic._id)) ||
-      authService.isAdmin(req.user);
+      (await authService.canManageTopic(
+        req.user._id,
+        topic._id,
+        req.user.role,
+      ))
 
     res.status(200).json({
       status: "success",
@@ -206,8 +215,12 @@ exports.updateTopicMetadata = async (req, res) => {
       return res.status(404).json({ message: "Temat nie znaleziony." });
     }
 
-    const hasPerm = await canManageTopic(req.user._id, topicId);
-    if (!hasPerm && req.user.role !== "admin") {
+    const hasPerm = await authService.canManageTopic(
+      req.user._id,
+      topicId,
+      req.user.role,
+    );
+    if (!hasPerm) {
       return res.status(403).json({
         message: "Tylko moderatorzy mogą edytować metadane tematu.",
       });
