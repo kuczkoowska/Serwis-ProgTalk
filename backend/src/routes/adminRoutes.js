@@ -10,6 +10,7 @@ router.use(authMiddleware.protect);
 router.use(authMiddleware.restrictTo("admin"));
 
 router.get("/stats", adminStatsController.getAdminStats);
+router.get("/extended-stats", adminStatsController.getExtendedStats);
 router.get("/topics", adminStatsController.getAllTopics);
 
 router.get("/logs", systemLogsController.getSystemLogs);
