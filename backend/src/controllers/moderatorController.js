@@ -76,7 +76,7 @@ exports.takeBackModerator = async (req, res) => {
     const isPromoter =
       mod.promotedBy && mod.promotedBy.toString() === req.user._id.toString();
 
-    const isCreator = topic.creator.toString() === req.user._id.toString();
+    const isCreator = authService.isOwner(topic.creator, req.user._id);
     const isAdmin = authService.isAdmin(req.user);
 
     const isAncestor = topic.parent

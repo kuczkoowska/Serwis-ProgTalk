@@ -21,4 +21,9 @@ router.delete("/users/:userId/reject", userManagementController.rejectUser);
 router.patch("/users/:userId/block", userManagementController.blockUser);
 router.patch("/users/:userId/unblock", userManagementController.unblockUser);
 
+router.patch(
+  "/transfer-ownership/:topicId",
+  userManagementController.transferTopicOwnership,
+);
+
 module.exports = router;

@@ -127,6 +127,22 @@ exports.blockUser = async (req, res) => {
     user.blockReason = reason || "Zablokowany przez administratora";
     await user.save();
 
+    const userTopics = await Topic.find({ creator: user._id });
+
+    if (userTopics.length > 0) {
+      for (const topic of userTopics) {
+        topic.creator = req.user._id;
+
+        await topic.save();
+
+        await SystemLogs.create({
+          performer: req.user._id,
+          actionType: ACTION_TYPES.TOPIC_TAKEOVER,
+          targetTopic: topic._id,
+          details: `Przejęcie tematu po zbanowaniu użytkownika ${user.username}`,
+        });
+      }
+    }
     await SystemLogs.create({
       performer: req.user._id,
       actionType: ACTION_TYPES.USER_BLOCK_GLOBAL,
@@ -175,6 +191,44 @@ exports.unblockUser = async (req, res) => {
       status: "success",
       message: "Użytkownik został odblokowany.",
       data: { user },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.transferTopicOwnership = async (req, res) => {
+  try {
+    const { topicId } = req.params;
+    const { newOwnerId } = req.body;
+
+    if (!authService.isAdmin(req.user)) {
+      return res.status(403).json({ message: "Brak uprawnień." });
+    }
+
+    const topic = await Topic.findById(topicId);
+    if (!topic) return res.status(404).json({ message: "Temat nie istnieje" });
+
+    const newOwner = await User.findById(newOwnerId);
+    if (!newOwner)
+      return res.status(404).json({ message: "Nowy właściciel nie istnieje" });
+
+    const oldOwnerId = topic.creator;
+    topic.creator = newOwnerId;
+
+    await topic.save();
+
+    await SystemLogs.create({
+      performer: req.user._id,
+      actionType: ACTION_TYPES.TOPIC_OWNER_TRANSFER,
+      targetTopic: topic._id,
+      targetUser: newOwnerId,
+      details: `Zmiana właściciela z ${oldOwnerId} na ${newOwnerId}`,
+    });
+
+    res.status(200).json({
+      status: "success",
+      message: "Własność tematu została przeniesiona.",
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

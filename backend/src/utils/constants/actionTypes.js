@@ -21,6 +21,8 @@ const ACTION_TYPES = {
   // Administracja użytkownikami
   USER_APPROVE: "USER_APPROVE",
   USER_REJECT: "USER_REJECT",
+  TOPIC_OWNER_TRANSFER: "TOPIC_OWNER_TRANSFER",
+  TOPIC_TAKEOVER: "TOPIC_TAKEOVER",
 
   // Bezpieczeństwo
   LOGIN_FAILED: "LOGIN_FAILED",
@@ -41,6 +43,8 @@ const ACTION_LABELS = {
   MODERATOR_REMOVE: "Usunięcie moderatora",
   USER_APPROVE: "Zatwierdzenie użytkownika",
   USER_REJECT: "Odrzucenie użytkownika",
+  TOPIC_OWNER_TRANSFER: "Przeniesienie własności tematu",
+  TOPIC_TAKEOVER: "Przejęcie tematu",
   LOGIN_FAILED: "Nieudane logowanie",
   LOGIN_SUCCESS: "Udane logowanie",
 };
