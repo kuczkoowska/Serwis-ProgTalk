@@ -1,3 +1,7 @@
+const Topic = require("../models/Topic");
+const ModeratorApplication = require("../models/ModeratorApplication");
+const authService = require("../services/authorizationService");
+
 exports.createModeratorApplication = async (req, res) => {
   try {
     const { topicId } = req.params;
@@ -8,8 +12,12 @@ exports.createModeratorApplication = async (req, res) => {
       return res.status(404).json({ message: "Temat nie znaleziony." });
     }
 
-    const isModerator = await canManageTopic(req.user._id, topicId);
-    if (isModerator || req.user.role === "admin") {
+    const isModerator = await authService.canManageTopic(
+      req.user._id,
+      topicId,
+      req.user.role,
+    );
+    if (isModerator) {
       return res
         .status(400)
         .json({ message: "Jesteś już moderatorem tego tematu." });
@@ -49,8 +57,12 @@ exports.getModeratorApplications = async (req, res) => {
   try {
     const { topicId } = req.params;
 
-    const hasPerm = await canManageTopic(req.user._id, topicId);
-    if (!hasPerm && req.user.role !== "admin") {
+    const hasPerm = await authService.canManageTopic(
+      req.user._id,
+      topicId,
+      req.user.role,
+    );
+    if (!hasPerm) {
       return res.status(403).json({ message: "Brak uprawnień." });
     }
 
@@ -87,8 +99,12 @@ exports.reviewModeratorApplication = async (req, res) => {
       return res.status(404).json({ message: "Aplikacja nie znaleziona." });
     }
 
-    const hasPerm = await canManageTopic(req.user._id, application.topic);
-    if (!hasPerm && req.user.role !== "admin") {
+    const hasPerm = await authService.canManageTopic(
+      req.user._id,
+      application.topic,
+      req.user.role,
+    );
+    if (!hasPerm) {
       return res.status(403).json({ message: "Brak uprawnień." });
     }
 

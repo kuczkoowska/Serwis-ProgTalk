@@ -1,7 +1,10 @@
 const Post = require("../models/Post");
 const Topic = require("../models/Topic");
 const Tag = require("../models/Tag");
-const { isUserBlockedInTopic } = require("../utils/permissions");
+const { isUserBlockedInTopic } = require("../utils/permissions"); // do dodania
+const authService = require("../services/authorizationService");
+const notificationService = require("../services/notificationService");
+const paginationService = require("../services/paginationService");
 
 exports.createPost = async (req, res) => {
   try {
@@ -56,14 +59,7 @@ exports.createPost = async (req, res) => {
       });
     }
 
-    const io = req.app.get("socketio");
-    if (io) {
-      const roomName = `topic_${topicId}`;
-
-      io.to(roomName).emit("new_post", {
-        post: newPost,
-      });
-    }
+    notificationService.notifyNewPost(newPost, topicId);
 
     res.status(201).json({
       status: "success",
@@ -80,9 +76,9 @@ exports.getTopicPosts = async (req, res) => {
   try {
     const { topicId } = req.params;
 
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = paginationService.getPaginationParams(
+      req.query,
+    );
 
     const topic = await Topic.findById(topicId);
     if (!topic) {
@@ -90,7 +86,7 @@ exports.getTopicPosts = async (req, res) => {
     }
 
     const filter = { topic: topicId };
-    if (req.user.role !== "admin") {
+    if (!authService.isAdmin(req.user)) {
       filter.isDeleted = false;
     }
 
@@ -104,14 +100,17 @@ exports.getTopicPosts = async (req, res) => {
 
     const totalPosts = await Post.countDocuments(filter);
 
-    const hasNextPage = posts.length > limit;
-    const results = hasNextPage ? posts.slice(0, -1) : posts;
+    const { items: results, pagination } = paginationService.formatResponse(
+      posts,
+      page,
+      limit,
+    );
 
     res.status(200).json({
       status: "success",
       results: results.length,
       totalPosts,
-      data: { posts: results, hasNextPage },
+      data: { posts: results, hasNextPage: pagination.hasNextPage },
     });
   } catch (error) {
     res.status(500).json({ message: "Błąd serwera", error: error.message });
@@ -138,14 +137,12 @@ exports.toggleLike = async (req, res) => {
 
     await post.save();
 
-    const io = req.app.get("socketio");
-    if (io) {
-      io.to(`topic_${post.topic}`).emit("post_liked", {
-        postId: post._id,
-        likesCount: post.likes.length,
-        isLiked: !isLiked,
-      });
-    }
+    notificationService.notifyPostLiked(
+      post._id,
+      post.topic,
+      post.likes.length,
+      !isLiked,
+    );
 
     res.status(200).json({
       status: "success",
@@ -168,8 +165,8 @@ exports.deleteOwnPost = async (req, res) => {
       return res.status(404).json({ message: "Wpis nie znaleziony." });
     }
 
-    const isAdmin = req.user.role === "admin";
-    const isAuthor = post.author.toString() === req.user._id.toString();
+    const isAdmin = authService.isAdmin(req.user);
+    const isAuthor = authService.isOwner(post.author, req.user._id);
 
     if (!isAdmin && !isAuthor) {
       return res.status(403).json({

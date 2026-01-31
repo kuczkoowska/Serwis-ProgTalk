@@ -1,15 +1,18 @@
 const Topic = require("../models/Topic");
-const SystemLogs = require("../models/SystemLogs");
-const { canManageTopic } = require("../utils/permissions");
-const { ACTION_TYPES } = require("../utils/constants/actionTypes");
+const authService = require("../services/authorizationService");
 
 exports.promoteModerator = async (req, res) => {
   try {
     const { topicId } = req.params;
     const { userIdToPromote } = req.body;
 
-    const hasPerm = await canManageTopic(req.user._id, topicId);
-    if (!hasPerm && req.user.role !== "admin") {
+    const canManage = await authService.canManageTopic(
+      req.user._id,
+      topicId,
+      req.user.role,
+    );
+
+    if (!canManage) {
       return res
         .status(403)
         .json({ message: "Brak uprawnien do tego tematu." });
@@ -70,10 +73,14 @@ exports.takeBackModerator = async (req, res) => {
       mod.promotedBy && mod.promotedBy.toString() === req.user._id.toString();
 
     const isCreator = topic.creator.toString() === req.user._id.toString();
-    const isAdmin = req.user.role === "admin";
+    const isAdmin = authService.isAdmin(req.user);
 
     const isAncestor = topic.parent
-      ? await canManageTopic(req.user._id, topic.parent)
+      ? await authService.canManageTopic(
+          req.user._id,
+          topic.parent,
+          req.user.role,
+        )
       : false;
 
     if (!isPromoter && !isCreator && !isAdmin && !isAncestor) {
@@ -103,45 +110,18 @@ exports.takeBackModerator = async (req, res) => {
   }
 };
 
-const removeModeratorFromSubtopics = async (parentTopicId, userId) => {
-  const subtopics = await Topic.find({ parent: parentTopicId });
-
-  for (const subtopic of subtopics) {
-    if (subtopic.creator.toString() !== userId) {
-      subtopic.moderators = subtopic.moderators.filter(
-        (m) => m.user.toString() !== userId,
-      );
-      await subtopic.save();
-    }
-
-    await removeModeratorFromSubtopics(subtopic._id, userId);
-  }
-};
-const moderatorToSubtopics = async (parentTopicId, userId, promotedBy) => {
-  const subtopics = await Topic.find({ parent: parentTopicId });
-
-  for (const subtopic of subtopics) {
-    if (!subtopic.moderators.some((m) => m.user.toString() === userId)) {
-      subtopic.moderators.push({
-        user: userId,
-        promotedBy: promotedBy,
-      });
-      await subtopic.save();
-    }
-
-    await moderatorToSubtopics(subtopic._id, userId, promotedBy);
-  }
-};
-
 exports.blockUserInTopic = async (req, res) => {
   try {
     const { topicId } = req.params;
     const { userIdToBlock, reason, allowedSubtopicsIds } = req.body;
 
-    if (
-      !(await canManageTopic(req.user._id, topicId)) &&
-      req.user.role !== "admin"
-    ) {
+    const canManage = await authService.canManageTopic(
+      req.user._id,
+      topicId,
+      req.user.role,
+    );
+
+    if (!canManage) {
       return res.status(403).json({ message: "Brak uprawnień." });
     }
 
@@ -183,10 +163,13 @@ exports.unblockUserInTopic = async (req, res) => {
     const { topicId } = req.params;
     const { userIdToUnblock } = req.body;
 
-    if (
-      !(await canManageTopic(req.user._id, topicId)) &&
-      req.user.role !== "admin"
-    ) {
+    const canManage = await authService.canManageTopic(
+      req.user._id,
+      topicId,
+      req.user.role,
+    );
+
+    if (!canManage) {
       return res.status(403).json({ message: "Brak uprawnień." });
     }
 

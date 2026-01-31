@@ -1,7 +1,7 @@
 const Tag = require("../models/Tag");
-const { canManageTopic } = require("../utils/permissions");
 const Topic = require("../models/Topic");
-const { TAG_COLORS } = require("../utils/constants");
+const authService = require("../services/authorizationService");
+const TAG_COLORS = require("../utils/constants/colors");
 
 exports.getAllTags = async (req, res) => {
   try {
@@ -32,12 +32,8 @@ exports.createTag = async (req, res) => {
       });
     }
 
-    if (req.user.role === "admin") {
-    } else {
-      const isModerator = await Topic.findOne({
-        $or: [{ creator: req.user._id }, { "moderators.user": req.user._id }],
-      });
-
+    if (!authService.isAdmin(req.user)) {
+      const isModerator = await authService.isModerator(req.user._id);
       if (!isModerator) {
         return res.status(403).json({
           message: "Tylko moderatorzy tematów mogą tworzyć nowe tagi.",
@@ -111,7 +107,7 @@ exports.deleteTag = async (req, res) => {
       return res.status(404).json({ message: "Tag nie znaleziony." });
     }
 
-    if (req.user.role !== "admin") {
+    if (!authService.isAdmin(req.user)) {
       return res.status(403).json({
         message: "Tylko administratorzy mogą usuwać tagi.",
       });
@@ -143,8 +139,13 @@ exports.addTagToTopic = async (req, res) => {
       });
     }
 
-    const hasPerm = await canManageTopic(req.user._id, topicId);
-    if (!hasPerm && req.user.role !== "admin") {
+    const canManage = await authService.canManageTopic(
+      req.user._id,
+      topicId,
+      req.user.role,
+    );
+
+    if (!canManage) {
       return res.status(403).json({
         message: "Tylko moderatorzy mogą zarządzać tagami tematu.",
       });
@@ -196,8 +197,13 @@ exports.removeTagFromTopic = async (req, res) => {
       });
     }
 
-    const hasPerm = await canManageTopic(req.user._id, topicId);
-    if (!hasPerm && req.user.role !== "admin") {
+    const canManage = await authService.canManageTopic(
+      req.user._id,
+      topicId,
+      req.user.role,
+    );
+
+    if (!canManage) {
       return res.status(403).json({
         message: "Tylko moderatorzy mogą zarządzać tagami tematu.",
       });
