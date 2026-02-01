@@ -1,40 +1,56 @@
 import { createRouter, createWebHistory } from "vue-router";
-import LoginView from "./views/auth/LoginView.vue";
-import RegisterView from "./views/auth/RegisterView.vue";
-import PendingApprovalView from "./views/auth/PendingApprovalView.vue";
-import TopicListView from "./views/topics/TopicListView.vue";
-import TopicDetailsView from "./views/topics/TopicDetailsView.vue";
-import ProfileView from "./views/user/ProfileView.vue";
-import AdminPanelView from "./views/admin/AdminPanelView.vue";
 import { useAuthStore } from "./stores/auth";
+import LoginView from "./views/auth/LoginView.vue";
 
 const routes = [
-  { path: "/login", component: LoginView, meta: { guestOnly: true } },
-  { path: "/register", component: RegisterView, meta: { guestOnly: true } },
+  {
+    path: "/login",
+    component: LoginView,
+    meta: { guestOnly: true },
+  },
+  {
+    path: "/register",
+    component: () => import("./views/auth/RegisterView.vue"),
+    meta: { guestOnly: true },
+  },
+  {
+    path: "/verify-email/:token",
+    component: () => import("./views/VerifyEmailPage.vue"),
+  },
   {
     path: "/pending-approval",
-    component: PendingApprovalView,
+    component: () => import("./views/auth/PendingApprovalView.vue"),
     meta: { requiresAuth: true },
   },
   {
     path: "/",
-    component: TopicListView,
+    component: () => import("./views/topics/TopicListView.vue"),
     meta: { requiresAuth: true, requiresApproval: true },
   },
   {
     path: "/topic/:id",
-    component: TopicDetailsView,
+    component: () => import("./views/topics/TopicDetailsView.vue"),
     meta: { requiresAuth: true, requiresApproval: true },
   },
   {
     path: "/profile",
-    component: ProfileView,
+    component: () => import("./views/user/ProfileView.vue"),
     meta: { requiresAuth: true, requiresApproval: true },
   },
   {
     path: "/admin",
-    component: AdminPanelView,
+    component: () => import("./views/admin/AdminPanelView.vue"),
     meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: "/chat",
+    component: () => import("./views/ChatView.vue"),
+    meta: { requiresAuth: true, requiresApproval: true },
+  },
+  // 404
+  {
+    path: "/:pathMatch(.*)*",
+    redirect: "/",
   },
 ];
 
@@ -51,13 +67,14 @@ router.beforeEach((to, from, next) => {
   const isActive = authStore.user?.isActive;
 
   if (to.meta.requiresAuth && !isAuthenticated) {
-    return next({
-      path: "/login",
-      query: { redirect: to.fullPath },
-    });
+    return next({ path: "/login", query: { redirect: to.fullPath } });
   }
 
-  if (to.meta.requiresApproval && isAuthenticated && !isActive && !isAdmin) {
+  if (to.meta.guestOnly && isAuthenticated) return next("/");
+
+  if (!isAuthenticated) return next();
+
+  if (to.meta.requiresApproval && !isActive && !isAdmin) {
     if (to.path !== "/pending-approval") {
       return next("/pending-approval");
     }
@@ -68,10 +85,6 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.meta.requiresAdmin && !isAdmin) {
-    return next("/");
-  }
-
-  if (to.meta.guestOnly && isAuthenticated) {
     return next("/");
   }
 

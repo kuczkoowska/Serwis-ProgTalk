@@ -6,16 +6,10 @@ const router = express.Router();
 
 router.use(authMiddleware.protect);
 
-router.post(
-  "/:topicId/moderator-applications",
-  moderatorApplication.createModeratorApplication,
-);
-router.get(
-  "/:topicId/moderator-applications",
-  moderatorApplication.getModeratorApplications,
-);
+router.post("/:topicId", moderatorApplication.createModeratorApplication);
+router.get("/:topicId", moderatorApplication.getModeratorApplications);
 router.patch(
-  "/moderator-applications/:applicationId",
+  "/review/:applicationId",
   moderatorApplication.reviewModeratorApplication,
 );
 

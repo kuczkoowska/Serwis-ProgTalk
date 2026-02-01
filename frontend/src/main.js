@@ -1,30 +1,18 @@
 import { createApp } from "vue";
 import { createPinia } from "pinia";
-import { useAuthStore } from "./stores/auth";
 import App from "./App.vue";
-import router from "./router.js";
+import router from "./router";
 
 import Aura from "@primeuix/themes/aura";
 import { definePreset } from "@primevue/themes";
 import PrimeVue from "primevue/config";
 import ToastService from "primevue/toastservice";
 import "primeicons/primeicons.css";
-
-import "highlight.js/styles/atom-one-dark.css";
-import hljs from "highlight.js/lib/core";
-import javascript from "highlight.js/lib/languages/javascript";
-import python from "highlight.js/lib/languages/python";
-import css from "highlight.js/lib/languages/css";
-import xml from "highlight.js/lib/languages/xml";
-import hljsVuePlugin from "@highlightjs/vue-plugin";
-import axios from "axios";
-
 import "./assets/main.css";
 
-hljs.registerLanguage("javascript", javascript);
-hljs.registerLanguage("python", python);
-hljs.registerLanguage("css", css);
-hljs.registerLanguage("xml", xml);
+import hljsVuePlugin from "@highlightjs/vue-plugin";
+import "./plugins/highlight";
+import socketService from "./plugins/socket";
 
 const MyPinkPreset = definePreset(Aura, {
   semantic: {
@@ -45,6 +33,16 @@ const MyPinkPreset = definePreset(Aura, {
 });
 
 const app = createApp(App);
+const pinia = createPinia();
+
+app.use(pinia);
+
+import { useAuthStore } from "./stores/auth";
+const authStore = useAuthStore();
+
+authStore.restore();
+
+app.use(router);
 
 app.use(PrimeVue, {
   theme: {
@@ -54,18 +52,9 @@ app.use(PrimeVue, {
     },
   },
 });
-app.use(createPinia());
-app.use(router);
-app.use(hljsVuePlugin);
 app.use(ToastService);
+app.use(hljsVuePlugin);
 
-const authStore = useAuthStore();
-authStore.restore();
-
-const token = localStorage.getItem("token");
-
-if (token) {
-  axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-}
+app.provide("socket", socketService);
 
 app.mount("#app");

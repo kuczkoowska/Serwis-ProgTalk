@@ -1,11 +1,23 @@
 import { defineStore } from "pinia";
 import router from "../router";
-import axios from "axios";
+import socketService from "../plugins/socket";
+import api from "../plugins/axios";
+
 const getError = (err) => err.response?.data?.message || "Błąd autoryzacji";
+
+function getUserFromLocalStorage() {
+  try {
+    const user = localStorage.getItem("user");
+    return user ? JSON.parse(user) : null;
+  } catch (e) {
+    localStorage.removeItem("user");
+    return null;
+  }
+}
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
-    user: JSON.parse(localStorage.getItem("user") || "null"),
+    user: getUserFromLocalStorage(),
     token: localStorage.getItem("token") || null,
   }),
 
@@ -17,7 +29,7 @@ export const useAuthStore = defineStore("auth", {
           password,
         };
 
-        const { data } = await axios.post("/api/auth/login", payload);
+        const { data } = await api.post("/auth/login", payload);
 
         this.setAuth(data.token, data.data.user);
         return true;
@@ -28,7 +40,7 @@ export const useAuthStore = defineStore("auth", {
 
     async register(payload) {
       try {
-        await axios.post("/api/auth/register", payload);
+        await api.post("/auth/register", payload);
         return true;
       } catch (error) {
         throw getError(error);
@@ -41,8 +53,12 @@ export const useAuthStore = defineStore("auth", {
     },
 
     restore() {
-      if (this.token) {
-        axios.defaults.headers.common["Authorization"] = `Bearer ${this.token}`;
+      if (this.token && this.user) {
+        socketService.io.io.opts.query = {
+          userId: this.user._id,
+          role: this.user.role,
+        };
+        socketService.connect();
       }
     },
 
@@ -53,45 +69,19 @@ export const useAuthStore = defineStore("auth", {
       if (token) {
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+        if (user) {
+          socketService.io.io.opts.query = {
+            userId: user._id,
+            role: user.role,
+          };
+          socketService.connect();
+        }
       } else {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        delete axios.defaults.headers.common["Authorization"];
-      }
-    },
 
-    async updateProfile(bio, username) {
-      try {
-        const { data } = await axios.patch("/api/users/profile", {
-          bio,
-          username,
-        });
-
-        this.user = { ...this.user, ...data.data.user };
-        localStorage.setItem("user", JSON.stringify(this.user));
-
-        return true;
-      } catch (error) {
-        throw getError(error);
-      }
-    },
-
-    async updatePassword(currentPassword, newPassword, newPasswordConfirm) {
-      try {
-        const { data } = await axios.patch("/api/users/update-password", {
-          currentPassword,
-          newPassword,
-          newPasswordConfirm,
-        });
-
-        if (data.token) {
-          this.setAuth(data.token, this.user);
-        }
-
-        return true;
-      } catch (error) {
-        throw getError(error);
+        socketService.disconnect();
       }
     },
   },

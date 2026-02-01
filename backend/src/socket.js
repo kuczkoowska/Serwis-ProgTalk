@@ -1,11 +1,43 @@
+const jwt = require("jsonwebtoken");
+const User = require("./models/User");
+
 module.exports = (io) => {
   const onlineUsers = new Map();
 
   io.onlineUsers = onlineUsers;
 
+  io.use(async (socket, next) => {
+    try {
+      const token = socket.handshake.auth.token;
+
+      if (!token) {
+        return next(new Error("Brak tokenu autoryzacji"));
+      }
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+      socket.user = {
+        _id: decoded.id,
+      };
+
+      const userDb = await User.findById(decoded.id).select("+role");
+      if (!userDb) {
+        return next(new Error("Użytkownik nie istnieje"));
+      }
+
+      socket.user.role = userDb.role;
+      socket.user.username = userDb.username;
+
+      next();
+    } catch (err) {
+      console.log("Błąd autoryzacji socketa:", err.message);
+      next(new Error("Nieprawidłowy token"));
+    }
+  });
+
   io.on("connection", (socket) => {
-    const userId = socket.handshake.query.userId;
-    const userRole = socket.handshake.query.role;
+    const userId = socket.user._id.toString();
+    const userRole = socket.user.role;
 
     console.log(`Klient połączony: ${socket.id}`);
 
