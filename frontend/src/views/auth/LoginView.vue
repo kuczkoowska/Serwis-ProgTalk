@@ -94,8 +94,7 @@ const handleLogin = async () => {
     await authStore.login(emailOrLogin.value, password.value);
     router.push("/");
   } catch (error) {
-    errorMessage.value =
-      typeof error === "string" ? error : "Nieprawidłowy login lub hasło.";
+    errorMessage.value = error;
   } finally {
     isLoading.value = false;
   }

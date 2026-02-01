@@ -164,8 +164,7 @@ const handleRegister = async () => {
     form.passwordConfirm = "";
     submitted.value = false;
   } catch (error) {
-    errorMessage.value =
-      typeof error === "string" ? error : "Wystąpił błąd podczas rejestracji.";
+    errorMessage.value = error;
   } finally {
     isLoading.value = false;
   }
