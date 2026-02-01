@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { ref, computed } from "vue";
 import router from "../router";
 import socketService from "../plugins/socket";
 import api from "../plugins/axios";
@@ -15,74 +16,82 @@ function getUserFromLocalStorage() {
   }
 }
 
-export const useAuthStore = defineStore("auth", {
-  state: () => ({
-    user: getUserFromLocalStorage(),
-    token: localStorage.getItem("token") || null,
-  }),
+export const useAuthStore = defineStore("auth", () => {
+  const user = ref(getUserFromLocalStorage());
+  const token = ref(localStorage.getItem("token") || null);
 
-  actions: {
-    async login(identifier, password) {
-      try {
-        const payload = {
-          [identifier.includes("@") ? "email" : "username"]: identifier,
-          password,
-        };
+  const isAuthenticated = computed(() => !!token.value && !!user.value);
+  const isAdmin = computed(() => user.value?.role === "admin");
+  const userId = computed(() => user.value?._id);
+  const username = computed(() => user.value?.username || "");
 
-        const { data } = await api.post("/auth/login", payload);
+  const login = async (identifier, password) => {
+    try {
+      const payload = {
+        [identifier.includes("@") ? "email" : "username"]: identifier,
+        password,
+      };
 
-        this.setAuth(data.token, data.data.user);
-        return true;
-      } catch (error) {
-        throw getError(error);
-      }
-    },
+      const { data } = await api.post("/auth/login", payload);
 
-    async register(payload) {
-      try {
-        await api.post("/auth/register", payload);
-        return true;
-      } catch (error) {
-        throw getError(error);
-      }
-    },
+      setAuth(data.token, data.data.user);
+      return true;
+    } catch (error) {
+      throw getError(error);
+    }
+  };
 
-    logout() {
-      this.setAuth(null, null);
-      router.push("/login");
-    },
+  const register = async (payload) => {
+    try {
+      await api.post("/auth/register", payload);
+      return true;
+    } catch (error) {
+      throw getError(error);
+    }
+  };
 
-    restore() {
-      if (this.token && this.user) {
-        socketService.io.io.opts.query = {
-          userId: this.user._id,
-          role: this.user.role,
-        };
+  const logout = () => {
+    setAuth(null, null);
+    router.push("/login");
+  };
+
+  const restore = () => {
+    if (token.value && user.value) {
+      socketService.connect();
+    }
+  };
+
+  const setAuth = (newToken, newUser) => {
+    token.value = newToken;
+    user.value = newUser;
+
+    if (newToken) {
+      localStorage.setItem("token", newToken);
+      localStorage.setItem("user", JSON.stringify(newUser));
+
+      if (newUser) {
         socketService.connect();
       }
-    },
+    } else {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      socketService.disconnect();
+    }
+  };
 
-    setAuth(token, user) {
-      this.token = token;
-      this.user = user;
+  return {
+    user,
+    token,
 
-      if (token) {
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
+    isAuthenticated,
+    isAdmin,
+    userId,
+    username,
 
-        if (user) {
-          socketService.io.io.opts.query = {
-            userId: user._id,
-            role: user.role,
-          };
-          socketService.connect();
-        }
-      } else {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-
-        socketService.disconnect();
-      }
-    },
-  },
+    login,
+    register,
+    logout,
+    restore,
+    setAuth,
+  };
 });

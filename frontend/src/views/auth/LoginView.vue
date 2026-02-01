@@ -1,23 +1,27 @@
 <template>
-  <div class="login-body">
-    <Card class="login-card">
+  <div class="auth-wrapper">
+    <Card class="auth-card">
       <template #title>
-        <div class="text-center">Witaj w ProgTalk</div>
+        <div class="text-center text-2xl font-bold mb-2">Witaj w ProgTalk</div>
       </template>
       <template #subtitle>
-        <div class="text-center">Zaloguj się, aby skorzystać z serwisu</div>
+        <div class="text-center mb-4">Zaloguj się, aby kontynuować</div>
       </template>
 
       <template #content>
         <form @submit.prevent="handleLogin">
-          <div class="field mt-3">
+          <div class="field">
             <label for="username">Email lub Login</label>
             <InputText
               id="username"
               v-model="emailOrLogin"
-              placeholder="Wpisz swój login..."
+              placeholder="Wpisz login..."
+              :invalid="submitted && !emailOrLogin"
               fluid
             />
+            <small v-if="submitted && !emailOrLogin" class="p-error"
+              >To pole jest wymagane</small
+            >
           </div>
 
           <div class="field">
@@ -28,11 +32,20 @@
               :feedback="false"
               toggleMask
               placeholder="••••••••"
+              :invalid="submitted && !password"
               fluid
             />
+            <small v-if="submitted && !password" class="p-error"
+              >Hasło jest wymagane</small
+            >
           </div>
 
-          <Message v-if="errorMessage" severity="error" class="mb-3">
+          <Message
+            v-if="errorMessage"
+            severity="error"
+            class="mb-3"
+            :closable="false"
+          >
             {{ errorMessage }}
           </Message>
 
@@ -43,11 +56,9 @@
             fluid
           />
 
-          <div class="text-center mt-3">
-            <small
-              >Nie masz jeszcze konta?
-              <router-link to="/register">Zarejestruj się</router-link></small
-            >
+          <div class="text-center mt-4">
+            <span class="text-gray">Nie masz konta? </span>
+            <router-link to="/register">Zarejestruj się</router-link>
           </div>
         </form>
       </template>
@@ -64,20 +75,27 @@ const emailOrLogin = ref("");
 const password = ref("");
 const errorMessage = ref("");
 const isLoading = ref(false);
+const submitted = ref(false);
 
 const router = useRouter();
 const authStore = useAuthStore();
 
 const handleLogin = async () => {
-  isLoading.value = true;
+  submitted.value = true;
   errorMessage.value = "";
+
+  if (!emailOrLogin.value || !password.value) {
+    return;
+  }
+
+  isLoading.value = true;
 
   try {
     await authStore.login(emailOrLogin.value, password.value);
     router.push("/");
   } catch (error) {
     errorMessage.value =
-      typeof error === "string" ? error : "Wystąpił błąd logowania";
+      typeof error === "string" ? error : "Nieprawidłowy login lub hasło.";
   } finally {
     isLoading.value = false;
   }

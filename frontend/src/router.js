@@ -15,7 +15,8 @@ const routes = [
   },
   {
     path: "/verify-email/:token",
-    component: () => import("./views/VerifyEmailPage.vue"),
+    component: () => import("./views/auth/VerifyEmailView.vue"),
+    meta: { requiresAuth: false },
   },
   {
     path: "/pending-approval",
@@ -62,8 +63,8 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
 
-  const isAuthenticated = !!authStore.token;
-  const isAdmin = authStore.user?.role === "admin";
+  const isAuthenticated = authStore.isAuthenticated;
+  const isAdmin = authStore.isAdmin;
   const isActive = authStore.user?.isActive;
 
   if (to.meta.requiresAuth && !isAuthenticated) {
