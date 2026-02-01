@@ -182,6 +182,8 @@ exports.deleteOwnPost = async (req, res) => {
     post.deletedAt = Date.now();
     await post.save();
 
+    notificationService.notifyPostDeleted(post._id, post.topic, req.user);
+
     res.status(200).json({
       status: "success",
       message:

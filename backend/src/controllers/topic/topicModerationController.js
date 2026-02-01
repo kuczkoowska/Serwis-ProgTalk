@@ -2,6 +2,7 @@ const Topic = require("../../models/Topic");
 const authService = require("../../services/authorizationService");
 const { ACTION_TYPES } = require("../../utils/constants/actionTypes");
 const SystemLogs = require("../../models/SystemLogs");
+const notificationService = require("../../services/notificationService");
 
 exports.closeTopic = async (req, res) => {
   try {
@@ -30,6 +31,8 @@ exports.closeTopic = async (req, res) => {
       actionType: ACTION_TYPES.TOPIC_CLOSE,
       targetTopic: topicId,
     });
+
+    notificationService.notifyTopicClosed(topicId, topic.name, req.user);
 
     res.status(200).json({
       status: "success",
@@ -68,6 +71,8 @@ exports.openTopic = async (req, res) => {
       targetTopic: topicId,
     });
 
+    notificationService.notifyTopicOpened(topicId, topic.name, req.user);
+
     res.status(200).json({
       status: "success",
       message: "Temat został otwarty.",
@@ -102,6 +107,8 @@ exports.hideTopic = async (req, res) => {
       targetTopic: topicId,
     });
 
+    notificationService.notifyTopicHidden(topicId, topic.name, req.user);
+
     res.status(200).json({
       status: "success",
       message: "Temat został ukryty i zamknięty.",
@@ -134,6 +141,8 @@ exports.unhideTopic = async (req, res) => {
       actionType: ACTION_TYPES.TOPIC_UNHIDE,
       targetTopic: topicId,
     });
+
+    notificationService.notifyTopicUnhidden(topicId, topic.name, req.user);
 
     res.status(200).json({
       status: "success",

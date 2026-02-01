@@ -1,5 +1,9 @@
 const Topic = require("../../models/Topic");
+const User = require("../../models/User");
 const authService = require("../../services/authorizationService");
+const notificationService = require("../../services/notificationService");
+const SystemLogs = require("../../models/SystemLogs");
+const { ACTION_TYPES } = require("../../utils/constants/actionTypes");
 const {
   moderatorToSubtopics,
   removeModeratorFromSubtopics,
@@ -45,6 +49,14 @@ exports.promoteModerator = async (req, res) => {
       targetUser: userIdToPromote,
       targetTopic: topicId,
     });
+
+    const newModerator = await User.findById(userIdToPromote);
+    notificationService.notifyModeratorAdded(
+      topicId,
+      topic.name,
+      newModerator,
+      req.user,
+    );
 
     res.status(200).json({ message: "Moderator dodany." });
   } catch (error) {
@@ -108,6 +120,14 @@ exports.takeBackModerator = async (req, res) => {
       targetTopic: topicId,
     });
 
+    const removedModerator = await User.findById(userIdToTake);
+    notificationService.notifyModeratorRemoved(
+      topicId,
+      topic.name,
+      removedModerator,
+      req.user,
+    );
+
     res.status(200).json({ message: "Uprawnienia cofnięte." });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -155,6 +175,15 @@ exports.blockUserInTopic = async (req, res) => {
       targetTopic: topicId,
       reason: reason || "",
     });
+
+    const blockedUser = await User.findById(userIdToBlock);
+    notificationService.notifyUserBlockedInTopic(
+      topicId,
+      topic.name,
+      blockedUser,
+      req.user,
+      reason,
+    );
 
     res.status(200).json({ message: "Użytkownik zablokowany." });
   } catch (error) {
@@ -205,6 +234,14 @@ exports.unblockUserInTopic = async (req, res) => {
       targetUser: userIdToUnblock,
       targetTopic: topicId,
     });
+
+    const unblockedUser = await User.findById(userIdToUnblock);
+    notificationService.notifyUserUnblockedInTopic(
+      topicId,
+      topic.name,
+      unblockedUser,
+      req.user,
+    );
 
     res.status(200).json({ message: "Użytkownik odblokowany." });
   } catch (error) {

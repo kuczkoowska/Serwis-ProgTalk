@@ -48,6 +48,7 @@ const ACTION_LABELS = {
   TOPIC_TAKEOVER: "Przejęcie tematu",
   LOGIN_FAILED: "Nieudane logowanie",
   LOGIN_SUCCESS: "Udane logowanie",
+  EMAIL_VERIFIED: "Weryfikacja adresu email",
 };
 
 module.exports = {

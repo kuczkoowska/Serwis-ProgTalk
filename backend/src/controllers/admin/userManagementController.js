@@ -157,6 +157,8 @@ exports.blockUser = async (req, res) => {
       reason: user.blockReason,
     });
 
+    notificationService.notifyUserBlocked(user, req.user, user.blockReason);
+
     res.status(200).json({
       status: "success",
       message: "Użytkownik został zablokowany.",

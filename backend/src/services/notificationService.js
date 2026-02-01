@@ -45,6 +45,7 @@ class NotificationService {
       username: user.username,
       blockedBy: blocker.username,
       reason,
+      message: `Użytkownik ${user.username} został zablokowany przez ${blocker.username}`,
     });
   }
 
@@ -53,6 +54,7 @@ class NotificationService {
       userId: user._id,
       username: user.username,
       unblockedBy: unblocker.username,
+      message: `Użytkownik ${user.username} został odblokowany przez ${unblocker.username}`,
     });
   }
 
@@ -85,6 +87,101 @@ class NotificationService {
   notifySupportMessage(messageData) {
     this.emitToRoom("admins", "new_support_message", {
       message: messageData,
+    });
+  }
+
+  notifyTopicClosed(topicId, topicName, closedBy) {
+    this.emitToRoom(`topic_${topicId}`, "topic_closed", {
+      topicId,
+      topicName,
+      closedBy: closedBy.username,
+      message: `Temat "${topicName}" został zamknięty przez ${closedBy.username}`,
+    });
+  }
+
+  notifyTopicOpened(topicId, topicName, openedBy) {
+    this.emitToRoom(`topic_${topicId}`, "topic_opened", {
+      topicId,
+      topicName,
+      openedBy: openedBy.username,
+      message: `Temat "${topicName}" został otwarty przez ${openedBy.username}`,
+    });
+  }
+
+  notifyTopicHidden(topicId, topicName, hiddenBy) {
+    this.emitToRoom(`topic_${topicId}`, "topic_hidden", {
+      topicId,
+      topicName,
+      hiddenBy: hiddenBy.username,
+      message: `Temat "${topicName}" został ukryty przez ${hiddenBy.username}`,
+    });
+    this.emitToRoom("admins", "topic_hidden", {
+      topicId,
+      topicName,
+      hiddenBy: hiddenBy.username,
+      message: `Temat "${topicName}" został ukryty`,
+    });
+  }
+
+  notifyTopicUnhidden(topicId, topicName, unhiddenBy) {
+    this.emitToRoom(`topic_${topicId}`, "topic_unhidden", {
+      topicId,
+      topicName,
+      unhiddenBy: unhiddenBy.username,
+      message: `Temat "${topicName}" został odkryty przez ${unhiddenBy.username}`,
+    });
+  }
+
+  notifyModeratorAdded(topicId, topicName, newModerator, promotedBy) {
+    this.emitToRoom(`topic_${topicId}`, "moderator_added", {
+      topicId,
+      topicName,
+      moderator: newModerator.username,
+      moderatorId: newModerator._id,
+      promotedBy: promotedBy.username,
+      message: `${newModerator.username} został moderatorem przez ${promotedBy.username}`,
+    });
+  }
+
+  notifyModeratorRemoved(topicId, topicName, removedModerator, removedBy) {
+    this.emitToRoom(`topic_${topicId}`, "moderator_removed", {
+      topicId,
+      topicName,
+      moderator: removedModerator.username,
+      moderatorId: removedModerator._id,
+      removedBy: removedBy.username,
+      message: `${removedModerator.username} przestał być moderatorem`,
+    });
+  }
+
+  notifyPostDeleted(postId, topicId, deletedBy) {
+    this.emitToRoom(`topic_${topicId}`, "post_deleted", {
+      postId,
+      deletedBy: deletedBy.username,
+      message: `Post został usunięty przez ${deletedBy.username}`,
+    });
+  }
+
+  notifyUserBlockedInTopic(topicId, topicName, blockedUser, blockedBy, reason) {
+    this.emitToRoom(`topic_${topicId}`, "user_blocked_in_topic", {
+      topicId,
+      topicName,
+      username: blockedUser.username,
+      userId: blockedUser._id,
+      blockedBy: blockedBy.username,
+      reason,
+      message: `${blockedUser.username} został zablokowany w tym temacie przez ${blockedBy.username}`,
+    });
+  }
+
+  notifyUserUnblockedInTopic(topicId, topicName, unblockedUser, unblockedBy) {
+    this.emitToRoom(`topic_${topicId}`, "user_unblocked_in_topic", {
+      topicId,
+      topicName,
+      username: unblockedUser.username,
+      userId: unblockedUser._id,
+      unblockedBy: unblockedBy.username,
+      message: `${unblockedUser.username} został odblokowany w tym temacie przez ${unblockedBy.username}`,
     });
   }
 }
