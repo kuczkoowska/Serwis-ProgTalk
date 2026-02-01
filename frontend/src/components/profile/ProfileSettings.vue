@@ -2,7 +2,7 @@
   <div class="custom-card layout-container">
     <h3>Ustawienia konta</h3>
 
-    <div>
+    <div v-if="user">
       <div class="field mb-3">
         <label for="email">Email</label>
         <InputText id="email" v-model="form.email" fluid disabled />
@@ -40,7 +40,7 @@
           label="Zapisz zmiany"
           icon="pi pi-check"
           @click="saveSettings"
-          :loading="loading"
+          :loading="userStore.loading"
         />
       </div>
     </div>
@@ -50,45 +50,39 @@
 </template>
 
 <script setup>
-import { reactive, ref } from "vue";
-import { useToast } from "primevue/usetoast";
-import { useAuthStore } from "../../stores/auth";
-import PasswordChangeDialog from "./PasswordChangeDialog.vue";
+import { reactive, ref, watch } from "vue";
+import { useToastHelper } from "../../composables/useToastHelper";
+import { useUserStore } from "../../stores/user";
 
 const props = defineProps(["user"]);
-const toast = useToast();
-const authStore = useAuthStore();
-const loading = ref(false);
+const { showSuccess, showError } = useToastHelper();
+const userStore = useUserStore();
 const showPasswordDialog = ref(false);
 
 const form = reactive({
-  email: props.user?.email || "",
-  username: props.user?.username || "",
-  bio: props.user?.bio || "",
+  email: "",
+  username: "",
+  bio: "",
 });
 
-const saveSettings = async () => {
-  loading.value = true;
+watch(
+  () => props.user,
+  (newUser) => {
+    if (newUser) {
+      form.email = newUser.email || "";
+      form.username = newUser.username || "";
+      form.bio = newUser.bio || "";
+    }
+  },
+  { immediate: true },
+);
 
+const saveSettings = async () => {
   try {
-    await authStore.updateProfile(form.bio, form.username);
-    toast.add({
-      severity: "success",
-      summary: "Sukces",
-      detail: "Profil zaktualizowany",
-      life: 3000,
-    });
+    const result = await userStore.updateProfile(form.bio, form.username);
+    showSuccess(result.message);
   } catch (error) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail: error || "Nie udało się zaktualizować profilu",
-      life: 3000,
-    });
-  } finally {
-    loading.value = false;
+    showError(error);
   }
 };
 </script>
-
-<style scoped></style>

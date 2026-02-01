@@ -37,6 +37,12 @@ exports.updatePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword, newPasswordConfirm } = req.body;
 
+    if (!currentPassword || !newPassword || !newPasswordConfirm) {
+      return res.status(400).json({
+        message: "Wszystkie pola są wymagane.",
+      });
+    }
+
     const user = await User.findById(req.user._id).select("+password");
 
     if (!(await user.checkPassword(currentPassword))) {
@@ -46,7 +52,21 @@ exports.updatePassword = async (req, res) => {
     }
 
     if (newPassword !== newPasswordConfirm) {
-      return res.status(400).json({ message: "Nowe hasła nie są identyczne." });
+      return res.status(400).json({
+        message: "Nowe hasła nie są identyczne.",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        message: "Nowe hasło musi mieć minimum 6 znaków.",
+      });
+    }
+
+    if (await user.checkPassword(newPassword)) {
+      return res.status(400).json({
+        message: "Nowe hasło nie może być takie samo jak obecne.",
+      });
     }
 
     user.password = newPassword;
@@ -85,6 +105,11 @@ exports.updateProfile = async (req, res) => {
     }
 
     if (bio !== undefined) {
+      if (bio.length > 200) {
+        return res.status(400).json({
+          message: "Opis nie może być dłuższy niż 200 znaków.",
+        });
+      }
       user.bio = bio;
     }
 

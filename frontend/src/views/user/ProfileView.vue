@@ -3,9 +3,13 @@
     <Toast />
 
     <div class="main-container">
-      <ProfileHeader :user="authStore.user" />
+      <ProfileHeader
+        :user="userStore.profile"
+        :stats="userStore.stats"
+        :loading="userStore.loading"
+      />
 
-      <div class="content-section">
+      <div class="content-section mt-4">
         <Tabs value="0">
           <TabList>
             <Tab value="0"> <i class="pi pi-list mr-2"></i> Aktywność </Tab>
@@ -28,7 +32,7 @@
             </TabPanel>
 
             <TabPanel value="1">
-              <ProfileSettings :user="authStore.user" />
+              <ProfileSettings :user="userStore.profile" />
             </TabPanel>
           </TabPanels>
         </Tabs>
@@ -38,11 +42,15 @@
 </template>
 
 <script setup>
-import { useAuthStore } from "../../stores/auth";
+import { onMounted } from "vue";
+import { useUserStore } from "../../stores/user";
 
-const authStore = useAuthStore();
+const userStore = useUserStore();
+
+onMounted(() => {
+  userStore.fetchMyProfile();
+});
 </script>
-
 <style scoped>
 :deep(.p-tablist) {
   background: transparent;

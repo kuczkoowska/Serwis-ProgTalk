@@ -42,7 +42,7 @@ const userSchema = new mongoose.Schema(
     bio: {
       type: String,
       default: "",
-      maxLength: 500,
+      maxlength: [200, "Opis nie może być dłuższy niż 200 znaków."],
     },
     lastViewedPages: [
       {

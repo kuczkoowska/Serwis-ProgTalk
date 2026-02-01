@@ -52,9 +52,9 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed } from "vue";
-import { useToast } from "primevue/usetoast";
-import { useAuthStore } from "../../stores/auth";
+import { reactive, computed, ref, watch } from "vue";
+import { useToastHelper } from "../../composables/useToastHelper";
+import { useUserStore } from "../../stores/user";
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -62,8 +62,8 @@ const props = defineProps({
 
 const emit = defineEmits(["update:visible"]);
 
-const toast = useToast();
-const authStore = useAuthStore();
+const { showSuccess, showError, showWarning } = useToastHelper();
+const userStore = useUserStore();
 const loading = ref(false);
 
 const isVisible = computed({
@@ -77,48 +77,48 @@ const passwordForm = reactive({
   newPasswordConfirm: "",
 });
 
+watch(
+  () => props.visible,
+  (newVal) => {
+    if (!newVal) {
+      setTimeout(() => {
+        passwordForm.currentPassword = "";
+        passwordForm.newPassword = "";
+        passwordForm.newPasswordConfirm = "";
+      }, 300);
+    }
+  },
+);
+
+const closeDialog = () => {
+  isVisible.value = false;
+};
+
 const changePassword = async () => {
   if (passwordForm.newPassword !== passwordForm.newPasswordConfirm) {
-    toast.add({
-      severity: "warn",
-      summary: "Uwaga",
-      detail: "Nowe hasła nie są identyczne",
-      life: 3000,
-    });
+    showWarning("Nowe hasła muszą być identyczne.");
+    return;
+  }
+
+  if (!passwordForm.currentPassword) {
+    showWarning("Wpisz obecne hasło.");
     return;
   }
 
   loading.value = true;
-
   try {
-    await authStore.updatePassword(
+    const result = await userStore.updatePassword(
       passwordForm.currentPassword,
       passwordForm.newPassword,
       passwordForm.newPasswordConfirm,
     );
-    toast.add({
-      severity: "success",
-      summary: "Sukces",
-      detail: "Hasło zostało zmienione",
-      life: 3000,
-    });
+
+    showSuccess(result.message);
     closeDialog();
   } catch (error) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail: error || "Nie udało się zmienić hasła",
-      life: 3000,
-    });
+    showError(error);
   } finally {
     loading.value = false;
   }
-};
-
-const closeDialog = () => {
-  isVisible.value = false;
-  passwordForm.currentPassword = "";
-  passwordForm.newPassword = "";
-  passwordForm.newPasswordConfirm = "";
 };
 </script>
