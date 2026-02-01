@@ -2,11 +2,12 @@ require("dotenv").config();
 const fs = require("fs");
 const https = require("https");
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
-const swaggerJsDoc = require("swagger-jsdoc");
 const { Server } = require("socket.io");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const swaggerDocs = require("./config/swagger");
 
 // routes
 const authRoutes = require("./routes/authRoutes");
@@ -17,30 +18,22 @@ const tagRoutes = require("./routes/tagRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const moderatorApplicationRoutes = require("./routes/moderatorApplication");
 const moderatorRoutes = require("./routes/moderatorRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 
 const app = express();
 
+app.use(helmet());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  message: "Zbyt wiele zapytań z tego IP, spróbuj ponownie za 15 minut.",
+});
+app.use("/api", limiter);
+
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "10kb" }));
 
-mongoose
-  .connect("mongodb://localhost:27017/progtalk")
-  .then(() => console.log("Połączono z MongoDB"))
-  .catch((err) => console.error("Błąd połączenia z bazą:", err));
-
-const swaggerOptions = {
-  definition: {
-    openapi: "3.0.0",
-    info: {
-      title: "ProgTalk API",
-      version: "1.0.0",
-      description: "Dokumentacja API",
-    },
-  },
-  apis: ["./src/docs/*.yaml"],
-};
-
-const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // routes
@@ -52,31 +45,10 @@ app.use("/api/tags", tagRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/moderator-applications", moderatorApplicationRoutes);
 app.use("/api/moderators", moderatorRoutes);
+app.use("/api/chat", chatRoutes);
 
 app.get("/", (req, res) => {
   res.send("Serwer ProgTalk działa!");
 });
 
-const options = {
-  key: fs.readFileSync("ssl/server.key"),
-  cert: fs.readFileSync("ssl/server.crt"),
-};
-
-const httpsServer = https.createServer(options, app);
-const socketHandler = require("./socket");
-const notificationService = require("./services/notificationService");
-
-const io = new Server(httpsServer, {
-  cors: {
-    origin: "*",
-  },
-});
-
-notificationService.setSocketIO(io);
-socketHandler(io);
-
-const PORT = process.env.PORT || 3001;
-httpsServer.listen(PORT, () => {
-  console.log(`Serwer nasłuchuje na https://localhost:${PORT}`);
-  console.log(`Dokumentacja: https://localhost:${PORT}/api-docs`);
-});
+module.exports = app;

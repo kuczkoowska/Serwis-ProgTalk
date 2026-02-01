@@ -1,23 +1,35 @@
 module.exports = (io) => {
+  const onlineUsers = new Map();
+
+  io.onlineUsers = onlineUsers;
+
   io.on("connection", (socket) => {
-    console.log(`Klient połączony przez WebSocket: ${socket.id}`);
+    const userId = socket.handshake.query.userId;
+    const userRole = socket.handshake.query.role;
 
-    socket.on("join_user_room", (userId) => {
+    console.log(`Klient połączony: ${socket.id}`);
+
+    if (userId) {
       socket.join(`user_${userId}`);
-    });
+      onlineUsers.set(userId, socket.id);
 
-    socket.on("leave_user_room", (userId) => {
-      socket.leave(`user_${userId}`);
-    });
+      if (userRole === "admin") {
+        socket.join("admins");
+        console.log(`Admin ${userId} dołączył do pokoju adminow.`);
+      }
+    }
 
     socket.on("join_admin_room", () => {
-      socket.join("admins");
-      console.log(
-        `Użytkownik ${socket.id} dołączył do kanału dla Administratorów`,
-      );
+      if (userRole === "admin") {
+        socket.join("admins");
+      } else {
+        console.warn(
+          `Próba nieautoryzowanego dostępu do admin room: ${socket.id}`,
+        );
+      }
     });
 
-    socket.on("join_topic", async (topicId) => {
+    socket.on("join_topic", (topicId) => {
       socket.join(`topic_${topicId}`);
     });
 
@@ -34,6 +46,9 @@ module.exports = (io) => {
     });
 
     socket.on("disconnect", () => {
+      if (userId) {
+        onlineUsers.delete(userId);
+      }
       console.log(`Klient rozłączony: ${socket.id}`);
     });
   });
