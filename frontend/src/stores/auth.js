@@ -4,7 +4,8 @@ import router from "../router";
 import socketService from "../plugins/socket";
 import api from "../plugins/axios";
 
-const getError = (err) => err.response?.data?.message || "Błąd autoryzacji";
+const getError = (err) =>
+  err.response?.data?.message || err.message || "Błąd autoryzacji";
 
 function getUserFromLocalStorage() {
   try {

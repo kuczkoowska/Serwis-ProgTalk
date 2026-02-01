@@ -1,6 +1,6 @@
 <template>
   <div class="navbar-wrapper" v-if="isActive">
-    <Menubar :model="items" class="custom-menubar">
+    <Menubar class="custom-menubar">
       <template #start>
         <router-link to="/" class="logo-link">
           <i class="pi pi-code logo-icon"></i>
@@ -17,8 +17,9 @@
               aria-haspopup="true"
               aria-controls="overlay_menu"
             >
-              <AvatarComponent
-                :username="authStore.user?.username"
+              <Avatar
+                :label="authStore.user?.username?.charAt(0).toUpperCase()"
+                shape="circle"
                 size="normal"
               />
               <i class="pi pi-angle-down"></i>
@@ -48,21 +49,9 @@ import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 
-import AvatarComponent from "./AvatarComponent.vue";
-
 const router = useRouter();
 const authStore = useAuthStore();
-
-const menu = ref();
-
-// główne linki w pasku
-const items = ref([
-  //   {
-  //     label: "Dyskusje",
-  //     icon: "pi pi-comments",
-  //     command: () => router.push("/"),
-  //   },
-]);
+const menu = ref(null);
 
 const isAdmin = computed(() => authStore.user?.role === "admin");
 const isActive = computed(() => authStore.user?.isActive !== false);
@@ -73,6 +62,11 @@ const userMenuItems = computed(() => {
       label: "Mój Profil",
       icon: "pi pi-user",
       command: () => router.push("/profile"),
+    },
+    {
+      label: "Wiadomości",
+      icon: "pi pi-comments",
+      command: () => router.push("/chat"),
     },
   ];
 
@@ -144,10 +138,5 @@ const handleLogout = async () => {
   align-items: center;
   padding: 4px;
   border-radius: 8px;
-  transition: background 0.2s;
-}
-
-.avatar-container:hover {
-  background-color: #f8fafc;
 }
 </style>
