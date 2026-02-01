@@ -53,6 +53,26 @@
           {{ form.description.length }} / 200 znaków
         </div>
       </div>
+
+      <div class="field">
+        <label for="tags">Tagi (opcjonalne)</label>
+        <MultiSelect
+          id="tags"
+          v-model="form.selectedTags"
+          :options="tagsStore.sortedTags"
+          optionLabel="name"
+          optionValue="_id"
+          placeholder="Wybierz tagi"
+          :maxSelectedLabels="3"
+          selectAllLabel="Zaznacz wszystkie"
+          fluid
+          variant="filled"
+          display="chip"
+        />
+        <small class="help-text">
+          Wybierz tagi, aby ułatwić znalezienie tematu
+        </small>
+      </div>
     </div>
 
     <div class="dialog-footer">
@@ -78,12 +98,14 @@
 <script setup>
 import { reactive, ref, computed } from "vue";
 import { useTopicsStore } from "../../../stores/topics";
+import { useTagsStore } from "../../../stores/tags";
 import { useToastHelper } from "../../../composables/useToastHelper";
 
 const props = defineProps(["visible", "parentId"]);
 const emit = defineEmits(["update:visible", "created"]);
 
 const topicsStore = useTopicsStore();
+const tagsStore = useTagsStore();
 const { showSuccess, showError } = useToastHelper();
 
 const isCreating = ref(false);
@@ -92,6 +114,7 @@ const submitted = ref(false);
 const form = reactive({
   name: "",
   description: "",
+  selectedTags: [],
 });
 
 const isVisible = computed({
@@ -111,6 +134,7 @@ const handleCreate = async () => {
     await topicsStore.createTopic({
       name: form.name,
       description: form.description,
+      tags: form.selectedTags,
       parentId: props.parentId || null,
     });
 
@@ -118,6 +142,7 @@ const handleCreate = async () => {
 
     form.name = "";
     form.description = "";
+    form.selectedTags = [];
     submitted.value = false;
     isVisible.value = false;
     emit("created");
@@ -168,6 +193,12 @@ const handleCreate = async () => {
   display: flex;
   align-items: center;
   gap: 4px;
+  margin-top: 4px;
+}
+
+.help-text {
+  color: #94a3b8;
+  font-size: 0.85rem;
   margin-top: 4px;
 }
 </style>
