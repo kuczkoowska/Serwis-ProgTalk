@@ -78,13 +78,13 @@
 <script setup>
 import { reactive, ref, computed } from "vue";
 import { useTopicsStore } from "../../../stores/topics";
-import { useToast } from "primevue/usetoast";
+import { useToastHelper } from "../../../composables/useToastHelper";
 
 const props = defineProps(["visible", "parentId"]);
 const emit = defineEmits(["update:visible", "created"]);
 
 const topicsStore = useTopicsStore();
-const toast = useToast();
+const { showSuccess, showError } = useToastHelper();
 
 const isCreating = ref(false);
 const submitted = ref(false);
@@ -114,12 +114,7 @@ const handleCreate = async () => {
       parentId: props.parentId || null,
     });
 
-    toast.add({
-      severity: "success",
-      summary: "Sukces",
-      detail: "Temat utworzony!",
-      life: 3000,
-    });
+    showSuccess("Temat utworzony!");
 
     form.name = "";
     form.description = "";
@@ -127,12 +122,7 @@ const handleCreate = async () => {
     isVisible.value = false;
     emit("created");
   } catch (e) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail: e || "Błąd tworzenia",
-      life: 3000,
-    });
+    showError(e || "Błąd tworzenia");
   } finally {
     isCreating.value = false;
   }

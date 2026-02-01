@@ -1,7 +1,9 @@
 const Topic = require("../../models/Topic");
+const SystemLogs = require("../../models/SystemLogs");
 const authService = require("../../services/authorizationService");
 const notificationService = require("../../services/notificationService");
 const paginationService = require("../../services/paginationService");
+const { ACTION_TYPES } = require("../../utils/constants/actionTypes");
 
 exports.createTopic = async (req, res) => {
   try {
@@ -160,7 +162,11 @@ exports.getTopicDetails = async (req, res) => {
       .populate("creator", "username")
       .populate("blockedUsers.user", "username email")
       .populate("moderators.user", "username email")
-      .populate("ancestors", "name _id");
+      .populate({
+        path: "ancestors",
+        select: "name _id",
+        options: { strictPopulate: false },
+      });
 
     if (!topic) {
       return res.status(404).json({ message: "Temat nie znaleziony" });
@@ -185,12 +191,11 @@ exports.getTopicDetails = async (req, res) => {
     );
     const canPost = !topic.isClosed && !isBlocked;
 
-    const canManage =
-      (await authService.canManageTopic(
-        req.user._id,
-        topic._id,
-        req.user.role,
-      ))
+    const canManage = await authService.canManageTopic(
+      req.user._id,
+      topic._id,
+      req.user.role,
+    );
 
     res.status(200).json({
       status: "success",
