@@ -9,7 +9,7 @@
     >
       <Column header="Data" style="width: 180px">
         <template #body="{ data }">
-          <span class="log-date">
+          <span>
             {{ formatDate(data.createdAt) }}
           </span>
         </template>
@@ -73,15 +73,6 @@
           <span v-if="data.reason" class="reason-text" :title="data.reason">{{
             data.reason
           }}</span>
-          <span v-else class="text-muted">-</span>
-        </template>
-      </Column>
-
-      <Column header="Szczegóły">
-        <template #body="{ data }">
-          <span v-if="data.details" class="details-text" :title="data.details">
-            {{ data.details }}
-          </span>
           <span v-else class="text-muted">-</span>
         </template>
       </Column>
