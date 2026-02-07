@@ -1,36 +1,47 @@
 <template>
   <div>
-    <div v-if="loading"><ProgressSpinner /></div>
-    <div v-else-if="users.length === 0">
-      <BaseEmptyState
-        title="Brak oczekujących użytkowników"
-        icon="pi-check-circle"
-      />
+    <div
+      v-if="adminStore.loading && adminStore.pendingUsers.length === 0"
+      class="loading-container"
+    >
+      <ProgressSpinner />
     </div>
-    <div v-else>
-      <Card v-for="user in users" :key="user._id" class="user-card">
+
+    <div v-else-if="adminStore.pendingUsers.length === 0" class="empty-state">
+      <i class="pi pi-check-circle success-icon"></i>
+      <p>Brak oczekujących użytkowników</p>
+    </div>
+
+    <div v-else class="pending-grid">
+      <Card
+        v-for="user in adminStore.pendingUsers"
+        :key="user._id"
+        class="user-card"
+      >
         <template #header>
-          <div class="user-card-header">
+          <div class="card-header-content">
             <Avatar
               :label="user.username.charAt(0).toUpperCase()"
               shape="circle"
               size="large"
-              class="user-avatar"
             />
-            <div class="user-basic-info">
-              <h4>{{ user.username }}</h4>
-              <p>{{ user.email }}</p>
-              <small>Zarejestrowany: {{ formatDate(user.createdAt) }}</small>
+            <div class="user-info">
+              <span class="username">{{ user.username }}</span>
+              <span>{{ user.email }}</span>
+              <small class="date"
+                >Zarejestrowany: {{ formatDate(user.createdAt) }}</small
+              >
             </div>
           </div>
         </template>
         <template #footer>
-          <div class="user-actions">
+          <div class="card-actions">
             <Button
               label="Odrzuć"
               icon="pi pi-times"
               severity="danger"
               outlined
+              size="small"
               @click="handleReject(user._id)"
               :loading="processingId === user._id"
             />
@@ -38,6 +49,7 @@
               label="Zaakceptuj"
               icon="pi pi-check"
               severity="success"
+              size="small"
               @click="handleApprove(user._id)"
               :loading="processingId === user._id"
             />
@@ -50,48 +62,24 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import axios from "axios";
-import { useToast } from "primevue/usetoast";
+import { useToastHelper } from "../../composables/useToastHelper";
+import { useAdminStore } from "../../stores/admin";
 
-const toast = useToast();
-const users = ref([]);
-const loading = ref(false);
+const { showSuccess, showError, showInfo } = useToastHelper();
+const adminStore = useAdminStore();
 const processingId = ref(null);
 
-const emit = defineEmits(["status-changed"]);
-
-const fetchData = async () => {
-  loading.value = true;
-  try {
-    const res = await axios.get("/api/admin/users/pending");
-    users.value = res.data.data.users;
-  } catch (err) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail: "Nie udało się pobrać oczekujących użytkowników",
-      life: 3000,
-    });
-  } finally {
-    loading.value = false;
-  }
-};
+onMounted(() => {
+  adminStore.fetchPendingUsers();
+});
 
 const handleApprove = async (id) => {
   processingId.value = id;
   try {
-    await axios.patch(`/api/admin/users/${id}/approve`);
-    toast.add({ severity: "success", summary: "Zaakceptowano", life: 3000 });
-    await fetchData();
-    emit("status-changed");
-  } catch (e) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail:
-        err.response?.data?.message || "Nie udało się zaakceptować użytkownika",
-      life: 3000,
-    });
+    await adminStore.approveUser(id);
+    showSuccess("Użytkownik aktywowany", "Zaakceptowano");
+  } catch (err) {
+    showError(err);
   } finally {
     processingId.value = null;
   }
@@ -100,31 +88,18 @@ const handleApprove = async (id) => {
 const handleReject = async (id) => {
   processingId.value = id;
   try {
-    await axios.delete(`/api/admin/users/${id}/reject`);
-    toast.add({
-      severity: "success",
-      summary: "Odrzucono",
-      detail: "Użytkownik został odrzucony",
-      life: 3000,
-    });
-    await fetchData();
-    emit("status-changed");
+    await adminStore.rejectUser(id, "Odrzucony przez administratora");
+    showInfo("Użytkownik usunięty", "Odrzucono");
   } catch (err) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail:
-        err.response?.data?.message || "Nie udało się odrzucić użytkownika",
-      life: 3000,
-    });
+    showError(err);
   } finally {
     processingId.value = null;
   }
 };
 
 const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("pl-PL", {
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleDateString("pl-PL", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -132,23 +107,32 @@ const formatDate = (dateString) => {
     minute: "2-digit",
   });
 };
-
-onMounted(fetchData);
-
-defineExpose({ refresh: fetchData });
 </script>
 
 <style scoped>
+.loading-container {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
 .empty-state {
   text-align: center;
   padding: 3rem;
   color: #64748b;
 }
 
-.empty-state i {
+.success-icon {
   font-size: 3rem;
   color: #22c55e;
   margin-bottom: 1rem;
+}
+
+.pending-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
 }
 
 .user-card {
@@ -157,18 +141,24 @@ defineExpose({ refresh: fetchData });
   background: #fffbeb;
 }
 
-.user-card-header {
+.card-header-content {
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 1.5rem;
 }
 
-.user-actions {
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 1rem 1.5rem;
   border-top: 1px solid #fde68a;
+  background: #fff;
 }
 </style>
