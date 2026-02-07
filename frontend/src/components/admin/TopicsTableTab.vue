@@ -1,59 +1,53 @@
 <template>
   <div>
     <DataTable
-      :value="topics"
-      :loading="loading"
+      :value="adminStore.topics"
+      :loading="adminStore.loading"
       paginator
       :rows="10"
       stripedRows
     >
       <Column field="name" header="Nazwa tematu" sortable></Column>
-      <Column field="creator.username" header="Twórca" sortable></Column>
+      <Column field="creator.username" header="Twórca" sortable>
+        <template #body="{ data }">
+          {{ data.creator?.username || "Nieznany" }}
+        </template>
+      </Column>
       <Column field="isClosed" header="Status" sortable>
-        <template #body="slotProps">
+        <template #body="{ data }">
           <div class="status-badges">
             <Tag
-              v-if="slotProps.data.isClosed"
-              value="Zamknięty"
-              severity="danger"
-              icon="pi pi-lock"
+              :value="data.isClosed ? 'Zamknięty' : 'Otwarty'"
+              :severity="data.isClosed ? 'danger' : 'success'"
+              :icon="data.isClosed ? 'pi pi-lock' : 'pi pi-lock-open'"
               class="clickable-tag"
-              @click="toggleTopicStatus(slotProps.data)"
-              v-tooltip.top="'Kliknij aby otworzyć'"
+              v-tooltip.top="'Kliknij, aby zmienić status'"
+              @click="handleToggleStatus(data)"
             />
+
             <Tag
-              v-else
-              value="Otwarty"
-              severity="success"
-              icon="pi pi-lock-open"
-              class="clickable-tag"
-              @click="toggleTopicStatus(slotProps.data)"
-              v-tooltip.top="'Kliknij aby zamknąć'"
-            />
-            <Tag
-              v-if="slotProps.data.isHidden"
+              v-if="data.isHidden"
               value="Ukryty"
               severity="warning"
               icon="pi pi-eye-slash"
-              class="ml-2"
             />
           </div>
         </template>
       </Column>
       <Column field="createdAt" header="Data utworzenia" sortable>
-        <template #body="slotProps">
-          {{ formatDate(slotProps.data.createdAt) }}
+        <template #body="{ data }">
+          {{ new Date(data.createdAt).toLocaleDateString() }}
         </template>
       </Column>
       <Column header="Akcje">
-        <template #body="slotProps">
+        <template #body="{ data }">
           <Button
             icon="pi pi-external-link"
             severity="info"
             text
             rounded
             v-tooltip.top="'Przejdź do tematu'"
-            @click="goToTopic(slotProps.data._id)"
+            @click="goToTopic(data._id)"
           />
         </template>
       </Column>
@@ -62,54 +56,34 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { onMounted } from "vue";
 import { useRouter } from "vue-router";
-import axios from "axios";
-import { useToast } from "primevue/usetoast";
+import { useToastHelper } from "../../composables/useToastHelper";
+import { useAdminStore } from "../../stores/admin";
+import { useTopicsStore } from "../../stores/topics";
 
 const router = useRouter();
-const toast = useToast();
-const topics = ref([]);
-const loading = ref(false);
+const { showSuccess, showError } = useToastHelper();
+const adminStore = useAdminStore();
+const topicsStore = useTopicsStore();
 
-const fetchData = async () => {
-  loading.value = true;
+onMounted(() => {
+  adminStore.fetchAdminTopics();
+});
+
+const handleToggleStatus = async (topic) => {
   try {
-    const res = await axios.get("/api/admin/topics");
-    topics.value = res.data.data.topics;
+    if (topic.isClosed) {
+      await topicsStore.openTopic(topic._id);
+      topic.isClosed = false;
+    } else {
+      await topicsStore.closeTopic(topic._id);
+      topic.isClosed = true;
+    }
+
+    showSuccess("Status tematu zmieniony");
   } catch (err) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail: "Nie udało się pobrać tematów",
-      life: 3000,
-    });
-  } finally {
-    loading.value = false;
-  }
-};
-
-const toggleTopicStatus = async (topic) => {
-  try {
-    const action = topic.isClosed ? "open" : "close";
-    await axios.patch(`/api/topics/${topic._id}/${action}`);
-
-    toast.add({
-      severity: "success",
-      summary: "Sukces",
-      detail: `Temat został ${topic.isClosed ? "otwarty" : "zamknięty"}`,
-      life: 3000,
-    });
-
-    fetchData();
-  } catch (err) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail:
-        err.response?.data?.message || "Nie udało się zmienić statusu tematu",
-      life: 3000,
-    });
+    showError(err);
   }
 };
 
@@ -119,27 +93,6 @@ const goToTopic = (topicId) => {
     query: { returnTo: "admin" },
   });
 };
-
-const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("pl-PL", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-};
-
-const refresh = () => {
-  fetchData();
-};
-
-defineExpose({
-  refresh,
-});
-
-onMounted(() => {
-  fetchData();
-});
 </script>
 
 <style scoped>
@@ -150,14 +103,5 @@ onMounted(() => {
 
 .clickable-tag:hover {
   opacity: 0.8;
-}
-.status-badges {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.ml-2 {
-  margin-left: 0.5rem;
 }
 </style>
