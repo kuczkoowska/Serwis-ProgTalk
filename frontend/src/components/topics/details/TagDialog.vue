@@ -2,129 +2,246 @@
   <Dialog
     :visible="visible"
     modal
-    header="Dodaj nowy tag"
-    :style="{ width: '400px' }"
+    header="Zarządzaj tagami"
+    :style="{ width: '500px' }"
     @update:visible="$emit('update:visible', $event)"
   >
     <div class="dialog-content">
       <div class="input-group">
-        <label for="tagName">Nazwa tagu</label>
-        <InputText
-          id="tagName"
-          v-model="newTag.name"
-          placeholder="np. pytanie, bug, feature"
-        />
+        <label class="font-bold mb-2">Wyszukaj tag lub stwórz nowy</label>
+        <Divider />
+        <AutoComplete
+          v-model="searchValue"
+          :suggestions="filteredTags"
+          @complete="searchTags"
+          placeholder="Zacznij pisać nazwę tagu..."
+          optionLabel="name"
+          class="tag-autocomplete"
+          dropdown
+          fluid
+        >
+          <template #option="slotProps">
+            <div class="tag-option">
+              <TagBadge :tag="slotProps.option" />
+              <span class="usage-count"
+                >({{ slotProps.option.usageCount || 0 }} użyć)</span
+              >
+            </div>
+          </template>
+        </AutoComplete>
+
+        <div class="action-buttons mt-3 flex gap-2">
+          <Button
+            v-if="isExistingTag"
+            label="Dodaj ten tag"
+            icon="pi pi-plus"
+            @click="handleAddExistingTag"
+            :loading="loading"
+          />
+
+          <Button
+            v-else-if="
+              searchValue &&
+              typeof searchValue === 'string' &&
+              searchValue.trim().length > 0
+            "
+            :label="`Stwórz i dodaj '${searchValue}'`"
+            icon="pi pi-plus-circle"
+            severity="success"
+            @click="handleCreateAndAddTag"
+            :loading="loading"
+          />
+        </div>
+
+        <small
+          v-if="
+            searchValue && typeof searchValue === 'string' && !isExistingTag
+          "
+          class="text-gray-500 mt-1"
+        >
+          Tag "{{ searchValue }}" nie istnieje - kliknij aby go utworzyć.
+        </small>
       </div>
 
-      <div class="input-group">
-        <label for="tagColor">Kolor</label>
-        <div class="color-picker">
-          <ColorPicker v-model="newTag.color" format="hex" />
-          <span
-            class="color-preview"
-            :style="{ background: '#' + newTag.color }"
-          >
-            {{ newTag.color }}
-          </span>
+      <Divider />
+
+      <div class="current-tags">
+        <label class="font-bold block mb-2">Obecne tagi tematu:</label>
+
+        <div v-if="currentTags.length > 0" class="tags-list">
+          <div v-for="tag in currentTags" :key="tag._id" class="tag-item">
+            <TagBadge :tag="tag" />
+            <Button
+              icon="pi pi-times"
+              rounded
+              text
+              size="small"
+              severity="danger"
+              @click="handleRemoveTag(tag._id)"
+              class="remove-btn"
+            />
+          </div>
         </div>
+        <p v-else class="text-gray-500 italic text-sm">
+          Brak przypisanych tagów.
+        </p>
       </div>
     </div>
 
     <template #footer>
-      <Button label="Anuluj" text @click="$emit('update:visible', false)" />
-      <Button label="Dodaj tag" @click="handleCreate" :loading="creating" />
+      <Button label="Gotowe" @click="$emit('update:visible', false)" />
     </template>
   </Dialog>
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useToast } from "primevue/usetoast";
-import { useTagsStore } from "../../../stores/tags.js";
+import { ref, computed, watch } from "vue";
+import { useToastHelper } from "../../../composables/useToastHelper";
+import { useTagsStore } from "../../../stores/tags";
+import TagBadge from "../../shared/TagBadge.vue";
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
   topicId: { type: String, required: true },
+  currentTags: { type: Array, default: () => [] },
 });
 
-const emit = defineEmits(["update:visible", "created"]);
+const emit = defineEmits(["update:visible", "updated"]);
 
 const tagsStore = useTagsStore();
-const toast = useToast();
+const { showSuccess, showError, showWarning } = useToastHelper();
 
-const creating = ref(false);
-const newTag = ref({
-  name: "",
-  color: "3498db",
+const loading = ref(false);
+const searchValue = ref(null);
+const filteredTags = ref([]);
+
+const isExistingTag = computed(() => {
+  return searchValue.value && typeof searchValue.value === "object";
 });
 
-const handleCreate = async () => {
-  if (!newTag.value.name.trim()) {
-    toast.add({
-      severity: "warn",
-      summary: "Uwaga",
-      detail: "Nazwa tagu nie może być pusta",
-      life: 3000,
-    });
+const availableTags = computed(() => {
+  const currentTagIds = props.currentTags.map((t) => t._id);
+  return tagsStore.allTags.filter((tag) => !currentTagIds.includes(tag._id));
+});
+
+const searchTags = (event) => {
+  const query = event.query.toLowerCase();
+
+  if (!query) {
+    filteredTags.value = availableTags.value;
+  } else {
+    filteredTags.value = availableTags.value.filter((tag) =>
+      tag.name.toLowerCase().includes(query),
+    );
+  }
+};
+
+watch(
+  () => props.visible,
+  async (newVal) => {
+    if (newVal) {
+      await tagsStore.fetchTags();
+      searchValue.value = null;
+      filteredTags.value = [];
+    }
+  },
+);
+
+const handleAddExistingTag = async () => {
+  if (!isExistingTag.value) return;
+
+  loading.value = true;
+  try {
+    await tagsStore.assignTagToTopic(props.topicId, searchValue.value._id);
+
+    showSuccess("Tag dodany");
+    searchValue.value = null;
+    emit("updated");
+  } catch (err) {
+    showError(err);
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleCreateAndAddTag = async () => {
+  if (!searchValue.value || typeof searchValue.value !== "string") return;
+
+  const tagName = searchValue.value.trim();
+  if (!tagName) {
+    showWarning("Nazwa tagu jest pusta");
     return;
   }
 
-  creating.value = true;
+  loading.value = true;
   try {
-    await tagsStore.createTag(
-      props.topicId,
-      newTag.value.name,
-      "#" + newTag.value.color,
-    );
-    toast.add({
-      severity: "success",
-      summary: "Sukces",
-      detail: "Tag został utworzony",
-      life: 3000,
-    });
-    emit("update:visible", false);
-    emit("created");
-    newTag.value = { name: "", color: "3498db" };
+    const res = await tagsStore.createTag(tagName);
+    const newTagId = res.data.tag._id;
+
+    await tagsStore.assignTagToTopic(props.topicId, newTagId);
+
+    showSuccess(`Tag "${tagName}" utworzony i dodany`);
+    searchValue.value = null;
+    emit("updated");
   } catch (err) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail: err || "Nie udało się utworzyć tagu",
-      life: 3000,
-    });
+    showError(err);
   } finally {
-    creating.value = false;
+    loading.value = false;
+  }
+};
+
+const handleRemoveTag = async (tagId) => {
+  try {
+    await tagsStore.removeTagFromTopic(props.topicId, tagId);
+    showSuccess("Tag usunięty");
+    emit("updated");
+  } catch (err) {
+    showError(err);
   }
 };
 </script>
+
 <style scoped>
 .dialog-content {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-}
+  gap: 1.5rem;
 
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
+  .tag-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.25rem 0;
+  }
 
-.color-picker {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
+  .usage-count {
+    font-size: 0.85rem;
+    color: #64748b;
+  }
 
-.color-preview {
-  padding: 0.5rem 1rem;
-  border-radius: 12px;
-  color: white;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  min-width: 100px;
-  text-align: center;
+  .tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tag-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 20px;
+    background: #f8fafc;
+    transition: background 0.2s;
+  }
+
+  .tag-item:hover {
+    background: #f1f5f9;
+  }
+
+  .remove-btn {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
 }
 </style>

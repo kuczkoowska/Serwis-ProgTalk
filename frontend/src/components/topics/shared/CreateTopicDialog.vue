@@ -96,7 +96,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed } from "vue";
+import { reactive, ref, computed, watch } from "vue";
 import { useTopicsStore } from "../../../stores/topics";
 import { useTagsStore } from "../../../stores/tags";
 import { useToastHelper } from "../../../composables/useToastHelper";
@@ -121,6 +121,15 @@ const isVisible = computed({
   get: () => props.visible,
   set: (value) => emit("update:visible", value),
 });
+
+watch(
+  () => props.visible,
+  async (newVal) => {
+    if (newVal) {
+      await tagsStore.fetchTags();
+    }
+  },
+);
 
 const handleCreate = async () => {
   submitted.value = true;

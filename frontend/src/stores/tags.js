@@ -5,16 +5,17 @@ import api from "../plugins/axios";
 const getError = (err) => err.response?.data?.message || "Błąd operacji";
 
 export const useTagsStore = defineStore("tags", () => {
-  const tags = ref([]);
+  const allTags = ref([]);
+  const topicTags = ref([]);
   const loading = ref(false);
   const error = ref(null);
 
-  const tagsCount = computed(() => tags.value.length);
+  const tagsCount = computed(() => allTags.value.length);
   const sortedTags = computed(() =>
-    [...tags.value].sort((a, b) => a.name.localeCompare(b.name)),
+    [...allTags.value].sort((a, b) => a.name.localeCompare(b.name)),
   );
   const popularTags = computed(() =>
-    [...tags.value].sort((a, b) => b.usageCount - a.usageCount).slice(0, 10),
+    [...allTags.value].sort((a, b) => b.usageCount - a.usageCount).slice(0, 10),
   );
 
   async function fetchTags() {
@@ -22,7 +23,7 @@ export const useTagsStore = defineStore("tags", () => {
     error.value = null;
     try {
       const res = await api.get("/tags");
-      tags.value = res.data.data.tags;
+      allTags.value = res.data.data.tags;
     } catch (err) {
       error.value = "Nie udało się pobrać tagów.";
       console.error(err);
@@ -36,7 +37,7 @@ export const useTagsStore = defineStore("tags", () => {
     error.value = null;
     try {
       const res = await api.get(`/tags/topic/${topicId}`);
-      tags.value = res.data.data.tags;
+      topicTags.value = res.data.data.tags;
     } catch (err) {
       error.value = "Nie udało się pobrać tagów tematu.";
       console.error(err);
@@ -58,7 +59,8 @@ export const useTagsStore = defineStore("tags", () => {
   async function deleteTag(tagId) {
     try {
       await api.delete(`/tags/${tagId}`);
-      tags.value = tags.value.filter((t) => t._id !== tagId);
+      allTags.value = allTags.value.filter((t) => t._id !== tagId);
+      topicTags.value = topicTags.value.filter((t) => t._id !== tagId);
     } catch (err) {
       throw getError(err);
     }
@@ -83,11 +85,13 @@ export const useTagsStore = defineStore("tags", () => {
   }
 
   function clearTags() {
-    tags.value = [];
+    allTags.value = [];
+    topicTags.value = [];
   }
 
   return {
-    tags,
+    allTags,
+    topicTags,
     loading,
     error,
 
