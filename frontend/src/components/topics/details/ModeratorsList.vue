@@ -71,7 +71,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import { useToast } from "primevue/usetoast";
+import { useToastHelper } from "../../../composables/useToastHelper";
 import { useTopicsStore } from "../../../stores/topics";
 import { useAuthStore } from "../../../stores/auth";
 import PromoteUserDialog from "./PromoteUserDialog.vue";
@@ -80,7 +80,7 @@ const props = defineProps({
   topic: { type: Object, required: true },
 });
 
-const toast = useToast();
+const { showError } = useToastHelper();
 const topicsStore = useTopicsStore();
 const authStore = useAuthStore();
 
@@ -119,19 +119,8 @@ const canRemoveModerator = (targetUserId, moderatorObject) => {
 const handleRemoveModerator = async (userId) => {
   try {
     await topicsStore.revokeModerator(props.topic._id, userId);
-    toast.add({
-      severity: "success",
-      summary: "Usunięto",
-      detail: "Użytkownik nie jest już moderatorem",
-      life: 3000,
-    });
   } catch (error) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail: error || "Operacja nieudana",
-      life: 3000,
-    });
+    showError(error || "Operacja nieudana");
   }
 };
 </script>

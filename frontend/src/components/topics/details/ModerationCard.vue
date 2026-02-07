@@ -15,19 +15,29 @@
 
       <TopicActionsButtons :topic="topic" />
     </div>
+
+    <ModeratorApplicationsCard
+      :topicId="topic._id"
+      @moderator-added="refreshTopic"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed } from "vue";
 import { useTopicsStore } from "../../../stores/topics";
+import ModeratorApplicationsCard from "./ModeratorApplicationsCard.vue";
 
-defineProps({
+const props = defineProps({
   topic: { type: Object, required: true },
 });
 
 const topicsStore = useTopicsStore();
 const canManage = computed(() => topicsStore.canManage);
+
+const refreshTopic = () => {
+  topicsStore.fetchTopicDetails(props.topic._id);
+};
 </script>
 
 <style scoped></style>

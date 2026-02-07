@@ -43,9 +43,9 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import { useToast } from "primevue/usetoast";
+import { useToastHelper } from "../../../composables/useToastHelper";
 import { useTopicsStore } from "../../../stores/topics";
-import axios from "axios";
+import api from "../../../plugins/axios.js";
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -54,7 +54,7 @@ const props = defineProps({
 
 const emit = defineEmits(["update:visible"]);
 
-const toast = useToast();
+const { showError } = useToastHelper();
 const topicsStore = useTopicsStore();
 
 const selectedUser = ref(null);
@@ -67,17 +67,12 @@ const isVisible = computed({
 
 const searchUsers = async (event) => {
   try {
-    const response = await axios.get("/api/users/search", {
+    const response = await api.get("/users/search", {
       params: { query: event.query },
     });
     searchResults.value = response.data.data.users;
   } catch (error) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail: "Nie udało się wyszukać użytkowników",
-      life: 3000,
-    });
+    showError("Nie udało się wyszukać użytkowników", "Błąd");
   }
 };
 
@@ -86,20 +81,9 @@ const handlePromote = async () => {
 
   try {
     await topicsStore.promoteModerator(props.topicId, selectedUser.value._id);
-    toast.add({
-      severity: "success",
-      summary: "Sukces",
-      detail: `${selectedUser.value.username} został promowany na moderatora`,
-      life: 3000,
-    });
     closeDialog();
   } catch (error) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail: error || "Nie udało się promować użytkownika",
-      life: 3000,
-    });
+    showError(error || "Nie udało się promować użytkownika", "Błąd");
   }
 };
 

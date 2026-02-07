@@ -1,3 +1,5 @@
+const Topic = require("../models/Topic");
+
 const removeModeratorFromSubtopics = async (parentTopicId, userId) => {
   const subtopics = await Topic.find({ parent: parentTopicId });
 
