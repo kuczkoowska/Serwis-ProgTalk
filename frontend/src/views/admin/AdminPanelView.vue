@@ -31,6 +31,7 @@
         <Tab value="1">Wszyscy użytkownicy</Tab>
         <Tab value="2">Wszystkie tematy</Tab>
         <Tab value="3">Logi Systemowe</Tab>
+        <Tab value="4">Rozszerzone statystyki</Tab>
       </TabList>
 
       <TabPanels>
@@ -48,6 +49,10 @@
 
         <TabPanel value="3">
           <SystemLogsTab />
+        </TabPanel>
+
+        <TabPanel value="4">
+          <ExtendedStatsTab />
         </TabPanel>
       </TabPanels>
     </Tabs>
