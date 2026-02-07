@@ -31,7 +31,7 @@
 
 <script setup>
 import { ref, computed, watch } from "vue";
-import { useToast } from "primevue/usetoast";
+import { useToastHelper } from "../../../composables/useToastHelper";
 import { useTopicsStore } from "../../../stores/topics";
 
 const props = defineProps({
@@ -42,7 +42,7 @@ const props = defineProps({
 
 const emit = defineEmits(["update:visible"]);
 
-const toast = useToast();
+const { showSuccess, showError } = useToastHelper();
 const topicsStore = useTopicsStore();
 
 const editedDescription = ref("");
@@ -67,20 +67,10 @@ const handleUpdateDescription = async () => {
       props.topicId,
       editedDescription.value,
     );
-    toast.add({
-      severity: "success",
-      summary: "Sukces",
-      detail: "Opis tematu został zaktualizowany",
-      life: 3000,
-    });
+    showSuccess("Opis tematu został zaktualizowany", "Sukces");
     closeDialog();
   } catch (error) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail: error || "Nie udało się zaktualizować opisu",
-      life: 3000,
-    });
+    showError(error || "Nie udało się zaktualizować opisu", "Błąd");
   }
 };
 
