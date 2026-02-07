@@ -11,6 +11,7 @@ router.post(
   "/:topicId/moderators/revoke",
   moderatorController.takeBackModerator,
 );
+router.get("/:topicId/blocked-users", moderatorController.getBlockedUsers);
 router.post("/:topicId/block", moderatorController.blockUserInTopic);
 router.post("/:topicId/unblock", moderatorController.unblockUserInTopic);
 

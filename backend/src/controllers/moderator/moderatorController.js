@@ -248,3 +248,82 @@ exports.unblockUserInTopic = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+exports.getBlockedUsers = async (req, res) => {
+  try {
+    const { topicId } = req.params;
+
+    const canManage = await authService.canManageTopic(
+      req.user._id,
+      topicId,
+      req.user.role,
+    );
+
+    if (!canManage) {
+      return res.status(403).json({ message: "Brak uprawnień." });
+    }
+
+    const topic = await Topic.findById(topicId)
+      .populate("ancestors")
+      .populate("blockedUsers.user", "username email")
+      .populate("blockedUsers.allowedSubtopics", "name");
+
+    if (!topic) {
+      return res.status(404).json({ message: "Temat nie znaleziony." });
+    }
+
+    const directBlocks = topic.blockedUsers.map((block) => ({
+      user: block.user,
+      reason: block.reason,
+      blockedAt: block.blockedAt,
+      allowedSubtopics: block.allowedSubtopics,
+      isInherited: false,
+      blockedInTopic: topic.name,
+      blockedInTopicId: topic._id,
+    }));
+
+    const inheritedBlocks = [];
+
+    if (topic.ancestors && topic.ancestors.length > 0) {
+      for (const ancestor of topic.ancestors) {
+        if (ancestor.blockedUsers) {
+          for (const block of ancestor.blockedUsers) {
+            const isAllowed = block.allowedSubtopics.some(
+              (allowedId) => allowedId.toString() === topic._id.toString(),
+            );
+
+            const alreadyBlocked = directBlocks.some(
+              (db) => db.user._id.toString() === block.user.toString(),
+            );
+
+            if (!isAllowed && !alreadyBlocked) {
+              const populatedUser = await User.findById(block.user).select(
+                "username email",
+              );
+              inheritedBlocks.push({
+                user: populatedUser,
+                reason: block.reason,
+                blockedAt: block.blockedAt,
+                isInherited: true,
+                blockedInTopic: ancestor.name,
+                blockedInTopicId: ancestor._id,
+                allowedSubtopics: block.allowedSubtopics,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        directBlocks,
+        inheritedBlocks,
+        allBlocks: [...directBlocks, ...inheritedBlocks],
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
