@@ -80,6 +80,38 @@ export const useApplicationsStore = defineStore("applications", () => {
     applications.value = [];
   }
 
+  function addOrUpdateApplication(application) {
+    const existingIndex = applications.value.findIndex(
+      (app) => app._id === application._id,
+    );
+
+    if (existingIndex !== -1) {
+      applications.value[existingIndex] = application;
+    } else {
+      applications.value.unshift(application);
+    }
+  }
+
+  async function refreshApplicationsForTopic(topicId) {
+    try {
+      await fetchApplications(topicId);
+    } catch (err) {
+      console.error("Błąd odświeżania aplikacji:", err);
+    }
+  }
+
+  async function checkUserApplicationStatus(topicId) {
+    try {
+      const { data } = await api.get(
+        `/moderator-applications/${topicId}/my-status`,
+      );
+      return data.data;
+    } catch (err) {
+      console.error("Błąd sprawdzania statusu aplikacji:", err);
+      return { hasPendingApplication: false, application: null };
+    }
+  }
+
   return {
     applications,
     loading,
@@ -95,5 +127,8 @@ export const useApplicationsStore = defineStore("applications", () => {
     fetchApplications,
     reviewApplication,
     clearApplications,
+    addOrUpdateApplication,
+    refreshApplicationsForTopic,
+    checkUserApplicationStatus,
   };
 });

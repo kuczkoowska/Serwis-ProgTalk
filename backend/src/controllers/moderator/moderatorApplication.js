@@ -1,6 +1,7 @@
 const Topic = require("../../models/Topic");
 const ModeratorApplication = require("../../models/ModeratorApplication");
 const authService = require("../../services/authorizationService");
+const notificationService = require("../../services/notificationService");
 const { moderatorToSubtopics } = require("../../utils/moderatorHelper");
 
 exports.createModeratorApplication = async (req, res) => {
@@ -36,6 +37,12 @@ exports.createModeratorApplication = async (req, res) => {
       });
     }
 
+    await ModeratorApplication.deleteMany({
+      topic: topicId,
+      applicant: req.user._id,
+      status: { $ne: "pending" },
+    });
+
     const application = await ModeratorApplication.create({
       topic: topicId,
       applicant: req.user._id,
@@ -43,6 +50,8 @@ exports.createModeratorApplication = async (req, res) => {
       experience: experience || "",
       availability: availability || "moderate",
     });
+
+    notificationService.notifyNewModeratorApplication(topic, req.user);
 
     res.status(201).json({
       status: "success",
@@ -78,6 +87,28 @@ exports.getModeratorApplications = async (req, res) => {
       status: "success",
       results: applications.length,
       data: { applications },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getUserApplicationStatus = async (req, res) => {
+  try {
+    const { topicId } = req.params;
+
+    const application = await ModeratorApplication.findOne({
+      topic: topicId,
+      applicant: req.user._id,
+      status: "pending",
+    });
+
+    res.status(200).json({
+      status: "success",
+      data: { 
+        hasPendingApplication: !!application,
+        application: application || null 
+      },
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -122,6 +153,10 @@ exports.reviewModeratorApplication = async (req, res) => {
 
     await application.save();
 
+    const populatedApp = await ModeratorApplication.findById(applicationId)
+      .populate("applicant", "username email")
+      .populate("topic", "name");
+
     if (status === "approved") {
       const topic = await Topic.findById(application.topic);
 
@@ -142,6 +177,28 @@ exports.reviewModeratorApplication = async (req, res) => {
           req.user._id,
         );
       }
+
+      notificationService.notifyApplicationApproved(
+        application.applicant,
+        populatedApp.topic._id,
+        populatedApp.topic.name,
+      );
+
+      notificationService.notifyModeratorAdded(
+        application.topic,
+        populatedApp.topic.name,
+        populatedApp.applicant,
+        req.user,
+      );
+    } else if (status === "rejected") {
+      notificationService.notifyApplicationRejected(
+        application.applicant,
+        populatedApp.topic._id,
+        populatedApp.topic.name,
+        reviewNotes,
+      );
+
+      await ModeratorApplication.findByIdAndDelete(applicationId);
     }
 
     res.status(200).json({

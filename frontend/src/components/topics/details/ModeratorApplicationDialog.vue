@@ -40,7 +40,7 @@
         <label for="availability" class="font-bold block mb-2"
           >Dostępność</label
         >
-        <Dropdown
+        <Select
           id="availability"
           v-model="form.availability"
           :options="availabilityOptions"
@@ -129,10 +129,14 @@ const submitApplication = async () => {
       experience: form.value.experience.trim(),
       availability: form.value.availability,
     });
+    showSuccess(
+      "Zgłoszenie wysłane! Oczekuje na rozpatrzenie przez moderatorów.",
+    );
     closeDialog();
     emit("submitted");
   } catch (error) {
-    showError(error);
+    const errorMsg = "Błąd wysyłania zgłoszenia";
+    showError(errorMsg);
   } finally {
     sending.value = false;
   }

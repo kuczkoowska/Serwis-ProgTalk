@@ -70,7 +70,7 @@ class NotificationService {
     this.emitToRoom(`topic_${topicId}`, "new_post", { post });
   }
 
-  notifyPostLiked(postId, topicId, likesCount, isLiked) {
+  notifyPostLiked(postId, topicId, likesCount, isLiked, userId) {
     this.emitToRoom(`topic_${topicId}`, "post_liked", {
       postId,
       likesCount,
@@ -182,6 +182,47 @@ class NotificationService {
       userId: unblockedUser._id,
       unblockedBy: unblockedBy.username,
       message: `${unblockedUser.username} został odblokowany w tym temacie przez ${unblockedBy.username}`,
+    });
+  }
+
+  notifyApplicationApproved(applicantId, topicId, topicName) {
+    this.emitToRoom(`user_${applicantId}`, "application_approved", {
+      topicId,
+      topicName,
+      message: `Twoje zgłoszenie na moderatora tematu "${topicName}" zostało zatwierdzone!`,
+    });
+  }
+
+  notifyApplicationRejected(applicantId, topicId, topicName, reason) {
+    this.emitToRoom(`user_${applicantId}`, "application_rejected", {
+      topicId,
+      topicName,
+      message: `Twoje zgłoszenie na moderatora tematu "${topicName}" zostało odrzucone.`,
+      reason: reason || "",
+    });
+  }
+
+  notifyNewModeratorApplication(topic, applicant) {
+    const recipientIds = new Set();
+
+    if (topic.creator) {
+      recipientIds.add(topic.creator.toString());
+    }
+
+    topic.moderators.forEach((mod) => {
+      recipientIds.add(mod.user.toString());
+    });
+
+    recipientIds.forEach((userId) => {
+      this.emitToRoom(`user_${userId}`, "new_moderator_application", {
+        topicId: topic._id,
+        topicName: topic.name,
+        applicant: {
+          id: applicant._id,
+          username: applicant.username,
+        },
+        message: `${applicant.username} zgłosił się na moderatora tematu "${topic.name}"`,
+      });
     });
   }
 }

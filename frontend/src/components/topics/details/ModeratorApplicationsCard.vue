@@ -125,6 +125,7 @@ import { ref, onMounted, computed } from "vue";
 import { useToastHelper } from "../../../composables/useToastHelper";
 import { useTopicsStore } from "../../../stores/topics";
 import { useApplicationsStore } from "../../../stores/applications";
+import { useUserSocketNotifications } from "../../../composables/socket/useUserSocketNotifications";
 
 const props = defineProps({
   topicId: { type: String, required: true },
@@ -191,6 +192,30 @@ const handleReview = async (appId, status) => {
     processingId.value = null;
   }
 };
+
+const handleNewModeratorApplication = (data) => {
+  if (data.topicId === props.topicId) {
+    applicationsStore.refreshApplicationsForTopic(props.topicId);
+  }
+};
+
+const handleApplicationApproved = (data) => {
+  if (data.topicId === props.topicId) {
+    applicationsStore.refreshApplicationsForTopic(props.topicId);
+  }
+};
+
+const handleApplicationRejected = (data) => {
+  if (data.topicId === props.topicId) {
+    applicationsStore.refreshApplicationsForTopic(props.topicId);
+  }
+};
+
+useUserSocketNotifications({
+  onNewModeratorApplication: handleNewModeratorApplication,
+  onApplicationApproved: handleApplicationApproved,
+  onApplicationRejected: handleApplicationRejected,
+});
 
 onMounted(() => {
   fetchApplications();
