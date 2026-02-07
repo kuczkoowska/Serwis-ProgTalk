@@ -204,6 +204,8 @@ exports.getTopicDetails = async (req, res) => {
         subtopics,
         canPost,
         canManage,
+        isBlocked,
+        isClosed: topic.isClosed,
       },
     });
   } catch (error) {

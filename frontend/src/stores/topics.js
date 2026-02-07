@@ -10,6 +10,8 @@ export const useTopicsStore = defineStore("topics", () => {
   const subtopics = ref([]);
   const canPost = ref(false);
   const canManage = ref(false);
+  const isBlocked = ref(false);
+  const isClosed = ref(false);
   const loading = ref(false);
   const error = ref(null);
 
@@ -118,6 +120,8 @@ export const useTopicsStore = defineStore("topics", () => {
       subtopics.value = data.subtopics || [];
       canPost.value = data.canPost;
       canManage.value = data.canManage;
+      isBlocked.value = data.isBlocked || false;
+      isClosed.value = data.isClosed || false;
     } catch (err) {
       error.value = "Nie udało się pobrać tematu.";
       if (err.response?.status === 403) {
@@ -316,6 +320,8 @@ export const useTopicsStore = defineStore("topics", () => {
     subtopics.value = [];
     canPost.value = false;
     canManage.value = false;
+    isBlocked.value = false;
+    isClosed.value = false;
   }
 
   return {
@@ -324,6 +330,8 @@ export const useTopicsStore = defineStore("topics", () => {
     subtopics,
     canPost,
     canManage,
+    isBlocked,
+    isClosed,
     loading,
     error,
     pagination,

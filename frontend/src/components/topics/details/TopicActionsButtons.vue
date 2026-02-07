@@ -41,7 +41,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import { useToast } from "primevue/usetoast";
+import { useToastHelper } from "../../../composables/useToastHelper";
 import { useTopicsStore } from "../../../stores/topics";
 import { useAuthStore } from "../../../stores/auth";
 import EditDescriptionDialog from "./EditDescriptionDialog.vue";
@@ -50,7 +50,7 @@ const props = defineProps({
   topic: { type: Object, required: true },
 });
 
-const toast = useToast();
+const { showSuccess, showError } = useToastHelper();
 const topicsStore = useTopicsStore();
 const authStore = useAuthStore();
 
@@ -61,42 +61,24 @@ const isAdmin = computed(() => authStore.user?.role === "admin");
 const handleToggleClosed = async () => {
   try {
     await topicsStore.toggleTopicClosed(props.topic._id);
-    toast.add({
-      severity: "success",
-      summary: "Sukces",
-      detail: props.topic.isClosed
-        ? "Temat został otwarty"
-        : "Temat został zamknięty",
-      life: 3000,
-    });
+    showSuccess(
+      props.topic.isClosed ? "Temat został otwarty" : "Temat został zamknięty",
+      "Sukces",
+    );
   } catch (error) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail: error || "Nie udało się zmienić statusu tematu",
-      life: 3000,
-    });
+    showError(error || "Nie udało się zmienić statusu tematu", "Błąd");
   }
 };
 
 const handleToggleHidden = async () => {
   try {
     await topicsStore.toggleTopicHidden(props.topic._id);
-    toast.add({
-      severity: "success",
-      summary: "Sukces",
-      detail: props.topic.isHidden
-        ? "Temat został odkryty"
-        : "Temat został ukryty",
-      life: 3000,
-    });
+    showSuccess(
+      props.topic.isHidden ? "Temat został odkryty" : "Temat został ukryty",
+      "Sukces",
+    );
   } catch (error) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail: error || "Nie udało się zmienić widoczności tematu",
-      life: 3000,
-    });
+    showError(error || "Nie udało się zmienić widoczności tematu", "Błąd");
   }
 };
 </script>

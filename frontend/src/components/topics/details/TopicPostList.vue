@@ -45,6 +45,7 @@ const props = defineProps({
   replyToId: String,
   canPost: Boolean,
   topicClosed: Boolean,
+  isBlocked: Boolean,
 });
 
 const emit = defineEmits([
@@ -56,6 +57,9 @@ const emit = defineEmits([
 ]);
 
 const canPostMessage = computed(() => {
+  if (props.isBlocked) {
+    return "Jesteś zablokowany w tym temacie. Nie możesz dodawać postów, odpowiadać ani lajkować.";
+  }
   if (props.topicClosed) {
     return "Ten temat został zamknięty. Nie można dodawać nowych wpisów.";
   }

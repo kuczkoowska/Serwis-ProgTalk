@@ -11,7 +11,10 @@
 
     <div class="post-header">
       <div class="meta-info">
-        <AvatarComponent :username="post.author?.username" />
+        <Avatar
+          :label="post.author?.username?.charAt(0).toUpperCase()"
+          size="normal"
+        />
         <div class="user-info-col">
           <span class="username">{{
             post.author?.username || "Użytkownik usunięty"

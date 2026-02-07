@@ -20,7 +20,10 @@
         <h1 class="topic-title">{{ topic?.name }}</h1>
 
         <div class="meta-info">
-          <AvatarComponent :username="topic?.creator?.username" size="normal" />
+          <Avatar
+            :label="topic?.creator?.username?.charAt(0).toUpperCase()"
+            size="normal"
+          />
           <div class="user-info-col">
             <span class="username">{{ topic?.creator?.username }}</span>
             <span class="date">

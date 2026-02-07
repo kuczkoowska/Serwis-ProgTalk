@@ -125,6 +125,16 @@ exports.toggleLike = async (req, res) => {
       return res.status(404).json({ message: "Wpis nie istnieje." });
     }
 
+    const isBlocked = await authService.isUserBlockedInTopic(
+      userId,
+      post.topic,
+    );
+    if (isBlocked) {
+      return res.status(403).json({
+        message: "Jesteś zablokowany w tym temacie i nie możesz lajkować.",
+      });
+    }
+
     const isLiked = post.likes.includes(userId);
 
     if (isLiked) {
