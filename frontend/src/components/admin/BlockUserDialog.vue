@@ -3,22 +3,28 @@
     :visible="visible"
     @update:visible="$emit('update:visible', $event)"
     modal
-    header="Zablokuj"
+    header="Zablokuj Użytkownika (Globalnie)"
     :style="{ width: '25rem' }"
   >
-    <div class="field">
-      <label>Powód (opcjonalnie)</label>
-      <Textarea v-model="reason" rows="4" fluid />
-    </div>
-    <template #footer>
-      <Button
-        label="Anuluj"
-        severity="secondary"
-        @click="$emit('update:visible', false)"
+    <div class="field mt-3">
+      <label for="reason" class="font-bold block mb-2"
+        >Powód blokady (opcjonalnie)</label
+      >
+      <Textarea
+        id="reason"
+        v-model="reason"
+        rows="4"
+        fluid
+        placeholder="Dlaczego blokujesz tego użytkownika?"
       />
+    </div>
+
+    <template #footer>
+      <Button label="Anuluj" severity="secondary" text @click="closeDialog" />
       <Button
         label="Zablokuj"
         severity="danger"
+        icon="pi pi-ban"
         @click="confirm"
         :loading="loading"
       />
@@ -27,34 +33,53 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
-import axios from "axios";
-import { useToast } from "primevue/usetoast";
+import { ref, watch } from "vue";
+import { useToastHelper } from "../../composables/useToastHelper";
+import { useAdminStore } from "../../stores/admin";
 
-const toast = useToast();
+const props = defineProps({
+  visible: { type: Boolean, default: false },
+  user: { type: Object, required: true },
+});
 
-const props = defineProps(["visible", "user"]);
 const emit = defineEmits(["update:visible", "blocked"]);
+
+const adminStore = useAdminStore();
+const { showSuccess, showError } = useToastHelper();
 
 const reason = ref("");
 const loading = ref(false);
 
+watch(
+  () => props.visible,
+  (newVal) => {
+    if (!newVal) {
+      setTimeout(() => {
+        reason.value = "";
+      }, 300);
+    }
+  },
+);
+
+const closeDialog = () => {
+  emit("update:visible", false);
+};
+
 const confirm = async () => {
+  if (!props.user?._id) {
+    showError("Błąd: Nie wybrano użytkownika.");
+    return;
+  }
+
   loading.value = true;
   try {
-    await axios.patch(`/api/admin/users/${props.user._id}/block`, {
-      reason: reason.value,
-    });
+    await adminStore.blockUser(props.user._id, reason.value);
+
+    showSuccess(`Użytkownik ${props.user.username} został zablokowany.`);
     emit("blocked");
-    emit("update:visible", false);
-    reason.value = "";
+    closeDialog();
   } catch (e) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail:
-        e.response?.data?.message || "Nie udało się zablokować użytkownika.",
-    });
+    showError(e);
   } finally {
     loading.value = false;
   }

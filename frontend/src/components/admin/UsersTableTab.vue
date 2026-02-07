@@ -1,11 +1,12 @@
 <template>
   <div>
     <DataTable
-      :value="users"
-      :loading="loading"
+      :value="adminStore.users"
+      :loading="adminStore.loading"
       paginator
       :rows="10"
       stripedRows
+      tableStyle="min-width: 50rem"
     >
       <Column field="username" header="Nazwa użytkownika" sortable></Column>
       <Column field="email" header="Email" sortable></Column>
@@ -27,22 +28,26 @@
       </Column>
       <Column header="Akcje">
         <template #body="{ data }">
-          <Button
-            v-if="!data.isBlocked"
-            icon="pi pi-ban"
-            severity="danger"
-            text
-            rounded
-            @click="openBlockDialog(data)"
-          />
-          <Button
-            v-else
-            icon="pi pi-unlock"
-            severity="success"
-            text
-            rounded
-            @click="handleUnblock(data._id)"
-          />
+          <div class="actions-cell">
+            <Button
+              v-if="!data.isBlocked"
+              icon="pi pi-ban"
+              severity="danger"
+              text
+              rounded
+              v-tooltip.top="'Zablokuj'"
+              @click="openBlockDialog(data)"
+            />
+            <Button
+              v-else
+              icon="pi pi-unlock"
+              severity="success"
+              text
+              rounded
+              v-tooltip.top="'Odblokuj'"
+              @click="handleUnblock(data._id)"
+            />
+          </div>
         </template>
       </Column>
     </DataTable>
@@ -57,59 +62,31 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import axios from "axios";
-import { useToast } from "primevue/usetoast";
+import { useToastHelper } from "../../composables/useToastHelper";
+import { useAdminStore } from "../../stores/admin";
+import BlockUserDialog from "./BlockUserDialog.vue";
 
-const toast = useToast();
-const users = ref([]);
-const loading = ref(false);
+const { showSuccess, showError } = useToastHelper();
+const adminStore = useAdminStore();
+
 const showDialog = ref(false);
 const selectedUser = ref(null);
-const emit = defineEmits(["status-changed"]);
 
-const fetchData = async () => {
-  loading.value = true;
-  try {
-    const res = await axios.get("/api/admin/users");
-    users.value = res.data.data.users;
-  } catch (err) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail: "Nie udało się pobrać użytkowników",
-      life: 3000,
-    });
-  } finally {
-    loading.value = false;
-  }
-};
+onMounted(() => {
+  adminStore.fetchAllUsers();
+});
 
 const openBlockDialog = (user) => {
   selectedUser.value = user;
   showDialog.value = true;
 };
 
-const onUserBlocked = () => {
-  fetchData();
-  emit("status-changed");
-};
-
 const handleUnblock = async (id) => {
   try {
-    await axios.patch(`/api/admin/users/${id}/unblock`);
-    await fetchData();
-    emit("status-changed");
+    await adminStore.unblockUser(id);
+    showSuccess("Użytkownik odblokowany");
   } catch (err) {
-    toast.add({
-      severity: "error",
-      summary: "Błąd",
-      detail:
-        err.response?.data?.message || "Nie udało się odblokować użytkownika",
-      life: 3000,
-    });
+    showError(err);
   }
 };
-
-onMounted(fetchData);
-defineExpose({ refresh: fetchData });
 </script>

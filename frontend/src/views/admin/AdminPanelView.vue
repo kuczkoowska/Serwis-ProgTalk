@@ -3,107 +3,76 @@
     <Toast />
 
     <div class="admin-header">
-      <h1><i class="pi pi-shield"></i> Panel Administratora</h1>
+      <h1>
+        <i class="pi pi-shield mr-2" style="font-size: 2rem"></i> Panel
+        Administratora
+      </h1>
+      <p>Zarządzaj użytkownikami, tematami i systemem.</p>
     </div>
 
-    <AdminStatsCard :stats="stats" />
+    <AdminStatsCard :stats="adminStore.stats" :loading="adminStore.loading" />
 
-    <TabView v-model:activeIndex="activeTab" class="admin-tabs">
-      <TabPanel header="Oczekujący użytkownicy">
-        <PendingUsersTab ref="pendingTabRef" @status-changed="fetchStats" />
-      </TabPanel>
-      <TabPanel header="Wszyscy użytkownicy">
-        <UsersTableTab ref="usersTabRef" @status-changed="fetchStats" />
-      </TabPanel>
-      <TabPanel header="Wszystkie tematy">
-        <TopicsTableTab ref="topicsTabRef" @status-changed="fetchStats" />
-      </TabPanel>
-    </TabView>
+    <Tabs
+      :value="String(activeTab)"
+      @update:value="activeTab = Number($event)"
+      class="admin-tabs"
+    >
+      <TabList>
+        <Tab value="0">
+          <div class="flex align-items-center gap-2">
+            <span>Oczekujący</span>
+            <Badge
+              v-if="adminStore.stats.users.pending > 0"
+              :value="adminStore.stats.users.pending"
+              severity="warning"
+            />
+          </div>
+        </Tab>
+        <Tab value="1">Wszyscy użytkownicy</Tab>
+        <Tab value="2">Wszystkie tematy</Tab>
+        <Tab value="3">Logi Systemowe</Tab>
+      </TabList>
+
+      <TabPanels>
+        <TabPanel value="0">
+          <PendingUsersTab />
+        </TabPanel>
+
+        <TabPanel value="1">
+          <UsersTableTab />
+        </TabPanel>
+
+        <TabPanel value="2">
+          <TopicsTableTab />
+        </TabPanel>
+
+        <TabPanel value="3">
+          <SystemLogsTab />
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
-import axios from "axios";
-import io from "socket.io-client";
-
-import { useToast } from "primevue/usetoast";
-
-const toast = useToast();
-const stats = ref(null);
+import { useAdminStore } from "../../stores/admin";
+import { useAdminSocketNotifications } from "../../composables/useSocketNotifications";
+const adminStore = useAdminStore();
 const activeTab = ref(0);
 
-const pendingTabRef = ref(null);
-const usersTabRef = ref(null);
+const refreshData = async () => {
+  await adminStore.fetchStats();
 
-const fetchStats = async () => {
-  try {
-    const res = await axios.get("/api/admin/stats");
-    stats.value = res.data.data;
-  } catch (err) {
-    console.error("Błąd pobierania statystyk:", err);
-  }
-};
-
-const connectSocket = () => {
-  const socket = io("https://localhost:3000", {
-    transports: ["websocket"],
-    reconnection: true,
-    reconnectionAttempts: 5,
-    reconnectionDelay: 1000,
-  });
-
-  socket.on("connect", () => {
-    console.log("Socket połączony:", socket.id);
-    socket.emit("join_admin_room");
-  });
-
-  socket.on("new_user_registration", (data) => {
-    toast.add({
-      severity: "info",
-      summary: "Nowa rejestracja",
-      detail: data.message,
-      life: 5000,
-    });
-    fetchStats();
-    pendingTabRef.value?.refresh();
-  });
-
-  socket.on("user_blocked", (data) => {
-    toast.add({
-      severity: "warn",
-      summary: "Użytkownik zablokowany",
-      detail: `${data.username} został zablokowany przez ${data.blockedBy}`,
-      life: 5000,
-    });
-    fetchStats();
-    usersTabRef.value?.refresh();
-  });
-
-  socket.on("user_unblocked", (data) => {
-    toast.add({
-      severity: "success",
-      summary: "Użytkownik odblokowany",
-      detail: `${data.username} został odblokowany przez ${data.unblockedBy}`,
-      life: 5000,
-    });
-    fetchStats();
-    usersTabRef.value?.refresh();
-  });
-
-  socket.on("disconnect", () => {
-    console.log("Socket rozłączony");
-  });
-
-  socket.on("connect_error", (error) => {
-    console.error("Błąd połączenia socket:", error);
-  });
+  if (activeTab.value === 0) await adminStore.fetchPendingUsers();
+  if (activeTab.value === 1) await adminStore.fetchAllUsers();
 };
 
 onMounted(() => {
-  fetchStats();
-  connectSocket();
+  adminStore.fetchStats();
 });
+
+useAdminSocketNotifications(refreshData);
 </script>
 
 <style scoped>
@@ -123,7 +92,6 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
 }
 
 .admin-header p {
