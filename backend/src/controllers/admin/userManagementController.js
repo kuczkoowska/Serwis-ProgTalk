@@ -114,6 +114,12 @@ exports.blockUser = async (req, res) => {
     const { userId } = req.params;
     const { reason } = req.body;
 
+    if (req.user._id.toString() === userId) {
+      return res
+        .status(400)
+        .json({ message: "Nie możesz zablokować samego siebie." });
+    }
+
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "Użytkownik nie znaleziony." });

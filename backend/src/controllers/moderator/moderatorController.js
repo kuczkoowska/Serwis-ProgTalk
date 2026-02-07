@@ -139,6 +139,12 @@ exports.blockUserInTopic = async (req, res) => {
     const { topicId } = req.params;
     const { userIdToBlock, reason, allowedSubtopicsIds } = req.body;
 
+    if (req.user._id.toString() === userIdToBlock) {
+      return res
+        .status(400)
+        .json({ message: "Nie możesz zablokować samego siebie." });
+    }
+
     const canManage = await authService.canManageTopic(
       req.user._id,
       topicId,
