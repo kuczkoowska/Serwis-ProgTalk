@@ -140,6 +140,7 @@ exports.toggleLike = async (req, res) => {
       post.topic,
       post.likes.length,
       !isLiked,
+      userId,
     );
 
     res.status(200).json({
