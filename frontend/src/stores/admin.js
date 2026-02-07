@@ -20,6 +20,9 @@ export const useAdminStore = defineStore("admin", () => {
   const topics = ref([]);
   const logs = ref([]);
 
+  const actionTypes = ref({});
+  const actionLabels = ref({});
+
   const logsPagination = ref({
     currentPage: 1,
     totalPages: 1,
@@ -165,6 +168,14 @@ export const useAdminStore = defineStore("admin", () => {
 
       logs.value = res.data.data.logs;
 
+      // Zapisz typy akcji i etykiety z odpowiedzi backendu
+      if (res.data.data.actionTypes) {
+        actionTypes.value = res.data.data.actionTypes;
+      }
+      if (res.data.data.actionLabels) {
+        actionLabels.value = res.data.data.actionLabels;
+      }
+
       if (res.data.data.pagination) {
         logsPagination.value = {
           currentPage: res.data.data.pagination.currentPage || page,
@@ -212,6 +223,8 @@ export const useAdminStore = defineStore("admin", () => {
     pendingUsers,
     topics,
     logs,
+    actionTypes,
+    actionLabels,
     logsPagination,
     loading,
     error,

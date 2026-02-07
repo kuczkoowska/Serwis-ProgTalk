@@ -1,5 +1,6 @@
 const User = require("../../models/User");
 const Topic = require("../../models/Topic");
+const Post = require("../../models/Post");
 
 exports.getAdminStats = async (req, res) => {
   try {

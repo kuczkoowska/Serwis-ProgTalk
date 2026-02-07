@@ -1,3 +1,5 @@
+const Topic = require("../models/Topic");
+
 class AuthorizationService {
   async canManageTopic(userId, topicId, userRole) {
     if (userRole === "admin") return true;

@@ -1,4 +1,5 @@
 const User = require("../../models/User");
+const Topic = require("../../models/Topic");
 const authService = require("../../services/authorizationService");
 const notificationService = require("../../services/notificationService");
 const SystemLogs = require("../../models/SystemLogs");
