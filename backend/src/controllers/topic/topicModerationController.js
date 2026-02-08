@@ -4,9 +4,44 @@ const { ACTION_TYPES } = require("../../utils/constants/actionTypes");
 const SystemLogs = require("../../models/SystemLogs");
 const notificationService = require("../../services/notificationService");
 
+const closeSubtopicsRecursively = async (parentId, performerId) => {
+  const subtopics = await Topic.find({ parent: parentId });
+  for (const subtopic of subtopics) {
+    if (!subtopic.isClosed) {
+      subtopic.isClosed = true;
+      await subtopic.save();
+
+      await SystemLogs.create({
+        performer: performerId,
+        actionType: ACTION_TYPES.TOPIC_CLOSE,
+        targetTopic: subtopic._id,
+      });
+    }
+    await closeSubtopicsRecursively(subtopic._id, performerId);
+  }
+};
+
+const openSubtopicsRecursively = async (parentId, performerId) => {
+  const subtopics = await Topic.find({ parent: parentId });
+  for (const subtopic of subtopics) {
+    if (subtopic.isClosed) {
+      subtopic.isClosed = false;
+      await subtopic.save();
+
+      await SystemLogs.create({
+        performer: performerId,
+        actionType: ACTION_TYPES.TOPIC_OPEN,
+        targetTopic: subtopic._id,
+      });
+    }
+    await openSubtopicsRecursively(subtopic._id, performerId);
+  }
+};
+
 exports.closeTopic = async (req, res) => {
   try {
     const { topicId } = req.params;
+    const { includeSubtopics } = req.body || {};
 
     const canManage = await authService.canManageTopic(
       req.user._id,
@@ -32,11 +67,17 @@ exports.closeTopic = async (req, res) => {
       targetTopic: topicId,
     });
 
+    if (includeSubtopics) {
+      await closeSubtopicsRecursively(topicId, req.user._id);
+    }
+
     notificationService.notifyTopicClosed(topicId, topic.name, req.user);
 
     res.status(200).json({
       status: "success",
-      message: "Temat został zamknięty.",
+      message: includeSubtopics
+        ? "Temat i jego podtematy zostały zamknięte."
+        : "Temat został zamknięty.",
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -46,6 +87,7 @@ exports.closeTopic = async (req, res) => {
 exports.openTopic = async (req, res) => {
   try {
     const { topicId } = req.params;
+    const { includeSubtopics } = req.body || {};
 
     const canManage = await authService.canManageTopic(
       req.user._id,
@@ -71,11 +113,17 @@ exports.openTopic = async (req, res) => {
       targetTopic: topicId,
     });
 
+    if (includeSubtopics) {
+      await openSubtopicsRecursively(topicId, req.user._id);
+    }
+
     notificationService.notifyTopicOpened(topicId, topic.name, req.user);
 
     res.status(200).json({
       status: "success",
-      message: "Temat został otwarty.",
+      message: includeSubtopics
+        ? "Temat i jego podtematy zostały otwarte."
+        : "Temat został otwarty.",
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

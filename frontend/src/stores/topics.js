@@ -171,12 +171,19 @@ export const useTopicsStore = defineStore("topics", () => {
     }
   }
 
-  async function closeTopic(topicId) {
+  async function closeTopic(topicId, includeSubtopics = false) {
     try {
-      await api.patch(`/topics/${topicId}/close`);
+      await api.patch(`/topics/${topicId}/close`, { includeSubtopics });
 
       if (currentTopic.value && currentTopic.value._id === topicId) {
         currentTopic.value.isClosed = true;
+      }
+
+      if (includeSubtopics) {
+        subtopics.value = subtopics.value.map((s) => ({
+          ...s,
+          isClosed: true,
+        }));
       }
 
       return true;
@@ -185,12 +192,19 @@ export const useTopicsStore = defineStore("topics", () => {
     }
   }
 
-  async function openTopic(topicId) {
+  async function openTopic(topicId, includeSubtopics = false) {
     try {
-      await api.patch(`/topics/${topicId}/open`);
+      await api.patch(`/topics/${topicId}/open`, { includeSubtopics });
 
       if (currentTopic.value && currentTopic.value._id === topicId) {
         currentTopic.value.isClosed = false;
+      }
+
+      if (includeSubtopics) {
+        subtopics.value = subtopics.value.map((s) => ({
+          ...s,
+          isClosed: false,
+        }));
       }
 
       return true;
@@ -282,12 +296,16 @@ export const useTopicsStore = defineStore("topics", () => {
     }
   }
 
-  async function toggleTopicClosed(topicId, isCurrentlyClosed) {
+  async function toggleTopicClosed(
+    topicId,
+    isCurrentlyClosed,
+    includeSubtopics = false,
+  ) {
     try {
       if (isCurrentlyClosed) {
-        await openTopic(topicId);
+        await openTopic(topicId, includeSubtopics);
       } else {
-        await closeTopic(topicId);
+        await closeTopic(topicId, includeSubtopics);
       }
 
       if (currentTopic.value && currentTopic.value._id === topicId) {

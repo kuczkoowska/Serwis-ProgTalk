@@ -22,7 +22,7 @@
               :icon="data.isClosed ? 'pi pi-lock' : 'pi pi-lock-open'"
               class="clickable-tag"
               v-tooltip.top="'Kliknij, aby zmienić status'"
-              @click="handleToggleStatus(data)"
+              @click="openCloseDialog(data)"
             />
 
             <Tag
@@ -52,36 +52,66 @@
         </template>
       </Column>
     </DataTable>
+
+    <CloseTopicDialog
+      v-model:visible="showCloseDialog"
+      :topic-name="selectedTopic?.name || ''"
+      :is-closed="selectedTopic?.isClosed || false"
+      @confirm="handleToggleStatus"
+    />
   </div>
 </template>
 
 <script setup>
-import { onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useToastHelper } from "../../composables/useToastHelper";
 import { useAdminStore } from "../../stores/admin";
 import { useTopicsStore } from "../../stores/topics";
+import CloseTopicDialog from "../topic/CloseTopicDialog.vue";
 
 const router = useRouter();
 const { showSuccess, showError } = useToastHelper();
 const adminStore = useAdminStore();
 const topicsStore = useTopicsStore();
 
+const showCloseDialog = ref(false);
+const selectedTopic = ref(null);
+
 onMounted(() => {
   adminStore.fetchAdminTopics();
 });
 
-const handleToggleStatus = async (topic) => {
+const openCloseDialog = (topic) => {
+  selectedTopic.value = topic;
+  showCloseDialog.value = true;
+};
+
+const handleToggleStatus = async (includeSubtopics) => {
+  if (!selectedTopic.value) return;
+
+  const topic = selectedTopic.value;
+  showCloseDialog.value = false;
+
   try {
     if (topic.isClosed) {
-      await topicsStore.openTopic(topic._id);
+      await topicsStore.openTopic(topic._id, includeSubtopics);
       topic.isClosed = false;
     } else {
-      await topicsStore.closeTopic(topic._id);
+      await topicsStore.closeTopic(topic._id, includeSubtopics);
       topic.isClosed = true;
     }
 
-    showSuccess("Status tematu zmieniony");
+    let message = "Status tematu zmieniony";
+    if (includeSubtopics) {
+      message += " (wraz z podtematami)";
+    }
+
+    showSuccess(message);
+
+    if (includeSubtopics) {
+      await adminStore.fetchAdminTopics();
+    }
   } catch (err) {
     showError(err);
   }

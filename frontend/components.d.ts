@@ -25,6 +25,7 @@ declare module 'vue' {
     ChatMessages: typeof import('./src/components/chat/ChatMessages.vue')['default']
     Checkbox: typeof import('primevue/checkbox')['default']
     Chip: typeof import('primevue/chip')['default']
+    CloseTopicDialog: typeof import('./src/components/topic/CloseTopicDialog.vue')['default']
     ColorPicker: typeof import('primevue/colorpicker')['default']
     Column: typeof import('primevue/column')['default']
     ConversationsList: typeof import('./src/components/chat/ConversationsList.vue')['default']

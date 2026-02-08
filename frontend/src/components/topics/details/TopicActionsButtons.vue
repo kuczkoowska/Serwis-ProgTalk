@@ -17,7 +17,7 @@
       size="small"
       outlined
       fluid
-      @click="handleToggleClosed"
+      @click="showCloseTopicDialog = true"
     />
 
     <Button
@@ -36,6 +36,13 @@
       :topic-id="topic._id"
       :description="topic.description"
     />
+
+    <CloseTopicDialog
+      v-model:visible="showCloseTopicDialog"
+      :topic-name="topic.name"
+      :is-closed="topic.isClosed"
+      @confirm="handleToggleClosed"
+    />
   </div>
 </template>
 
@@ -45,6 +52,7 @@ import { useToastHelper } from "../../../composables/useToastHelper";
 import { useTopicsStore } from "../../../stores/topics";
 import { useAuthStore } from "../../../stores/auth";
 import EditDescriptionDialog from "./EditDescriptionDialog.vue";
+import CloseTopicDialog from "../../topic/CloseTopicDialog.vue";
 
 const props = defineProps({
   topic: { type: Object, required: true },
@@ -55,17 +63,29 @@ const topicsStore = useTopicsStore();
 const authStore = useAuthStore();
 
 const showEditDescriptionDialog = ref(false);
+const showCloseTopicDialog = ref(false);
 
 const isAdmin = computed(() => authStore.user?.role === "admin");
 
-const handleToggleClosed = async () => {
+const handleToggleClosed = async (includeSubtopics) => {
   try {
+    showCloseTopicDialog.value = false;
     const wasClosedBefore = props.topic.isClosed;
-    await topicsStore.toggleTopicClosed(props.topic._id, wasClosedBefore);
-    showSuccess(
-      wasClosedBefore ? "Temat został otwarty" : "Temat został zamknięty",
-      "Sukces",
+    await topicsStore.toggleTopicClosed(
+      props.topic._id,
+      wasClosedBefore,
+      includeSubtopics,
     );
+
+    let message = wasClosedBefore
+      ? "Temat został otwarty"
+      : "Temat został zamknięty";
+
+    if (includeSubtopics) {
+      message += " (wraz z podtematami)";
+    }
+
+    showSuccess(message, "Sukces");
   } catch (error) {
     showError(error || "Nie udało się zmienić statusu tematu", "Błąd");
   }
