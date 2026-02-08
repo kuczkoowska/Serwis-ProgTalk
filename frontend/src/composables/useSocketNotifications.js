@@ -27,7 +27,14 @@ export function useSocketNotifications() {
               data.approvedBy ||
               data.rejectedBy ||
               data.blockedBy ||
-              data.unblockedBy;
+              data.unblockedBy ||
+              data.closedBy ||
+              data.openedBy ||
+              data.hiddenBy ||
+              data.unhiddenBy ||
+              data.promotedBy ||
+              data.removedBy ||
+              data.deletedBy;
             if (actionUsername === selfUsername) return;
           }
 
@@ -120,37 +127,65 @@ export function useTopicSocketNotifications(topicId, handlers = {}) {
       {
         event: "post_deleted",
         handler: handlers.onPostDeleted,
-        toastConfig: { severity: "info", summary: "Post usunięty" },
+        toastConfig: {
+          severity: "info",
+          summary: "Post usunięty",
+          skipIfSelf: true,
+        },
       },
       {
         event: "topic_closed",
         handler: handlers.onTopicClosed,
-        toastConfig: { severity: "warn", summary: "Temat zamknięty" },
+        toastConfig: {
+          severity: "warn",
+          summary: "Temat zamknięty",
+          skipIfSelf: true,
+        },
       },
       {
         event: "topic_opened",
         handler: handlers.onTopicOpened,
-        toastConfig: { severity: "success", summary: "Temat otwarty" },
+        toastConfig: {
+          severity: "success",
+          summary: "Temat otwarty",
+          skipIfSelf: true,
+        },
       },
       {
         event: "topic_hidden",
         handler: handlers.onTopicHidden,
-        toastConfig: { severity: "error", summary: "Temat ukryty" },
+        toastConfig: {
+          severity: "error",
+          summary: "Temat ukryty",
+          skipIfSelf: true,
+        },
       },
       {
         event: "topic_unhidden",
         handler: handlers.onTopicUnhidden,
-        toastConfig: { severity: "success", summary: "Temat odkryty" },
+        toastConfig: {
+          severity: "success",
+          summary: "Temat odkryty",
+          skipIfSelf: true,
+        },
       },
       {
         event: "moderator_added",
         handler: handlers.onModeratorAdded,
-        toastConfig: { severity: "info", summary: "Nowy moderator" },
+        toastConfig: {
+          severity: "info",
+          summary: "Nowy moderator",
+          skipIfSelf: true,
+        },
       },
       {
         event: "moderator_removed",
         handler: handlers.onModeratorRemoved,
-        toastConfig: { severity: "info", summary: "Moderator usunięty" },
+        toastConfig: {
+          severity: "info",
+          summary: "Moderator usunięty",
+          skipIfSelf: true,
+        },
       },
       {
         event: "user_blocked_in_topic",

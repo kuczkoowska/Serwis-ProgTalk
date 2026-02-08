@@ -170,6 +170,8 @@ export const useTopicsStore = defineStore("topics", () => {
 
       if (currentTopic.value && currentTopic.value._id === topicId) {
         currentTopic.value.isClosed = true;
+        isClosed.value = true;
+        canPost.value = false;
       }
 
       if (includeSubtopics) {
@@ -191,6 +193,7 @@ export const useTopicsStore = defineStore("topics", () => {
 
       if (currentTopic.value && currentTopic.value._id === topicId) {
         currentTopic.value.isClosed = false;
+        isClosed.value = false;
       }
 
       if (includeSubtopics) {
@@ -270,7 +273,6 @@ export const useTopicsStore = defineStore("topics", () => {
       await api.post(`/moderators/${topicId}/moderators`, {
         userIdToPromote: userId,
       });
-      await fetchTopicDetails(topicId);
       return true;
     } catch (err) {
       throw getError(err);
@@ -282,7 +284,6 @@ export const useTopicsStore = defineStore("topics", () => {
       await api.post(`/moderators/${topicId}/moderators/revoke`, {
         userIdToTake: userId,
       });
-      await fetchTopicDetails(topicId);
       return true;
     } catch (err) {
       throw getError(err);
@@ -301,10 +302,6 @@ export const useTopicsStore = defineStore("topics", () => {
         await closeTopic(topicId, includeSubtopics);
       }
 
-      if (currentTopic.value && currentTopic.value._id === topicId) {
-        currentTopic.value.isClosed = !isCurrentlyClosed;
-      }
-
       return true;
     } catch (err) {
       throw getError(err);
@@ -317,10 +314,6 @@ export const useTopicsStore = defineStore("topics", () => {
         await unhideTopic(topicId);
       } else {
         await hideTopic(topicId);
-      }
-
-      if (currentTopic.value && currentTopic.value._id === topicId) {
-        currentTopic.value.isHidden = !isCurrentlyHidden;
       }
 
       return true;

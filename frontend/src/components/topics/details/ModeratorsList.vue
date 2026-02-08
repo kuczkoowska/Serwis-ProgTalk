@@ -64,7 +64,6 @@
     <PromoteUserDialog
       v-model:visible="showPromoteDialog"
       :topic-id="topic._id"
-      @promoted="topicsStore.fetchTopicDetails(topic._id)"
     />
   </div>
 </template>

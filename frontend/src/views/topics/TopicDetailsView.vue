@@ -309,9 +309,7 @@ const onModeratorApplicationSubmitted = async () => {
   hasPendingApplication.value = status.hasPendingApplication;
 };
 
-const onSubtopicCreated = async () => {
-  await topicsStore.fetchTopicDetails(route.params.id);
-
+const onSubtopicCreated = () => {
   showSuccess("Nowy podtemat został dodany", "Podtemat utworzony");
 };
 </script>

@@ -1,13 +1,9 @@
 import { useTopicSocketNotifications } from "../useSocketNotifications";
-import { useToastHelper } from "../useToastHelper";
 import { useUserStore } from "../../stores/user";
-import { storeToRefs } from "pinia";
 import router from "../../router";
 
 export const useTopicSocketHandlers = (topicsStore, postsStore, authStore) => {
-  const { showSuccess } = useToastHelper();
   const userStore = useUserStore();
-  const { canPost, isBlocked } = storeToRefs(topicsStore);
 
   const handleNewPost = async (data) => {
     const postExists = postsStore.posts.find((p) => p._id === data.post._id);
@@ -56,23 +52,7 @@ export const useTopicSocketHandlers = (topicsStore, postsStore, authStore) => {
     const post = postsStore.posts.find((p) => p._id === data.postId);
     if (!post) return;
 
-    if (!post.likes) post.likes = [];
-
-    const isCurrentUser = data.userId === authStore.user?._id;
-
-    if (!isCurrentUser) return;
-
-    const userIdIndex = post.likes.findIndex(
-      (like) =>
-        like &&
-        (like._id === authStore.user._id || like === authStore.user._id),
-    );
-
-    if (data.isLiked && userIdIndex === -1) {
-      post.likes.push(authStore.user._id);
-    } else if (!data.isLiked && userIdIndex !== -1) {
-      post.likes.splice(userIdIndex, 1);
-    }
+    post.likesCount = data.likesCount;
   };
 
   const handleNewSubtopic = (data) => {
@@ -89,34 +69,48 @@ export const useTopicSocketHandlers = (topicsStore, postsStore, authStore) => {
     }
   };
 
-  const handleTopicClosed = async (data) => {
-    if (topicsStore.currentTopic) {
+  const handleTopicClosed = (data) => {
+    if (
+      topicsStore.currentTopic &&
+      data.topicId === topicsStore.currentTopic._id
+    ) {
       topicsStore.currentTopic.isClosed = true;
-      await topicsStore.fetchTopicDetails(topicsStore.currentTopic._id);
+      topicsStore.isClosed = true;
+      topicsStore.canPost = false;
     }
   };
 
-  const handleTopicOpened = async (data) => {
-    if (topicsStore.currentTopic) {
+  const handleTopicOpened = (data) => {
+    if (
+      topicsStore.currentTopic &&
+      data.topicId === topicsStore.currentTopic._id
+    ) {
       topicsStore.currentTopic.isClosed = false;
-      await topicsStore.fetchTopicDetails(topicsStore.currentTopic._id);
+      topicsStore.isClosed = false;
+      if (!topicsStore.isBlocked) {
+        topicsStore.canPost = true;
+      }
     }
   };
 
-  const handleTopicHidden = async (data) => {
-    if (topicsStore.currentTopic) {
+  const handleTopicHidden = (data) => {
+    if (
+      topicsStore.currentTopic &&
+      data.topicId === topicsStore.currentTopic._id
+    ) {
       topicsStore.currentTopic.isHidden = true;
       if (authStore.user?.role !== "admin") {
-        showSuccess("Temat został ukryty przez administratora");
         router.push("/");
       }
     }
   };
 
-  const handleTopicUnhidden = async (data) => {
-    if (topicsStore.currentTopic) {
+  const handleTopicUnhidden = (data) => {
+    if (
+      topicsStore.currentTopic &&
+      data.topicId === topicsStore.currentTopic._id
+    ) {
       topicsStore.currentTopic.isHidden = false;
-      await topicsStore.fetchTopicDetails(topicsStore.currentTopic._id);
     }
   };
 
@@ -138,25 +132,25 @@ export const useTopicSocketHandlers = (topicsStore, postsStore, authStore) => {
     }
   };
 
-  const handleUserBlockedInTopic = async (data) => {
-    if (data.userId === authStore.user?._id) {
-      canPost.value = false;
-      isBlocked.value = true;
-
-      if (topicsStore.currentTopic) {
-        await topicsStore.fetchTopicDetails(topicsStore.currentTopic._id);
-      }
+  const handleUserBlockedInTopic = (data) => {
+    if (
+      data.userId === authStore.user?._id &&
+      topicsStore.currentTopic &&
+      data.topicId === topicsStore.currentTopic._id
+    ) {
+      topicsStore.canPost = false;
+      topicsStore.isBlocked = true;
     }
   };
 
-  const handleUserUnblockedInTopic = async (data) => {
-    if (data.userId === authStore.user?._id) {
-      canPost.value = true;
-      isBlocked.value = false;
-
-      if (topicsStore.currentTopic) {
-        await topicsStore.fetchTopicDetails(topicsStore.currentTopic._id);
-      }
+  const handleUserUnblockedInTopic = (data) => {
+    if (
+      data.userId === authStore.user?._id &&
+      topicsStore.currentTopic &&
+      data.topicId === topicsStore.currentTopic._id
+    ) {
+      topicsStore.canPost = true;
+      topicsStore.isBlocked = false;
     }
   };
 
