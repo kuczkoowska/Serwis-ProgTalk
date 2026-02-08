@@ -70,12 +70,15 @@
       <Column header="Cel - Temat">
         <template #body="{ data }">
           <router-link
-            v-if="data.targetTopic"
+            v-if="data.targetTopic && data.targetTopic._id"
             :to="{ name: 'TopicDetails', params: { id: data.targetTopic._id } }"
             class="topic-link"
           >
             {{ data.targetTopic.name }}
           </router-link>
+          <span v-else-if="data.targetTopic" class="text-muted">
+            {{ data.targetTopic.name || "-" }}
+          </span>
           <span v-else class="text-muted">-</span>
         </template>
       </Column>

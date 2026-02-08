@@ -30,6 +30,7 @@ const routes = [
   },
   {
     path: "/topic/:id",
+    name: "TopicDetails",
     component: () => import("./views/topics/TopicDetailsView.vue"),
     meta: { requiresAuth: true, requiresApproval: true },
   },
