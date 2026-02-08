@@ -61,6 +61,14 @@ module.exports = (io) => {
       }
     });
 
+    socket.on("join_user_room", () => {
+      socket.join(`user_${userId}`);
+    });
+
+    socket.on("leave_user_room", () => {
+      socket.leave(`user_${userId}`);
+    });
+
     socket.on("join_topic", (topicId) => {
       socket.join(`topic_${topicId}`);
     });

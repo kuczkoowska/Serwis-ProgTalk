@@ -1,7 +1,4 @@
-import {
-  useTopicSocketNotifications,
-  useUserSocketNotifications,
-} from "../socket/index";
+import { useTopicSocketNotifications } from "../useSocketNotifications";
 import { useToastHelper } from "../useToastHelper";
 import api from "../../plugins/axios";
 import { storeToRefs } from "pinia";

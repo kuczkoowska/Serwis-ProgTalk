@@ -1,5 +1,9 @@
 <script setup>
 import NavBarComponent from "./components/NavBarComponent.vue";
+import { useGlobalUserSocketNotifications } from "./composables/useSocketNotifications";
+
+// Globalny listener — wyloguj gdy admin zablokuje konto
+useGlobalUserSocketNotifications();
 </script>
 
 <template>

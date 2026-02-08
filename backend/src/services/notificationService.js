@@ -90,8 +90,14 @@ class NotificationService {
     });
   }
 
-  notifyNewMessage(recipientId, senderId, messageData) {
+  notifyNewMessage(recipientId, messageData) {
     this.emitToRoom(`user_${recipientId}`, "new_message", {
+      message: messageData,
+    });
+  }
+
+  notifyMessageSent(senderId, messageData) {
+    this.emitToRoom(`user_${senderId}`, "message_sent", {
       message: messageData,
     });
   }

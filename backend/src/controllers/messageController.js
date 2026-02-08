@@ -59,7 +59,25 @@ exports.getConversations = async (req, res) => {
             "username email avatar",
           );
         } else {
-          otherUser = { username: "Wsparcie ProgTalk", role: "system" };
+          const lastMsg = conv.lastMessage;
+          const adminId =
+            lastMsg.sender.toString() === userId.toString()
+              ? lastMsg.receiver
+              : lastMsg.sender;
+
+          if (adminId) {
+            otherUser = await User.findById(adminId).select(
+              "username email avatar role",
+            );
+          }
+
+          if (!otherUser) {
+            otherUser = {
+              _id: "support",
+              username: "Wsparcie ProgTalk",
+              role: "system",
+            };
+          }
         }
 
         return {
@@ -88,8 +106,9 @@ exports.getMessages = async (req, res) => {
   try {
     const userId = req.user._id;
     const isAdmin = authService.isAdmin(req.user);
+    const { recipientId } = req.params;
 
-    const targetUserId = isAdmin ? req.params.recipientId : userId;
+    const targetUserId = isAdmin ? recipientId : userId;
 
     const conversationId = `support_${targetUserId}`;
 
@@ -150,7 +169,44 @@ exports.sendMessage = async (req, res) => {
       receiverId = recipientId;
     } else {
       conversationId = `support_${senderId}`;
-      receiverId = null;
+
+      let adminId =
+        recipientId && recipientId !== "support" ? recipientId : null;
+
+      if (!adminId) {
+        const existingMsg = await Message.findOne({ conversationId }).populate(
+          "sender receiver",
+        );
+        if (existingMsg) {
+          const otherUser =
+            existingMsg.sender._id.toString() === senderId.toString()
+              ? existingMsg.receiver
+              : existingMsg.sender;
+          if (otherUser && otherUser.role === "admin") {
+            adminId = otherUser._id;
+          }
+        }
+      }
+
+      if (!adminId) {
+        const firstAdmin = await User.findOne({
+          role: "admin",
+          status: "approved",
+        });
+        if (firstAdmin) {
+          adminId = firstAdmin._id;
+        }
+      }
+
+      if (adminId) {
+        const recipient = await User.findById(adminId);
+        if (!recipient || recipient.role !== "admin") {
+          return res.status(403).json({
+            message: "Możesz wysyłać wiadomości tylko do administratorów",
+          });
+        }
+        receiverId = adminId;
+      }
     }
 
     const message = await Message.create({
@@ -160,16 +216,22 @@ exports.sendMessage = async (req, res) => {
       content: content.trim(),
     });
 
-    const populatedMsg = await Message.findById(message._id).populate(
-      "sender",
-      "username role",
-    );
+    const populatedMsg = await Message.findById(message._id)
+      .populate("sender", "username avatar role")
+      .populate("receiver", "username avatar role");
 
-    if (isAdmin && receiverId) {
-      notificationService.notifyNewMessage(receiverId, senderId, populatedMsg);
-    } else if (!isAdmin) {
+    if (isAdmin) {
+      if (receiverId) {
+        notificationService.notifyNewMessage(receiverId, populatedMsg);
+      }
+    } else {
       notificationService.notifySupportMessage(populatedMsg);
+      if (receiverId) {
+        notificationService.notifyNewMessage(receiverId, populatedMsg);
+      }
     }
+
+    notificationService.notifyMessageSent(senderId, populatedMsg);
 
     res
       .status(201)
@@ -214,7 +276,7 @@ exports.getUnreadCount = async (req, res) => {
 
     if (isAdmin) {
       count = await Message.countDocuments({
-        receiver: null,
+        receiver: userId,
         read: false,
       });
     } else {
