@@ -123,9 +123,12 @@ export const useTopicsStore = defineStore("topics", () => {
       isBlocked.value = data.isBlocked || false;
       isClosed.value = data.isClosed || false;
     } catch (err) {
-      error.value = "Nie udało się pobrać tematu.";
-      if (err.response?.status === 403) {
-        error.value = "Brak dostępu do tego tematu (ukryty).";
+      if (err.response?.status === 404) {
+        error.value = "Temat nie został znaleziony.";
+      } else if (err.response?.status === 403) {
+        error.value = "Brak dostępu do tego tematu.";
+      } else {
+        error.value = "Nie udało się pobrać tematu.";
       }
       console.error(err);
     } finally {

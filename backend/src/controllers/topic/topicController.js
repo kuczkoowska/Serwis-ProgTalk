@@ -173,8 +173,8 @@ exports.getTopicDetails = async (req, res) => {
     }
 
     if (topic.isHidden && !authService.isAdmin(req.user)) {
-      return res.status(403).json({
-        message: "Temat jest ukryty i niedostępny dla użytkowników.",
+      return res.status(404).json({
+        message: "Temat nie znaleziony",
       });
     }
 

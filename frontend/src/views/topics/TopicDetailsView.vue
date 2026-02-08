@@ -12,6 +12,17 @@
       <ProgressSpinner />
     </div>
 
+    <div v-else-if="!currentTopic && !loading" class="not-found-container">
+      <Message severity="error" :closable="false">
+        <div class="flex flex-column align-items-center">
+          <i class="pi pi-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+          <h3>Temat nie znaleziony</h3>
+          <p>Ten temat nie istnieje lub został usunięty.</p>
+          <Button label="Powrót do strony głównej" icon="pi pi-home" @click="$router.push('/')" class="mt-3" />
+        </div>
+      </Message>
+    </div>
+
     <div
       v-else-if="currentTopic"
       class="main-container"
@@ -330,6 +341,19 @@ const onSubtopicCreated = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.not-found-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  padding: 2rem;
+}
+
+.not-found-container .p-message {
+  width: 100%;
+  max-width: 600px;
 }
 
 .sidebar-column {

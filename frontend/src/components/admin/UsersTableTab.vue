@@ -89,4 +89,8 @@ const handleUnblock = async (id) => {
     showError(err);
   }
 };
+
+const onUserBlocked = () => {
+  adminStore.fetchAllUsers();
+};
 </script>

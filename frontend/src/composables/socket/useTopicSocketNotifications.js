@@ -55,6 +55,14 @@ export const useTopicSocketNotifications = (topicId, handlers = {}) => {
         },
       },
       {
+        event: "topic_unhidden",
+        handler: handlers.onTopicUnhidden,
+        toastConfig: {
+          severity: "success",
+          summary: "Temat odkryty",
+        },
+      },
+      {
         event: "moderator_added",
         handler: handlers.onModeratorAdded,
         toastConfig: {

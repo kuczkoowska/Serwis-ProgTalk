@@ -60,9 +60,10 @@ const isAdmin = computed(() => authStore.user?.role === "admin");
 
 const handleToggleClosed = async () => {
   try {
-    await topicsStore.toggleTopicClosed(props.topic._id);
+    const wasClosedBefore = props.topic.isClosed;
+    await topicsStore.toggleTopicClosed(props.topic._id, wasClosedBefore);
     showSuccess(
-      props.topic.isClosed ? "Temat został otwarty" : "Temat został zamknięty",
+      wasClosedBefore ? "Temat został otwarty" : "Temat został zamknięty",
       "Sukces",
     );
   } catch (error) {
@@ -72,9 +73,10 @@ const handleToggleClosed = async () => {
 
 const handleToggleHidden = async () => {
   try {
-    await topicsStore.toggleTopicHidden(props.topic._id);
+    const wasHiddenBefore = props.topic.isHidden;
+    await topicsStore.toggleTopicHidden(props.topic._id, wasHiddenBefore);
     showSuccess(
-      props.topic.isHidden ? "Temat został odkryty" : "Temat został ukryty",
+      wasHiddenBefore ? "Temat został odkryty" : "Temat został ukryty",
       "Sukces",
     );
   } catch (error) {
