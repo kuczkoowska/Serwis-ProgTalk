@@ -94,7 +94,7 @@ exports.getTopicPosts = async (req, res) => {
     const posts = await Post.find(filter)
       .populate("author", "username _id")
       .populate("tags", "name color")
-      .populate("replyTo", "content author")
+      .populate("replyTo", "content author isDeleted")
       .sort("createdAt")
       .skip(skip)
       .limit(limit + 1);

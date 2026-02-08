@@ -30,10 +30,17 @@
     <div
       v-if="post.replyTo"
       class="reply-reference"
-      @click="scrollToPost(post.replyTo._id)"
+      :class="{ 'deleted-reference': post.replyTo.isDeleted }"
+      @click="!post.replyTo.isDeleted && scrollToPost(post.replyTo._id)"
     >
       <i class="pi pi-reply"></i>
-      <span>Odpowiedź na: {{ getPreviewText(post.replyTo.content) }}</span>
+      <span v-if="post.replyTo.isDeleted" style="color: #dc2626">
+        <i class="pi pi-trash"></i>
+        Odpowiedź na: [Usunięty post]
+      </span>
+      <span v-else
+        >Odpowiedź na: {{ getPreviewText(post.replyTo.content) }}</span
+      >
     </div>
 
     <FormattedContent :content="post.content" class="post-content" />
@@ -148,6 +155,12 @@ const formatDate = (dateString) => {
   margin-bottom: 0.75rem;
   font-size: 0.9rem;
   color: #64748b;
+}
+.reply-reference.deleted-reference {
+  background: #fee;
+  border-left-color: #dc2626;
+  cursor: not-allowed;
+  opacity: 0.7;
   display: flex;
   align-items: center;
   gap: 0.5rem;
