@@ -47,6 +47,12 @@ class NotificationService {
       reason,
       message: `Użytkownik ${user.username} został zablokowany przez ${blocker.username}`,
     });
+
+    this.emitToRoom(`user_${user._id}`, "user_blocked_globally", {
+      userId: user._id,
+      reason: reason || "Zablokowany przez administratora",
+      message: "Twoje konto zostało zablokowane. Zostaniesz wylogowany.",
+    });
   }
 
   notifyUserUnblocked(user, unblocker) {
@@ -55,6 +61,12 @@ class NotificationService {
       username: user.username,
       unblockedBy: unblocker.username,
       message: `Użytkownik ${user.username} został odblokowany przez ${unblocker.username}`,
+    });
+
+    this.emitToRoom(`user_${user._id}`, "user_unblocked_globally", {
+      userId: user._id,
+      message:
+        "Twoje konto zostało odblokowane. Możesz ponownie korzystać z systemu.",
     });
   }
 
@@ -163,25 +175,25 @@ class NotificationService {
   }
 
   notifyUserBlockedInTopic(topicId, topicName, blockedUser, blockedBy, reason) {
-    this.emitToRoom(`topic_${topicId}`, "user_blocked_in_topic", {
+    this.emitToRoom(`user_${blockedUser._id}`, "user_blocked_in_topic", {
       topicId,
       topicName,
       username: blockedUser.username,
       userId: blockedUser._id,
       blockedBy: blockedBy.username,
       reason,
-      message: `${blockedUser.username} został zablokowany w tym temacie przez ${blockedBy.username}`,
+      message: `Zostałeś zablokowany w temacie "${topicName}" przez ${blockedBy.username}${reason ? `: ${reason}` : ""}`,
     });
   }
 
   notifyUserUnblockedInTopic(topicId, topicName, unblockedUser, unblockedBy) {
-    this.emitToRoom(`topic_${topicId}`, "user_unblocked_in_topic", {
+    this.emitToRoom(`user_${unblockedUser._id}`, "user_unblocked_in_topic", {
       topicId,
       topicName,
       username: unblockedUser.username,
       userId: unblockedUser._id,
       unblockedBy: unblockedBy.username,
-      message: `${unblockedUser.username} został odblokowany w tym temacie przez ${unblockedBy.username}`,
+      message: `Zostałeś odblokowany w temacie "${topicName}" przez ${unblockedBy.username}`,
     });
   }
 

@@ -9,6 +9,18 @@
       </template>
 
       <template #content>
+        <Message
+          v-if="blockedReason"
+          severity="error"
+          class="mb-4"
+          :closable="false"
+        >
+          <div class="flex flex-column gap-2">
+            <div class="font-bold">Twoje konto zostało zablokowane</div>
+            <div>{{ blockedReason }}</div>
+          </div>
+        </Message>
+
         <form @submit.prevent="handleLogin">
           <div class="field">
             <label for="username">Email lub Login</label>
@@ -67,18 +79,32 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useAuthStore } from "../../stores/auth";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 
 const emailOrLogin = ref("");
 const password = ref("");
 const errorMessage = ref("");
+const blockedReason = ref("");
 const isLoading = ref(false);
 const submitted = ref(false);
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
+
+onMounted(() => {
+  // Wyczyść flagę blokady
+  window.__USER_BLOCKED__ = false;
+
+  // Sprawdź czy użytkownik został przekierowany po zablokowaniu
+  if (route.query.blocked === "true") {
+    blockedReason.value =
+      route.query.reason || "Zablokowany przez administratora";
+    // Nie czyścimy query params od razu, pozwalamy użytkownikowi zobaczyć komunikat
+  }
+});
 
 const handleLogin = async () => {
   submitted.value = true;

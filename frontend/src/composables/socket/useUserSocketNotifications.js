@@ -21,6 +21,38 @@ export const useUserSocketNotifications = (handlers = {}) => {
           event: "message_sent",
           handler: handlers.onMessageSent,
         },
+        {
+          event: "user_blocked_in_topic",
+          handler: handlers.onUserBlockedInTopic,
+          toastConfig: {
+            severity: "error",
+            summary: "Zablokowano w temacie",
+          },
+        },
+        {
+          event: "user_unblocked_in_topic",
+          handler: handlers.onUserUnblockedInTopic,
+          toastConfig: {
+            severity: "success",
+            summary: "Odblokowano w temacie",
+          },
+        },
+        {
+          event: "user_blocked_globally",
+          handler: handlers.onUserBlockedGlobally,
+          toastConfig: {
+            severity: "error",
+            summary: "Konto zablokowane",
+          },
+        },
+        {
+          event: "user_unblocked_globally",
+          handler: handlers.onUserUnblockedGlobally,
+          toastConfig: {
+            severity: "success",
+            summary: "Konto odblokowane",
+          },
+        },
       ]);
     }
   });

@@ -39,7 +39,7 @@ import { useAdminStore } from "../../stores/admin";
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
-  user: { type: Object, required: true },
+  user: { type: Object, default: null },
 });
 
 const emit = defineEmits(["update:visible", "blocked"]);
