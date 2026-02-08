@@ -108,6 +108,7 @@ useUserSocketNotifications({
 onMounted(async () => {
   try {
     await chatStore.fetchConversations();
+    await chatStore.fetchUnreadCount();
 
     if (
       authStore.user?.role !== "admin" &&

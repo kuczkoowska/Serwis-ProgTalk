@@ -7,6 +7,7 @@ export const useChatStore = defineStore("chat", () => {
   const messages = ref([]);
   const selectedUserId = ref(null);
   const availableUsers = ref([]);
+  const unreadCount = ref(0);
 
   const loading = ref(false);
   const loadingMessages = ref(false);
@@ -86,9 +87,23 @@ export const useChatStore = defineStore("chat", () => {
   async function markAsRead(recipientId) {
     try {
       await api.patch(`/chat/messages/${recipientId}/read`);
+      await fetchUnreadCount();
     } catch (error) {
       console.error("Błąd oznaczania jako przeczytane:", error);
     }
+  }
+
+  async function fetchUnreadCount() {
+    try {
+      const { data } = await api.get("/chat/unread");
+      unreadCount.value = data.data.unreadCount || 0;
+    } catch (error) {
+      console.error("Błąd pobierania liczby nieprzeczytanych:", error);
+    }
+  }
+
+  function incrementUnread() {
+    unreadCount.value++;
   }
 
   function selectConversation(userId) {
@@ -123,6 +138,7 @@ export const useChatStore = defineStore("chat", () => {
     messages.value = [];
     selectedUserId.value = null;
     availableUsers.value = [];
+    unreadCount.value = 0;
     loading.value = false;
     loadingMessages.value = false;
     loadingUsers.value = false;
@@ -134,6 +150,7 @@ export const useChatStore = defineStore("chat", () => {
     selectedUserId,
     selectedUser,
     availableUsers,
+    unreadCount,
     loading,
     loadingMessages,
     loadingUsers,
@@ -142,6 +159,8 @@ export const useChatStore = defineStore("chat", () => {
     fetchAvailableUsers,
     sendMessage,
     markAsRead,
+    fetchUnreadCount,
+    incrementUnread,
     selectConversation,
     addMessage,
     addOrUpdateConversation,

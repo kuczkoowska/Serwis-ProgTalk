@@ -1,7 +1,9 @@
 import { onMounted, onUnmounted } from "vue";
 import { useToast } from "primevue/usetoast";
+import { useRoute } from "vue-router";
 import socketService from "../plugins/socket";
 import { useAuthStore } from "../stores/auth";
+import { useChatStore } from "../stores/chat";
 
 export function useSocketNotifications() {
   const toast = useToast();
@@ -286,20 +288,46 @@ export function useUserSocketNotifications(handlers = {}) {
 
 export function useGlobalUserSocketNotifications() {
   const authStore = useAuthStore();
+  const chatStore = useChatStore();
+  const route = useRoute();
   let cleanup = null;
 
   const setup = () => {
     if (!authStore.user?._id) return;
+
+    chatStore.fetchUnreadCount();
 
     const onBlocked = (data) => {
       alert(data.message || "Twoje konto zostało zablokowane.");
       authStore.logout();
     };
 
+    const onChatMessage = (data) => {
+      if (!data?.message) return;
+
+      const senderId = (
+        data.message.sender?._id || data.message.sender
+      )?.toString();
+      if (senderId === authStore.user?._id?.toString()) return;
+
+      if (route.path !== "/chat") {
+        chatStore.incrementUnread();
+      }
+    };
+
     socketService.on("user_blocked_globally", onBlocked);
+    socketService.on("new_message", onChatMessage);
+
+    if (authStore.user?.role === "admin") {
+      socketService.on("new_support_message", onChatMessage);
+    }
 
     cleanup = () => {
       socketService.off("user_blocked_globally", onBlocked);
+      socketService.off("new_message", onChatMessage);
+      if (authStore.user?.role === "admin") {
+        socketService.off("new_support_message", onChatMessage);
+      }
     };
   };
 

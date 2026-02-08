@@ -55,10 +55,6 @@ export const useChatSocketHandlers = () => {
     const msg = data.message;
     if (!msg || !authStore.user?._id) return;
 
-    if (isOwnMessage(msg) && isForOpenConversation(msg)) {
-      chatStore.addMessage(msg);
-    }
-
     await chatStore.fetchConversations();
   };
 

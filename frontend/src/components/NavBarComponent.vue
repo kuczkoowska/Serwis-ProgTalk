@@ -11,18 +11,34 @@
       <template #end>
         <div>
           <div v-if="authStore.user">
-            <div
-              class="avatar-container"
-              @click="toggleMenu"
-              aria-haspopup="true"
-              aria-controls="overlay_menu"
-            >
-              <Avatar
-                :label="authStore.user?.username?.charAt(0).toUpperCase()"
-                shape="circle"
-                size="normal"
-              />
-              <i class="pi pi-angle-down"></i>
+            <div class="nav-actions">
+              <router-link
+                to="/chat"
+                class="nav-icon-link"
+                v-tooltip.bottom="'Wiadomości'"
+              >
+                <i class="pi pi-comments nav-icon"></i>
+                <Badge
+                  v-if="chatStore.unreadCount > 0"
+                  :value="chatStore.unreadCount"
+                  severity="danger"
+                  class="nav-badge"
+                />
+              </router-link>
+
+              <div
+                class="avatar-container"
+                @click="toggleMenu"
+                aria-haspopup="true"
+                aria-controls="overlay_menu"
+              >
+                <Avatar
+                  :label="authStore.user?.username?.charAt(0).toUpperCase()"
+                  shape="circle"
+                  size="normal"
+                />
+                <i class="pi pi-angle-down"></i>
+              </div>
             </div>
 
             <Menu
@@ -48,9 +64,11 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
+import { useChatStore } from "../stores/chat";
 
 const router = useRouter();
 const authStore = useAuthStore();
+const chatStore = useChatStore();
 const menu = ref(null);
 
 const isAdmin = computed(() => authStore.user?.role === "admin");
@@ -62,11 +80,6 @@ const userMenuItems = computed(() => {
       label: "Mój Profil",
       icon: "pi pi-user",
       command: () => router.push("/profile"),
-    },
-    {
-      label: "Wiadomości",
-      icon: "pi pi-comments",
-      command: () => router.push("/chat"),
     },
   ];
 
@@ -138,5 +151,43 @@ const handleLogout = async () => {
   align-items: center;
   padding: 4px;
   border-radius: 8px;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.nav-icon-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: background 0.2s;
+  text-decoration: none;
+  color: #475569;
+}
+
+.nav-icon-link:hover {
+  background: #f1f5f9;
+  color: var(--p-primary-color);
+}
+
+.nav-icon {
+  font-size: 1.25rem;
+}
+
+.nav-badge {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  font-size: 0.6rem;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
 }
 </style>
