@@ -1,7 +1,6 @@
 <template>
   <Dialog
-    :visible="visible"
-    @update:visible="$emit('update:modelValue', $event)"
+    v-model:visible="visible"
     header="Zgłoś chęć zostania moderatorem"
     :style="{ width: '500px' }"
     modal
@@ -53,13 +52,7 @@
     </div>
 
     <template #footer>
-      <Button
-        label="Anuluj"
-        icon="pi pi-times"
-        text
-        severity="secondary"
-        @click="closeDialog"
-      />
+      <Button label="Anuluj" icon="pi pi-times" text @click="visible = false" />
       <Button
         label="Wyślij zgłoszenie"
         icon="pi pi-send"
@@ -112,10 +105,6 @@ const resetForm = () => {
   };
 };
 
-const closeDialog = () => {
-  emit("update:modelValue", false);
-};
-
 const submitApplication = async () => {
   if (!form.value.motivation.trim()) {
     showError("Motywacja jest wymagana");
@@ -132,7 +121,7 @@ const submitApplication = async () => {
     showSuccess(
       "Zgłoszenie wysłane! Oczekuje na rozpatrzenie przez moderatorów.",
     );
-    closeDialog();
+    visible.value = false;
     emit("submitted");
   } catch (error) {
     const errorMsg = "Błąd wysyłania zgłoszenia";

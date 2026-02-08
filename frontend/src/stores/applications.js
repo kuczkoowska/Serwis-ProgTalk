@@ -55,6 +55,7 @@ export const useApplicationsStore = defineStore("applications", () => {
   }
 
   async function reviewApplication(applicationId, status, reviewNotes = "") {
+    loading.value = true;
     error.value = null;
     try {
       const { data } = await api.patch(
@@ -65,19 +66,35 @@ export const useApplicationsStore = defineStore("applications", () => {
       const appIndex = applications.value.findIndex(
         (a) => a._id === applicationId,
       );
-
       if (appIndex !== -1) {
         applications.value[appIndex].status = status;
+        applications.value[appIndex].reviewedBy =
+          data.data.application.reviewedBy;
+        applications.value[appIndex].reviewNotes = reviewNotes;
       }
 
       return data;
     } catch (err) {
       throw getError(err);
+    } finally {
+      loading.value = false;
     }
   }
 
   function clearApplications() {
     applications.value = [];
+  }
+
+  async function checkUserApplicationStatus(topicId) {
+    try {
+      const { data } = await api.get(
+        `/moderator-applications/${topicId}/my-status`,
+      );
+      return data.data;
+    } catch (err) {
+      console.error("Błąd sprawdzania statusu aplikacji:", err);
+      return { hasPendingApplication: false, application: null };
+    }
   }
 
   function addOrUpdateApplication(application) {
@@ -100,18 +117,6 @@ export const useApplicationsStore = defineStore("applications", () => {
     }
   }
 
-  async function checkUserApplicationStatus(topicId) {
-    try {
-      const { data } = await api.get(
-        `/moderator-applications/${topicId}/my-status`,
-      );
-      return data.data;
-    } catch (err) {
-      console.error("Błąd sprawdzania statusu aplikacji:", err);
-      return { hasPendingApplication: false, application: null };
-    }
-  }
-
   return {
     applications,
     loading,
@@ -127,8 +132,8 @@ export const useApplicationsStore = defineStore("applications", () => {
     fetchApplications,
     reviewApplication,
     clearApplications,
+    checkUserApplicationStatus,
     addOrUpdateApplication,
     refreshApplicationsForTopic,
-    checkUserApplicationStatus,
   };
 });

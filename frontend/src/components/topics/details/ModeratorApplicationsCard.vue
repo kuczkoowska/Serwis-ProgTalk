@@ -30,7 +30,7 @@
         <ProgressSpinner strokeWidth="4" style="width: 50px; height: 50px" />
       </div>
 
-      <div v-else-if="pendingApplications.length === 0" class="empty-state">
+      <div v-else-if="applications.length === 0" class="empty-state">
         <div class="empty-icon">
           <i class="pi pi-check text-3xl"></i>
         </div>
@@ -40,7 +40,7 @@
 
       <div v-else class="applications-list">
         <div
-          v-for="app in pendingApplications"
+          v-for="app in applications"
           :key="app._id"
           class="application-card"
         >
@@ -125,7 +125,6 @@ import { ref, onMounted, computed } from "vue";
 import { useToastHelper } from "../../../composables/useToastHelper";
 import { useTopicsStore } from "../../../stores/topics";
 import { useApplicationsStore } from "../../../stores/applications";
-import { useUserSocketNotifications } from "../../../composables/socket/useUserSocketNotifications";
 
 const props = defineProps({
   topicId: { type: String, required: true },
@@ -140,9 +139,7 @@ const showDialog = ref(false);
 const processingId = ref(null);
 
 const canManage = computed(() => topicsStore.canManage);
-const pendingApplications = computed(
-  () => applicationsStore.pendingApplications,
-);
+const applications = computed(() => applicationsStore.pendingApplications);
 const pendingCount = computed(() => applicationsStore.pendingCount);
 const loading = computed(() => applicationsStore.loading);
 
@@ -183,6 +180,7 @@ const handleReview = async (appId, status) => {
     if (status === "approved") {
       showSuccess("Nowy moderator dodany!");
       emit("moderator-added");
+      await topicsStore.fetchTopicDetails(props.topicId);
     } else {
       showInfo("Zgłoszenie odrzucone.");
     }
@@ -192,30 +190,6 @@ const handleReview = async (appId, status) => {
     processingId.value = null;
   }
 };
-
-const handleNewModeratorApplication = (data) => {
-  if (data.topicId === props.topicId) {
-    applicationsStore.refreshApplicationsForTopic(props.topicId);
-  }
-};
-
-const handleApplicationApproved = (data) => {
-  if (data.topicId === props.topicId) {
-    applicationsStore.refreshApplicationsForTopic(props.topicId);
-  }
-};
-
-const handleApplicationRejected = (data) => {
-  if (data.topicId === props.topicId) {
-    applicationsStore.refreshApplicationsForTopic(props.topicId);
-  }
-};
-
-useUserSocketNotifications({
-  onNewModeratorApplication: handleNewModeratorApplication,
-  onApplicationApproved: handleApplicationApproved,
-  onApplicationRejected: handleApplicationRejected,
-});
 
 onMounted(() => {
   fetchApplications();

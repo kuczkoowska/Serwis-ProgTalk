@@ -1,6 +1,6 @@
 <template>
   <div class="extended-stats">
-    <div v-if="adminStore.loading" class="loading-state">
+    <div v-if="loading" class="loading-state">
       <ProgressSpinner strokeWidth="4" />
     </div>
 
@@ -74,11 +74,17 @@
                 </div>
               </template>
             </Column>
-            <Column
-              field="likesCount"
-              header="Lajki"
-              style="width: 80px; text-align: center"
-            >
+            <Column header="Temat" style="width: 150px">
+              <template #body="{ data }">
+                <router-link
+                  :to="`/topic/${data.topic._id}`"
+                  class="topic-link"
+                >
+                  {{ data.topic.name }}
+                </router-link>
+              </template>
+            </Column>
+            <Column field="likesCount" header="Polubienia" style="width: 100px">
               <template #body="{ data }">
                 <Tag severity="warning" :value="data.likesCount">
                   <i class="pi pi-heart-fill text-xs mr-1"></i>
@@ -94,15 +100,13 @@
 </template>
 
 <script setup>
-import { onMounted, computed } from "vue";
-import { useAdminStore } from "../../stores/admin";
+import { ref, onMounted } from "vue";
+import api from "../../plugins/axios";
 
-const adminStore = useAdminStore();
-
-const stats = computed(() => adminStore.extendedStats);
-
-onMounted(() => {
-  adminStore.fetchExtendedStats();
+const loading = ref(true);
+const stats = ref({
+  popularTopicsByPosts: [],
+  popularTopicsByLikes: [],
 });
 
 const getBadgeSeverity = (index) => {
@@ -116,6 +120,22 @@ const truncateContent = (content) => {
   if (!content) return "";
   return content.length > 60 ? content.substring(0, 60) + "..." : content;
 };
+
+const fetchStats = async () => {
+  loading.value = true;
+  try {
+    const { data } = await api.get("/admin/extended-stats");
+    stats.value = data.data;
+  } catch (error) {
+    console.error("Błąd ładowania statystyk:", error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchStats();
+});
 </script>
 
 <style scoped>
@@ -166,20 +186,55 @@ const truncateContent = (content) => {
 
 .parent-topic {
   font-size: 0.8rem;
-  color: #94a3b8;
-  display: block;
+  color: #6b7280;
 }
 
 .post-cell {
   display: flex;
   flex-direction: column;
+  gap: 0.25rem;
 }
+
 .post-content {
-  font-size: 0.95rem;
-  color: #334155;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
-.text-muted {
-  color: #94a3b8;
-  font-size: 0.85rem;
+
+.post-author {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.user-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.user-cell .username {
+  font-weight: 500;
+}
+
+.user-cell .email {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.hierarchy-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.topic-badges {
+  display: flex;
+  gap: 0.25rem;
+}
+
+@media (max-width: 1024px) {
+  .stats-content {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

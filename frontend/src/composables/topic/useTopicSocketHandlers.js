@@ -4,9 +4,11 @@ import {
 } from "../socket/index";
 import { useToastHelper } from "../useToastHelper";
 import api from "../../plugins/axios";
+import { storeToRefs } from "pinia";
 
 export const useTopicSocketHandlers = (topicsStore, postsStore, authStore) => {
   const { showSuccess } = useToastHelper();
+  const { canPost, isBlocked } = storeToRefs(topicsStore);
 
   const handleNewPost = async (data) => {
     const postExists = postsStore.posts.find((p) => p._id === data.post._id);
@@ -146,7 +148,9 @@ export const useTopicSocketHandlers = (topicsStore, postsStore, authStore) => {
 
   const handleUserBlockedInTopic = async (data) => {
     if (data.userId === authStore.user?._id) {
-      showSuccess("Zostałeś zablokowany w tym temacie");
+      canPost.value = false;
+      isBlocked.value = true;
+
       if (topicsStore.currentTopic) {
         await topicsStore.fetchTopicDetails(topicsStore.currentTopic._id);
       }
@@ -155,7 +159,9 @@ export const useTopicSocketHandlers = (topicsStore, postsStore, authStore) => {
 
   const handleUserUnblockedInTopic = async (data) => {
     if (data.userId === authStore.user?._id) {
-      showSuccess("Zostałeś odblokowany w tym temacie");
+      canPost.value = true;
+      isBlocked.value = false;
+
       if (topicsStore.currentTopic) {
         await topicsStore.fetchTopicDetails(topicsStore.currentTopic._id);
       }
