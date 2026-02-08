@@ -6,6 +6,7 @@
 import { computed } from "vue";
 import hljs from "highlight.js";
 import "highlight.js/styles/github-dark.css";
+import DOMPurify from "dompurify";
 
 const props = defineProps({
   content: { type: String, required: true },
@@ -34,7 +35,10 @@ const formattedHtml = computed(() => {
 
   text = text.replace(/\n/g, "<br>");
 
-  return text;
+  return DOMPurify.sanitize(text, {
+    ALLOWED_TAGS: ["pre", "code", "br", "span"],
+    ALLOWED_ATTR: ["class"],
+  });
 });
 </script>
 

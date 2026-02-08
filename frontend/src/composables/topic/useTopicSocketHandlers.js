@@ -1,10 +1,12 @@
 import { useTopicSocketNotifications } from "../useSocketNotifications";
 import { useToastHelper } from "../useToastHelper";
-import api from "../../plugins/axios";
+import { useUserStore } from "../../stores/user";
 import { storeToRefs } from "pinia";
+import router from "../../router";
 
 export const useTopicSocketHandlers = (topicsStore, postsStore, authStore) => {
   const { showSuccess } = useToastHelper();
+  const userStore = useUserStore();
   const { canPost, isBlocked } = storeToRefs(topicsStore);
 
   const handleNewPost = async (data) => {
@@ -15,23 +17,17 @@ export const useTopicSocketHandlers = (topicsStore, postsStore, authStore) => {
       postsStore.waitingForOwnPost = false;
       postsStore.ownPostId = data.post._id;
 
-      if (postsStore.pagination.page < postsStore.pagination.totalPages) {
+      if (postsStore.pagination.hasNextPage) {
         await postsStore.fetchPosts(
           data.post.topic,
-          postsStore.pagination.totalPages,
+          postsStore.pagination.page + 1,
           postsStore.pagination.limit,
         );
 
-        if (authStore.user) {
-          try {
-            await api.post("/users/last-viewed-page", {
-              topicId: data.post.topic,
-              page: postsStore.pagination.totalPages,
-            });
-          } catch (e) {
-            console.log("Nie udało się zapisać ostatniej strony", e);
-          }
-        }
+        userStore.saveLastViewedPage(
+          data.post.topic,
+          postsStore.pagination.page,
+        );
       } else if (!postExists) {
         postsStore.posts.push(data.post);
       }
@@ -90,7 +86,6 @@ export const useTopicSocketHandlers = (topicsStore, postsStore, authStore) => {
     const index = postsStore.posts.findIndex((p) => p._id === data.postId);
     if (index !== -1) {
       postsStore.posts.splice(index, 1);
-      postsStore.pagination.totalPosts -= 1;
     }
   };
 
@@ -113,7 +108,7 @@ export const useTopicSocketHandlers = (topicsStore, postsStore, authStore) => {
       topicsStore.currentTopic.isHidden = true;
       if (authStore.user?.role !== "admin") {
         showSuccess("Temat został ukryty przez administratora");
-        window.location.href = "/";
+        router.push("/");
       }
     }
   };

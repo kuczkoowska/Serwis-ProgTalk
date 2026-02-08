@@ -33,9 +33,6 @@ export const useAdminStore = defineStore("admin", () => {
   const error = ref(null);
 
   const hasPendingUsers = computed(() => pendingUsers.value.length > 0);
-  const blockedUsersCount = computed(
-    () => users.value.filter((u) => u.isBlocked).length,
-  );
 
   const fetchStats = async () => {
     loading.value = true;
@@ -230,7 +227,6 @@ export const useAdminStore = defineStore("admin", () => {
     error,
 
     hasPendingUsers,
-    blockedUsersCount,
 
     fetchStats,
     fetchExtendedStats,

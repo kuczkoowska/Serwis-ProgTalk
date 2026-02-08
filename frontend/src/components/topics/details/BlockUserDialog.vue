@@ -134,7 +134,7 @@ const handleBlock = async () => {
   if (!userToBlock.value) return;
 
   try {
-    await moderatorStore.blockUser(
+    await topicsStore.blockUser(
       props.topicId,
       userToBlock.value._id,
       blockReason.value,

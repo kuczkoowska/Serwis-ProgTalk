@@ -109,9 +109,11 @@ import { ref, onMounted } from "vue";
 import { useToastHelper } from "../../../composables/useToastHelper";
 import BlockUserDialog from "./BlockUserDialog.vue";
 import { useModeratorStore } from "../../../stores/moderator";
+import { useTopicsStore } from "../../../stores/topics";
 
 const { showSuccess, showError } = useToastHelper();
 const moderatorStore = useModeratorStore();
+const topicsStore = useTopicsStore();
 const props = defineProps({
   topic: { type: Object, required: true },
 });
@@ -120,7 +122,7 @@ const showBlockDialog = ref(false);
 
 const handleUnblock = async (userId) => {
   try {
-    await moderatorStore.unblockUser(props.topic._id, userId);
+    await topicsStore.unblockUser(props.topic._id, userId);
     await moderatorStore.fetchBlockedUsers(props.topic._id);
     showSuccess("Użytkownik został odblokowany");
   } catch (error) {

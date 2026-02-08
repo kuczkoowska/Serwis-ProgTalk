@@ -15,10 +15,18 @@
     <div v-else-if="!currentTopic && !loading" class="not-found-container">
       <Message severity="error" :closable="false">
         <div class="flex flex-column align-items-center">
-          <i class="pi pi-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+          <i
+            class="pi pi-exclamation-triangle"
+            style="font-size: 3rem; margin-bottom: 1rem"
+          ></i>
           <h3>Temat nie znaleziony</h3>
           <p>Ten temat nie istnieje lub został usunięty.</p>
-          <Button label="Powrót do strony głównej" icon="pi pi-home" @click="$router.push('/')" class="mt-3" />
+          <Button
+            label="Powrót do strony głównej"
+            icon="pi pi-home"
+            @click="$router.push('/')"
+            class="mt-3"
+          />
         </div>
       </Message>
     </div>
@@ -48,7 +56,7 @@
         <div class="posts-column">
           <TopicPostList
             :posts="postsStore.posts"
-            :tags="tagsStore.tags"
+            :tags="tagsStore.topicTags"
             :sending="sending"
             :replyToId="replyToId"
             :canPost="topicsStore.canPost"
@@ -144,12 +152,12 @@ import { useTopicSocketHandlers } from "../../composables/topic/useTopicSocketHa
 import TopicBreadcrumb from "../../components/topic/TopicBreadcrumb.vue";
 import TopicPagination from "../../components/topic/TopicPagination.vue";
 
-import api from "../../plugins/axios";
 import { useTopicsStore } from "../../stores/topics.js";
 import { usePostsStore } from "../../stores/posts.js";
 import { useTagsStore } from "../../stores/tags.js";
 import { useAuthStore } from "../../stores/auth.js";
 import { useApplicationsStore } from "../../stores/applications.js";
+import { useUserStore } from "../../stores/user.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -160,6 +168,7 @@ const postsStore = usePostsStore();
 const tagsStore = useTagsStore();
 const authStore = useAuthStore();
 const applicationsStore = useApplicationsStore();
+const userStore = useUserStore();
 
 const sending = ref(false);
 const showSubtopicDialog = ref(false);
@@ -167,8 +176,6 @@ const showModeratorApplicationDialog = ref(false);
 const hasPendingApplication = ref(false);
 const replyToId = ref(null);
 const rowsPerPage = ref(10);
-const waitingForOwnPost = ref(false);
-const ownPostId = ref(null);
 const loading = ref(false);
 
 const currentTopicId = computed(() => route.params.id);
@@ -196,12 +203,7 @@ const loadAllData = async (id, initialPage = null) => {
 
     let startPage = initialPage || 1;
     if (authStore.user && !initialPage) {
-      try {
-        const response = await api.get(`/users/last-viewed-page/${id}`);
-        startPage = response.data.data.page || 1;
-      } catch (e) {
-        console.log("Nie udało się pobrać ostatniej strony", e);
-      }
+      startPage = await userStore.getLastViewedPage(id);
     }
 
     await postsStore.fetchPosts(id, startPage, rowsPerPage.value);
@@ -215,9 +217,6 @@ const loadAllData = async (id, initialPage = null) => {
     loading.value = false;
   }
 };
-
-postsStore.waitingForOwnPost = waitingForOwnPost;
-postsStore.ownPostId = ownPostId;
 
 const { setupSocketListeners } = useTopicSocketHandlers(
   topicsStore,
@@ -287,14 +286,14 @@ const handleAddPost = async (data) => {
     const content = typeof data === "string" ? data : data.content;
     const tags = typeof data === "object" ? data.tags : [];
 
-    waitingForOwnPost.value = true;
+    postsStore.waitingForOwnPost = true;
 
     await postsStore.addPost(route.params.id, content, replyToId.value, tags);
 
     replyToId.value = null;
     showSuccess("Post zostanie dodany za chwilę...", "Wysłano");
   } catch (e) {
-    waitingForOwnPost.value = false;
+    postsStore.waitingForOwnPost = false;
     const msg = e?.response?.data?.message || e?.message || "Błąd wysyłania";
     showError(msg);
   } finally {

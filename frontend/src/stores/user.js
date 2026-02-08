@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { ref } from "vue";
 import { useAuthStore } from "./auth";
 import api from "../plugins/axios";
 
@@ -17,10 +17,6 @@ export const useUserStore = defineStore("user", () => {
   const searchResults = ref([]);
   const loading = ref(false);
   const error = ref(null);
-
-  const hasProfile = computed(() => !!profile.value);
-  const userBio = computed(() => profile.value?.bio || "");
-  const totalActivity = computed(() => stats.value.topics + stats.value.posts);
 
   async function fetchMyProfile() {
     loading.value = true;
@@ -160,10 +156,6 @@ export const useUserStore = defineStore("user", () => {
     searchResults,
     loading,
     error,
-
-    hasProfile,
-    userBio,
-    totalActivity,
 
     fetchMyProfile,
     fetchUserProfile,

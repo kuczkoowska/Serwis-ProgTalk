@@ -29,12 +29,9 @@ export const useTopicsStore = defineStore("topics", () => {
     showAllLevels: false,
   });
 
-  const topicsCount = computed(() => rootTopics.value.length);
   const hasMoreTopics = computed(() => pagination.value.hasNextPage);
-  const isTopicClosed = computed(() => currentTopic.value?.isClosed || false);
-  const isTopicHidden = computed(() => currentTopic.value?.isHidden || false);
 
-  const canManageTopic = computed(() => (userId) => {
+  function canManageTopic(userId) {
     if (!currentTopic.value || !userId) return false;
 
     const creatorId = currentTopic.value.creator?._id;
@@ -46,15 +43,7 @@ export const useTopicsStore = defineStore("topics", () => {
         return modId === userId;
       }) || false
     );
-  });
-
-  const currentTopicModerators = computed(
-    () => currentTopic.value?.moderators || [],
-  );
-
-  const currentTopicBlockedUsers = computed(
-    () => currentTopic.value?.blockedUsers || [],
-  );
+  }
 
   async function fetchRootTopics(customFilters = {}) {
     loading.value = true;
@@ -107,9 +96,13 @@ export const useTopicsStore = defineStore("topics", () => {
 
   async function fetchTopicDetails(id) {
     loading.value = true;
-    currentTopic.value = null;
-    subtopics.value = [];
     error.value = null;
+
+    const isNewTopic = currentTopic.value?._id !== id;
+    if (isNewTopic) {
+      currentTopic.value = null;
+      subtopics.value = [];
+    }
 
     try {
       const res = await api.get(`/topics/${id}`);
@@ -358,13 +351,9 @@ export const useTopicsStore = defineStore("topics", () => {
     pagination,
     searchFilters,
 
-    topicsCount,
+    topicsCount: computed(() => rootTopics.value.length),
     hasMoreTopics,
-    isTopicClosed,
-    isTopicHidden,
     canManageTopic,
-    currentTopicModerators,
-    currentTopicBlockedUsers,
 
     fetchRootTopics,
     setSearchFilters,

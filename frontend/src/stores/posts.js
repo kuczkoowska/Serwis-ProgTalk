@@ -15,8 +15,9 @@ export const usePostsStore = defineStore("posts", () => {
     hasNextPage: false,
   });
 
-  const postsCount = computed(() => posts.value.length);
-  const hasMorePosts = computed(() => pagination.value.hasNextPage);
+  const waitingForOwnPost = ref(false);
+  const ownPostId = ref(null);
+
   const currentPage = computed(() => pagination.value.page);
 
   async function fetchPosts(topicId, page = 1, limit = 10) {
@@ -109,6 +110,8 @@ export const usePostsStore = defineStore("posts", () => {
       limit: 10,
       hasNextPage: false,
     };
+    waitingForOwnPost.value = false;
+    ownPostId.value = null;
   }
 
   return {
@@ -116,9 +119,9 @@ export const usePostsStore = defineStore("posts", () => {
     loading,
     error,
     pagination,
+    waitingForOwnPost,
+    ownPostId,
 
-    postsCount,
-    hasMorePosts,
     currentPage,
 
     fetchPosts,

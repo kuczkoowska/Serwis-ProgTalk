@@ -13,15 +13,6 @@ export const useApplicationsStore = defineStore("applications", () => {
     applications.value.filter((app) => app.status === "pending"),
   );
 
-  const approvedApplications = computed(() =>
-    applications.value.filter((app) => app.status === "approved"),
-  );
-
-  const rejectedApplications = computed(() =>
-    applications.value.filter((app) => app.status === "rejected"),
-  );
-
-  const applicationsCount = computed(() => applications.value.length);
   const pendingCount = computed(() => pendingApplications.value.length);
 
   async function submitApplication(topicId, payload) {
@@ -123,9 +114,6 @@ export const useApplicationsStore = defineStore("applications", () => {
     error,
 
     pendingApplications,
-    approvedApplications,
-    rejectedApplications,
-    applicationsCount,
     pendingCount,
 
     submitApplication,

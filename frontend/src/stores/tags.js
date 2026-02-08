@@ -10,12 +10,8 @@ export const useTagsStore = defineStore("tags", () => {
   const loading = ref(false);
   const error = ref(null);
 
-  const tagsCount = computed(() => allTags.value.length);
   const sortedTags = computed(() =>
     [...allTags.value].sort((a, b) => a.name.localeCompare(b.name)),
-  );
-  const popularTags = computed(() =>
-    [...allTags.value].sort((a, b) => b.usageCount - a.usageCount).slice(0, 10),
   );
 
   async function fetchTags() {
@@ -95,9 +91,7 @@ export const useTagsStore = defineStore("tags", () => {
     loading,
     error,
 
-    tagsCount,
     sortedTags,
-    popularTags,
 
     fetchTags,
     fetchTagsForTopic,

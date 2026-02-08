@@ -48,31 +48,20 @@ export const useChatStore = defineStore("chat", () => {
   async function fetchAvailableUsers(isAdmin = false) {
     loadingUsers.value = true;
     try {
-      let users = [];
-
-      if (isAdmin) {
-        const { data } = await api.get("/admin/users", {
-          params: { status: "approved" },
-        });
-        users = data.data.users || [];
-      } else {
-        const { data } = await api.get("/admin/users", {
-          params: { status: "approved" },
-        });
-        users = (data.data.users || []).filter((user) => user.role === "admin");
-      }
-
-      availableUsers.value = users;
+      const { data } = await api.get("/admin/users", {
+        params: { status: "approved" },
+      });
+      const users = data.data.users || [];
+      availableUsers.value = isAdmin
+        ? users
+        : users.filter((user) => user.role === "admin");
     } catch (error) {
       try {
         const { data } = await api.get("/users");
-        if (isAdmin) {
-          availableUsers.value = data.data.users || [];
-        } else {
-          availableUsers.value = (data.data.users || []).filter(
-            (user) => user.role === "admin",
-          );
-        }
+        const users = data.data.users || [];
+        availableUsers.value = isAdmin
+          ? users
+          : users.filter((user) => user.role === "admin");
       } catch (fallbackError) {
         console.error("Błąd zapasowego ładowania użytkowników:", fallbackError);
         throw error;
