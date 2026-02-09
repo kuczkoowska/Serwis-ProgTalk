@@ -13,6 +13,8 @@ class NotificationService {
     }
   }
 
+  // uzytkownicy i admini
+
   notifyNewUserRegistration(user) {
     this.emitToRoom("admins", "new_user_registration", {
       email: user.email,
@@ -39,6 +41,8 @@ class NotificationService {
     });
   }
 
+  // Blokowanie i odblokowywanie użytkowników
+
   notifyUserBlocked(user, blocker, reason) {
     this.emitToRoom("admins", "user_blocked", {
       userId: user._id,
@@ -47,7 +51,6 @@ class NotificationService {
       reason,
       message: `Użytkownik ${user.username} został zablokowany przez ${blocker.username}`,
     });
-
     this.emitToRoom(`user_${user._id}`, "user_blocked_globally", {
       userId: user._id,
       reason: reason || "Zablokowany przez administratora",
@@ -62,13 +65,14 @@ class NotificationService {
       unblockedBy: unblocker.username,
       message: `Użytkownik ${user.username} został odblokowany przez ${unblocker.username}`,
     });
-
     this.emitToRoom(`user_${user._id}`, "user_unblocked_globally", {
       userId: user._id,
       message:
         "Twoje konto zostało odblokowane. Możesz ponownie korzystać z systemu.",
     });
   }
+
+  // tematy i posty
 
   notifyNewTopic(topic, parentId = null) {
     if (parentId) {
@@ -78,33 +82,14 @@ class NotificationService {
     }
   }
 
-  notifyNewPost(post, topicId) {
-    this.emitToRoom(`topic_${topicId}`, "new_post", { post });
+  notifyTopicUpdated(topic) {
+    this.emitToRoom(`topic_${topic._id}`, "topic_updated", { topic });
   }
 
-  notifyPostLiked(postId, topicId, likesCount, isLiked, userId) {
-    this.emitToRoom(`topic_${topicId}`, "post_liked", {
-      postId,
-      likesCount,
-      isLiked,
-    });
-  }
-
-  notifyNewMessage(recipientId, messageData) {
-    this.emitToRoom(`user_${recipientId}`, "new_message", {
-      message: messageData,
-    });
-  }
-
-  notifyMessageSent(senderId, messageData) {
-    this.emitToRoom(`user_${senderId}`, "message_sent", {
-      message: messageData,
-    });
-  }
-
-  notifySupportMessage(messageData) {
-    this.emitToRoom("admins", "new_support_message", {
-      message: messageData,
+  notifyTopicStatusChanged(topicId, isClosed) {
+    this.emitToRoom(`topic_${topicId}`, "topic_status_changed", {
+      topicId,
+      isClosed,
     });
   }
 
@@ -150,6 +135,49 @@ class NotificationService {
     });
   }
 
+  // posty
+  notifyNewPost(post, topicId) {
+    this.emitToRoom(`topic_${topicId}`, "new_post", { post });
+  }
+
+  notifyPostLiked(postId, topicId, likesCount, isLiked, userId) {
+    this.emitToRoom(`topic_${topicId}`, "post_liked", {
+      postId,
+      likesCount,
+      isLiked,
+    });
+  }
+
+  notifyPostDeleted(postId, topicId, deletedBy) {
+    this.emitToRoom(`topic_${topicId}`, "post_deleted", {
+      postId,
+      deletedBy: deletedBy.username,
+      message: `Post został usunięty przez ${deletedBy.username}`,
+    });
+  }
+
+  // czat
+
+  notifyNewMessage(recipientId, messageData) {
+    this.emitToRoom(`user_${recipientId}`, "new_message", {
+      message: messageData,
+    });
+  }
+
+  notifyMessageSent(senderId, messageData) {
+    this.emitToRoom(`user_${senderId}`, "message_sent", {
+      message: messageData,
+    });
+  }
+
+  notifySupportMessage(messageData) {
+    this.emitToRoom("admins", "new_support_message", {
+      message: messageData,
+    });
+  }
+
+  // aplikacje na moderatora
+
   notifyModeratorAdded(topicId, topicName, newModerator, promotedBy) {
     this.emitToRoom(`topic_${topicId}`, "moderator_added", {
       topicId,
@@ -169,14 +197,6 @@ class NotificationService {
       moderatorId: removedModerator._id,
       removedBy: removedBy.username,
       message: `${removedModerator.username} przestał być moderatorem`,
-    });
-  }
-
-  notifyPostDeleted(postId, topicId, deletedBy) {
-    this.emitToRoom(`topic_${topicId}`, "post_deleted", {
-      postId,
-      deletedBy: deletedBy.username,
-      message: `Post został usunięty przez ${deletedBy.username}`,
     });
   }
 
@@ -223,13 +243,8 @@ class NotificationService {
   notifyNewModeratorApplication(topic, applicant) {
     const recipientIds = new Set();
 
-    if (topic.creator) {
-      recipientIds.add(topic.creator.toString());
-    }
-
-    topic.moderators.forEach((mod) => {
-      recipientIds.add(mod.user.toString());
-    });
+    if (topic.creator) recipientIds.add(topic.creator.toString());
+    topic.moderators.forEach((mod) => recipientIds.add(mod.user.toString()));
 
     recipientIds.forEach((userId) => {
       this.emitToRoom(`user_${userId}`, "new_moderator_application", {
@@ -241,17 +256,6 @@ class NotificationService {
         },
         message: `${applicant.username} zgłosił się na moderatora tematu "${topic.name}"`,
       });
-    });
-  }
-
-  notifyTopicUpdated(topic) {
-    this.emitToRoom(`topic_${topic._id}`, "topic_updated", { topic });
-  }
-
-  notifyTopicStatusChanged(topicId, isClosed) {
-    this.emitToRoom(`topic_${topicId}`, "topic_status_changed", {
-      topicId,
-      isClosed,
     });
   }
 }

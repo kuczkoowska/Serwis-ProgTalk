@@ -1,7 +1,8 @@
+const { TAG_COLORS } = require("../utils/constants/colors");
 const Tag = require("../models/Tag");
 const Topic = require("../models/Topic");
 const authService = require("../services/authorizationService");
-const TAG_COLORS = require("../utils/constants/colors");
+const notificationService = require("../services/notificationService");
 
 exports.getAllTags = async (req, res) => {
   try {
@@ -16,6 +17,7 @@ exports.getAllTags = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
+      status: "error",
       message: "Błąd serwera",
       error: error.message,
     });
@@ -28,6 +30,7 @@ exports.createTag = async (req, res) => {
 
     if (!name) {
       return res.status(400).json({
+        status: "fail",
         message: "Nazwa tagu jest wymagana.",
       });
     }
@@ -36,6 +39,7 @@ exports.createTag = async (req, res) => {
       const isModerator = await authService.isModerator(req.user._id);
       if (!isModerator) {
         return res.status(403).json({
+          status: "fail",
           message: "Tylko moderatorzy tematów mogą tworzyć nowe tagi.",
         });
       }
@@ -47,6 +51,7 @@ exports.createTag = async (req, res) => {
 
     if (existingTag) {
       return res.status(400).json({
+        status: "fail",
         message: "Tag o tej nazwie już istnieje globalnie.",
       });
     }
@@ -67,6 +72,7 @@ exports.createTag = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
+      status: "error",
       message: "Błąd przy tworzeniu tagu",
       error: error.message,
     });
@@ -81,6 +87,7 @@ exports.getTagsForTopic = async (req, res) => {
 
     if (!topic) {
       return res.status(404).json({
+        status: "fail",
         message: "Temat nie znaleziony.",
       });
     }
@@ -92,6 +99,7 @@ exports.getTagsForTopic = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
+      status: "error",
       message: "Błąd serwera",
       error: error.message,
     });
@@ -104,11 +112,14 @@ exports.deleteTag = async (req, res) => {
 
     const tag = await Tag.findById(tagId);
     if (!tag) {
-      return res.status(404).json({ message: "Tag nie znaleziony." });
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Tag nie znaleziony." });
     }
 
     if (!authService.isAdmin(req.user)) {
       return res.status(403).json({
+        status: "fail",
         message: "Tylko administratorzy mogą usuwać tagi.",
       });
     }
@@ -123,6 +134,7 @@ exports.deleteTag = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
+      status: "error",
       message: "Błąd serwera",
       error: error.message,
     });
@@ -135,6 +147,7 @@ exports.addTagToTopic = async (req, res) => {
 
     if (!topicId || !tagId) {
       return res.status(400).json({
+        status: "fail",
         message: "ID tematu i tagu są wymagane.",
       });
     }
@@ -147,32 +160,36 @@ exports.addTagToTopic = async (req, res) => {
 
     if (!canManage) {
       return res.status(403).json({
+        status: "fail",
         message: "Tylko moderatorzy mogą zarządzać tagami tematu.",
       });
     }
 
     const topic = await Topic.findById(topicId);
-
-    if (!topic) {
-      return res.status(404).json({ message: "Temat nie znaleziony." });
-    }
+    if (!topic)
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Temat nie znaleziony." });
 
     const tag = await Tag.findById(tagId);
-    if (!tag) {
-      return res.status(404).json({ message: "Tag nie znaleziony." });
-    }
+    if (!tag)
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Tag nie znaleziony." });
 
     if (topic.tags.includes(tagId)) {
-      return res.status(400).json({
-        message: "Ten tag jest już przypisany do tematu.",
-      });
+      return res
+        .status(400)
+        .json({ status: "fail", message: "Ten tag jest już przypisany." });
     }
 
     topic.tags.push(tagId);
     await topic.save();
 
-    tag.usageCount += 1;
-    await tag.save();
+    await Tag.findByIdAndUpdate(tagId, { $inc: { usageCount: 1 } });
+
+    await topic.populate("tags");
+    notificationService.notifyTopicUpdated(topic);
 
     res.status(200).json({
       status: "success",
@@ -181,6 +198,7 @@ exports.addTagToTopic = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
+      status: "error",
       message: "Błąd serwera",
       error: error.message,
     });
@@ -193,6 +211,7 @@ exports.removeTagFromTopic = async (req, res) => {
 
     if (!topicId || !tagId) {
       return res.status(400).json({
+        status: "fail",
         message: "ID tematu i tagu są wymagane.",
       });
     }
@@ -205,24 +224,27 @@ exports.removeTagFromTopic = async (req, res) => {
 
     if (!canManage) {
       return res.status(403).json({
+        status: "fail",
         message: "Tylko moderatorzy mogą zarządzać tagami tematu.",
       });
     }
 
     const topic = await Topic.findById(topicId);
-
-    if (!topic) {
-      return res.status(404).json({ message: "Temat nie znaleziony." });
-    }
+    if (!topic)
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Temat nie znaleziony." });
 
     topic.tags = topic.tags.filter((t) => t.toString() !== tagId);
     await topic.save();
 
-    const tag = await Tag.findById(tagId);
-    if (tag && tag.usageCount > 0) {
-      tag.usageCount -= 1;
-      await tag.save();
-    }
+    await Tag.findOneAndUpdate(
+      { _id: tagId, usageCount: { $gt: 0 } },
+      { $inc: { usageCount: -1 } },
+    );
+
+    await topic.populate("tags");
+    notificationService.notifyTopicUpdated(topic);
 
     res.status(200).json({
       status: "success",
@@ -231,6 +253,7 @@ exports.removeTagFromTopic = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
+      status: "error",
       message: "Błąd serwera",
       error: error.message,
     });
