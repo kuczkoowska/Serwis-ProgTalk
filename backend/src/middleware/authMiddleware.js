@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { promisify } = require("util");
 
 exports.protect = async (req, res, next) => {
   try {
@@ -7,7 +8,7 @@ exports.protect = async (req, res, next) => {
 
     if (
       req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
+      req.headers.authorization.startsWith("Bearer ")
     ) {
       token = req.headers.authorization.split(" ")[1];
     }
@@ -18,9 +19,12 @@ exports.protect = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
-    const currentUser = await User.findById(decoded.id);
+    const currentUser = await User.findById(decoded.id).select(
+      "-lastViewedPages",
+    );
+
     if (!currentUser) {
       return res.status(401).json({
         message: "Użytkownik przypisany do tego tokena już nie istnieje.",
@@ -45,15 +49,31 @@ exports.protect = async (req, res, next) => {
 
     next();
   } catch (error) {
-    return res.status(401).json({
-      message: "Nieprawidłowy token logowania lub token wygasł.",
-      error: error.message,
-    });
+    if (error.name === "TokenExpiredError") {
+      return res
+        .status(401)
+        .json({ message: "Twój token wygasł. Zaloguj się ponownie." });
+    }
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ message: "Nieprawidłowy token." });
+    }
+
+    console.error("Błąd w middleware protect:", error);
+    return res
+      .status(500)
+      .json({ message: "Błąd serwera podczas autoryzacji." });
   }
 };
 
 exports.restrictTo = (...roles) => {
   return (req, res, next) => {
+    if (!req.user) {
+      return res.status(500).json({
+        message:
+          "Błąd serwera: Sprawdzanie uprawnień bez wcześniejszej autoryzacji.",
+      });
+    }
+
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         message: "Nie masz uprawnień do wykonania tej akcji.",
