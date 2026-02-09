@@ -24,7 +24,7 @@ const postSchema = new mongoose.Schema(
     ],
     likes: [
       {
-        type: mongoose.Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId, //moze zmiana ?
         ref: "User",
       },
     ],
@@ -44,5 +44,7 @@ const postSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+postSchema.index({ topic: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Post", postSchema);

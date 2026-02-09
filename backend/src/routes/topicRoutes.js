@@ -7,9 +7,9 @@ const router = express.Router();
 
 router.use(authMiddleware.protect);
 
-router.post("/", topicController.createTopic); // Tworzenie
-router.get("/", topicController.getAllTopics); // Lista
-router.get("/:id", topicController.getTopicDetails); // Szczegóły + podtematy
+router.post("/", topicController.createTopic);
+router.get("/", topicController.getAllTopics);
+router.get("/:topicId", topicController.getTopicDetails);
 
 router.patch("/:topicId/metadata", topicController.updateTopicMetadata);
 

@@ -16,8 +16,9 @@ exports.createTopic = async (req, res) => {
 
     if (existingTopic) {
       return res.status(400).json({
+        status: "fail",
         message: parentId
-          ? "Podtemat o tej nazwie już istnieje w tym temacie nadrzędnym."
+          ? "Podtemat o tej nazwie już istnieje w tym miejscu."
           : "Temat główny o tej nazwie już istnieje.",
       });
     }
@@ -33,39 +34,34 @@ exports.createTopic = async (req, res) => {
     if (parentId) {
       const parentTopic = await Topic.findById(parentId);
 
-      if (!parentTopic) {
+      if (!parentTopic)
         return res
           .status(404)
-          .json({ message: "Temat nadrzędny nie istnieje." });
-      }
-
-      if (parentTopic.isClosed) {
-        return res.status(400).json({
-          message: "Nie można tworzyć podtematów w zamkniętym temacie.",
-        });
-      }
+          .json({ status: "fail", message: "Temat nadrzędny nie istnieje." });
+      if (parentTopic.isClosed)
+        return res
+          .status(400)
+          .json({ status: "fail", message: "Temat nadrzędny jest zamknięty." });
 
       const isBlocked = await authService.isUserBlockedInTopic(
         req.user._id,
         parentId,
       );
-      if (isBlocked) {
+      if (isBlocked)
         return res.status(403).json({
-          message:
-            "Jesteś zablokowany w tym temacie i nie możesz tworzyć podtematów.",
+          status: "fail",
+          message: "Jesteś zablokowany w tym temacie.",
         });
-      }
 
       const hasPerm = await authService.canManageTopic(
         req.user._id,
         parentId,
         req.user.role,
       );
-      if (!hasPerm) {
-        return res.status(403).json({
-          message: "Tylko moderatorzy mogą tworzyć podtematy.",
-        });
-      }
+      if (!hasPerm)
+        return res
+          .status(403)
+          .json({ status: "fail", message: "Brak uprawnień." });
 
       topicData.parent = parentTopic._id;
       topicData.ancestors = [...parentTopic.ancestors, parentTopic._id];
@@ -76,21 +72,20 @@ exports.createTopic = async (req, res) => {
         promotedAt: mod.promotedAt,
       }));
 
-      const creatorAlreadyModerator = topicData.moderators.some(
-        (mod) => mod.user.toString() === parentTopic.creator.toString(),
-      );
-
-      if (!creatorAlreadyModerator) {
+      if (
+        !topicData.moderators.some(
+          (m) => m.user.toString() === parentTopic.creator.toString(),
+        )
+      ) {
         topicData.moderators.push({
           user: parentTopic.creator,
           promotedBy: parentTopic.creator,
-          promotedAt: parentTopic.createdAt || Date.now(),
+          promotedAt: Date.now(),
         });
       }
     }
 
     const newTopic = await Topic.create(topicData);
-
     await newTopic.populate("creator", "username");
     await newTopic.populate("tags", "name color");
 
@@ -109,7 +104,7 @@ exports.createTopic = async (req, res) => {
   } catch (error) {
     res
       .status(500)
-      .json({ message: "Błąd przy tworzeniu tematu", error: error.message });
+      .json({ status: "error", message: "Błąd serwera", error: error.message });
   }
 };
 
@@ -118,16 +113,13 @@ exports.getAllTopics = async (req, res) => {
     const filter = {};
     if (req.query.root === "true") filter.parent = null;
     if (req.user.role !== "admin") filter.isHidden = false;
-
-    if (req.query.search) {
+    if (req.query.search)
       filter.name = { $regex: req.query.search, $options: "i" };
-    }
 
     const { page, limit, skip } = paginationService.getPaginationParams(
       req.query,
       12,
     );
-
     const sortOption = paginationService.getSortOption(req.query);
 
     const topics = await Topic.find(filter)
@@ -146,13 +138,10 @@ exports.getAllTopics = async (req, res) => {
     res.status(200).json({
       status: "success",
       results: results.length,
-      data: {
-        topics: results,
-        pagination,
-      },
+      data: { topics: results, pagination },
     });
   } catch (error) {
-    res.status(500).json({ message: "Błąd serwera", error: error.message });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
@@ -162,35 +151,29 @@ exports.getTopicDetails = async (req, res) => {
       .populate("creator", "username")
       .populate("blockedUsers.user", "username email")
       .populate("moderators.user", "username email")
-      .populate({
-        path: "ancestors",
-        select: "name _id",
-        options: { strictPopulate: false },
-      });
+      .populate({ path: "ancestors", select: "name _id" });
 
-    if (!topic) {
-      return res.status(404).json({ message: "Temat nie znaleziony" });
-    }
-
-    if (topic.isHidden && !authService.isAdmin(req.user)) {
-      return res.status(404).json({
-        message: "Temat nie znaleziony",
-      });
-    }
+    if (!topic)
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Temat nie znaleziony" });
+    if (topic.isHidden && !authService.isAdmin(req.user))
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Temat nie znaleziony" });
 
     const subtopicsFilter = { parent: topic._id };
-    if (!authService.isAdmin(req.user)) {
-      subtopicsFilter.isHidden = false;
-    }
+    if (!authService.isAdmin(req.user)) subtopicsFilter.isHidden = false;
 
-    const subtopics = await Topic.find(subtopicsFilter);
+    const subtopics = await Topic.find(subtopicsFilter).populate(
+      "tags",
+      "name color",
+    );
 
     const isBlocked = await authService.isUserBlockedInTopic(
       req.user._id,
       topic._id,
     );
-    const canPost = !topic.isClosed && !isBlocked;
-
     const canManage = await authService.canManageTopic(
       req.user._id,
       topic._id,
@@ -202,14 +185,14 @@ exports.getTopicDetails = async (req, res) => {
       data: {
         topic,
         subtopics,
-        canPost,
+        canPost: !topic.isClosed && !isBlocked,
         canManage,
         isBlocked,
         isClosed: topic.isClosed,
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "Błąd serwera", error: error.message });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
@@ -219,33 +202,30 @@ exports.updateTopicMetadata = async (req, res) => {
     const { description } = req.body;
 
     const topic = await Topic.findById(topicId);
-    if (!topic) {
-      return res.status(404).json({ message: "Temat nie znaleziony." });
+    if (!topic)
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Temat nie znaleziony." });
+
+    if (
+      !(await authService.canManageTopic(req.user._id, topicId, req.user.role))
+    ) {
+      return res
+        .status(403)
+        .json({ status: "fail", message: "Brak uprawnień." });
     }
 
-    const hasPerm = await authService.canManageTopic(
-      req.user._id,
-      topicId,
-      req.user.role,
-    );
-    if (!hasPerm) {
-      return res.status(403).json({
-        message: "Tylko moderatorzy mogą edytować metadane tematu.",
-      });
-    }
-
-    if (description) {
-      topic.description = description;
-    }
-
+    if (description) topic.description = description;
     await topic.save();
+
+    notificationService.notifyTopicUpdated(topic);
 
     res.status(200).json({
       status: "success",
-      message: "Metadane tematu zaktualizowane.",
+      message: "Zaktualizowano.",
       data: { topic },
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };

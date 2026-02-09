@@ -243,6 +243,17 @@ class NotificationService {
       });
     });
   }
+
+  notifyTopicUpdated(topic) {
+    this.emitToRoom(`topic_${topic._id}`, "topic_updated", { topic });
+  }
+
+  notifyTopicStatusChanged(topicId, isClosed) {
+    this.emitToRoom(`topic_${topicId}`, "topic_status_changed", {
+      topicId,
+      isClosed,
+    });
+  }
 }
 
 module.exports = new NotificationService();
