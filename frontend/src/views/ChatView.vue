@@ -17,6 +17,7 @@
         :messages="chatStore.messages"
         :loading="chatStore.loadingMessages"
         :currentUserId="authStore.user?._id"
+        :isAdmin="authStore.user?.role === 'admin'"
         @send-message="sendMessage"
         @back="chatStore.selectedUserId = null"
       />
@@ -26,6 +27,7 @@
       v-model:visible="showNewChatDialog"
       :users="chatStore.availableUsers"
       :loading="chatStore.loadingUsers"
+      :isAdmin="authStore.user?.role === 'admin'"
       @select-user="startNewChat"
     />
   </div>
@@ -59,19 +61,23 @@ const selectConversation = async (userId) => {
 
 const startNewChat = async (userId) => {
   showNewChatDialog.value = false;
-  chatStore.selectConversation(userId);
+  const isAdmin = authStore.user?.role === "admin";
+  const targetId = isAdmin ? userId : "support";
+  chatStore.selectConversation(targetId);
 
   const existing = chatStore.conversations.find(
-    (c) => c.otherUser._id === userId,
+    (c) => c.otherUser._id === targetId,
   );
   if (existing) {
-    await chatStore.fetchMessages(userId);
+    await chatStore.fetchMessages(targetId);
   } else {
-    const user = chatStore.availableUsers.find((u) => u._id === userId);
-    if (user) {
+    const user = chatStore.availableUsers.find((u) => u._id === targetId);
+    if (user || !isAdmin) {
       chatStore.addOrUpdateConversation({
-        conversationId: `temp_${userId}`,
-        otherUser: user,
+        conversationId: `temp_${targetId}`,
+        otherUser: isAdmin
+          ? user
+          : { _id: "support", username: "Administracja", role: "admin" },
         lastMessage: { content: "", createdAt: new Date(), isFromMe: true },
         unreadCount: 0,
       });

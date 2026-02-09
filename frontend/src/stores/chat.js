@@ -1,6 +1,7 @@
 import { ref, computed } from "vue";
 import { defineStore } from "pinia";
 import api from "../plugins/axios";
+import { useAuthStore } from "./auth";
 
 export const useChatStore = defineStore("chat", () => {
   const conversations = ref([]);
@@ -74,7 +75,12 @@ export const useChatStore = defineStore("chat", () => {
 
   async function sendMessage(userId, content) {
     try {
-      const { data } = await api.post(`/chat/messages/${userId}`, { content });
+      const authStore = useAuthStore();
+      const isAdmin = authStore.user?.role === "admin";
+      const targetId = isAdmin ? userId : "support";
+      const { data } = await api.post(`/chat/messages/${targetId}`, {
+        content,
+      });
       const msg = data.data.message;
       addMessage(msg);
       return msg;

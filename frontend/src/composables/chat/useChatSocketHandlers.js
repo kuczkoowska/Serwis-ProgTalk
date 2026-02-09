@@ -8,10 +8,10 @@ export const useChatSocketHandlers = () => {
   const isForOpenConversation = (msg) => {
     if (!chatStore.selectedUserId) return false;
 
-    const currentUserId = authStore.user?._id;
+    const currentUserId = authStore.user?._id?.toString();
     const isAdmin = authStore.user?.role === "admin";
-    const selectedId = chatStore.selectedUserId;
-    const convId = msg.conversationId;
+    const selectedId = chatStore.selectedUserId?.toString();
+    const convId = msg.conversationId?.toString();
 
     if (isAdmin) {
       return convId === `support_${selectedId}`;
@@ -54,7 +54,7 @@ export const useChatSocketHandlers = () => {
   const handleMessageSent = async (data) => {
     const msg = data.message;
     if (!msg || !authStore.user?._id) return;
-
+    chatStore.addMessage(msg);
     await chatStore.fetchConversations();
   };
 

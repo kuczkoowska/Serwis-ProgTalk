@@ -3,11 +3,15 @@ import { reactive } from "vue";
 
 class SocketService {
   constructor() {
-    this.socket = io("https://localhost:3001", {
+    const host = window.location.hostname || "localhost";
+    const port = 3001;
+    const url = `https://${host}:${port}`;
+
+    this.socket = io(url, {
       autoConnect: false,
       transports: ["websocket", "polling"],
       withCredentials: true,
-      rejectUnauthorized: false, // dev
+      rejectUnauthorized: false,
     });
 
     this.state = reactive({
@@ -16,10 +20,6 @@ class SocketService {
 
     this.activeRooms = new Set();
 
-    this.bindConnectionListeners();
-  }
-
-  bindConnectionListeners() {
     this.socket.on("connect", () => {
       this.state.connected = true;
 

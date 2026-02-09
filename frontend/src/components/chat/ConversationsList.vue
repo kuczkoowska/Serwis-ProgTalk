@@ -41,9 +41,16 @@
         <Avatar :user="conv.otherUser" size="normal" />
         <div class="conversation-info">
           <div class="conversation-header">
-            <span class="username">{{ conv.otherUser.username }}</span>
+            <span class="username">
+              <template v-if="isAdmin">
+                {{ conv.otherUser.username }}
+              </template>
+              <template v-else>
+                Administracja
+              </template>
+            </span>
             <Badge
-              v-if="conv.otherUser.role === 'admin'"
+              v-if="isAdmin && conv.otherUser.role === 'admin'"
               value="Admin"
               severity="danger"
               class="role-badge"

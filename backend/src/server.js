@@ -1,6 +1,7 @@
 require("dotenv").config();
 const fs = require("fs");
 const https = require("https");
+const http = require("http");
 const { Server } = require("socket.io");
 const connectDB = require("./config/db");
 const app = require("./app");
@@ -18,15 +19,17 @@ const httpsServer = https.createServer(options, app);
 
 const io = new Server(httpsServer, {
   cors: {
-    origin: "*",
+    origin: ["http://localhost:5173", "https://localhost:5173"],
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
 app.set("io", io);
-notificationService.setSocketIO(io);
 
 if (socketHandler) socketHandler(io);
+
+notificationService.setSocketIO(io);
 
 const PORT = process.env.PORT || 3001;
 httpsServer.listen(PORT, () => {

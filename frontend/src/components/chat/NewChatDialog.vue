@@ -7,37 +7,43 @@
     @update:visible="$emit('update:visible', $event)"
   >
     <div class="new-chat-content">
-      <div v-if="loading" class="loading-state">
-        <ProgressSpinner strokeWidth="4" style="width: 40px; height: 40px" />
-      </div>
-
-      <div v-else-if="users.length === 0" class="empty-state">
-        <p>Brak dostępnych użytkowników</p>
-      </div>
-
-      <div v-else class="users-list">
-        <div
-          v-for="user in users"
-          :key="user._id"
-          class="user-item"
-          @click="$emit('select-user', user._id)"
-        >
-          <Avatar :user="user" size="normal" />
-          <div class="user-info">
-            <span class="username">{{ user.username }}</span>
-            <span class="email">{{ user.email }}</span>
-          </div>
-          <Badge v-if="user.role === 'admin'" value="Admin" severity="danger" />
+      <template v-if="isAdmin">
+        <div v-if="loading" class="loading-state">
+          <ProgressSpinner strokeWidth="4" style="width: 40px; height: 40px" />
         </div>
-      </div>
+        <div v-else-if="users.length === 0" class="empty-state">
+          <p>Brak dostępnych użytkowników</p>
+        </div>
+        <div v-else class="users-list">
+          <div
+            v-for="user in users"
+            :key="user._id"
+            class="user-item"
+            @click="$emit('select-user', user._id)"
+          >
+            <Avatar :user="user" size="normal" />
+            <div class="user-info">
+              <span class="username">{{ user.username }}</span>
+              <span class="email">{{ user.email }}</span>
+            </div>
+            <Badge v-if="user.role === 'admin'" value="Admin" severity="danger" />
+          </div>
+        </div>
+      </template>
+      <template v-else>
+        <div class="empty-state">
+          <Button label="Napisz do administracji" icon="pi pi-send" @click="$emit('select-user', 'support')" />
+        </div>
+      </template>
     </div>
   </Dialog>
 </template>
 
 <script setup>
+
 import { defineProps, defineEmits } from "vue";
 
-defineProps({
+const props = defineProps({
   visible: {
     type: Boolean,
     required: true,
@@ -47,6 +53,10 @@ defineProps({
     required: true,
   },
   loading: {
+    type: Boolean,
+    default: false,
+  },
+  isAdmin: {
     type: Boolean,
     default: false,
   },

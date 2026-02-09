@@ -169,7 +169,7 @@ exports.sendMessage = async (req, res) => {
       receiverId = recipientId;
     } else {
       conversationId = `support_${senderId}`;
-
+      // receiverId może być null jeśli nie ma admina, wiadomość i tak zostanie zapisana
       let adminId =
         recipientId && recipientId !== "support" ? recipientId : null;
 
@@ -200,12 +200,9 @@ exports.sendMessage = async (req, res) => {
 
       if (adminId) {
         const recipient = await User.findById(adminId);
-        if (!recipient || recipient.role !== "admin") {
-          return res.status(403).json({
-            message: "Możesz wysyłać wiadomości tylko do administratorów",
-          });
+        if (recipient && recipient.role === "admin") {
+          receiverId = adminId;
         }
-        receiverId = adminId;
       }
     }
 

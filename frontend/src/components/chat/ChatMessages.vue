@@ -16,9 +16,16 @@
         />
         <Avatar :user="selectedUser" size="normal" />
         <div class="user-info">
-          <span class="username">{{ selectedUser.username }}</span>
+          <span class="username">
+            <template v-if="isAdmin">
+              {{ selectedUser.username }}
+            </template>
+            <template v-else>
+              Administracja
+            </template>
+          </span>
           <Badge
-            v-if="selectedUser.role === 'admin'"
+            v-if="isAdmin && selectedUser.role === 'admin'"
             value="Administrator"
             severity="danger"
           />
@@ -39,24 +46,18 @@
             v-for="msg in messages"
             :key="msg._id"
             class="message-row"
-            :class="{
-              'message-row--own': msg.sender._id === currentUserId,
-              'message-row--other': msg.sender._id !== currentUserId,
-            }"
+            :class="messageRowClass(msg)"
           >
-            <div class="message-avatar" v-if="msg.sender._id !== currentUserId">
+            <div class="message-avatar" v-if="messageRowClass(msg).includes('message-row--other')">
               <Avatar :user="msg.sender" size="small" />
             </div>
             <div
               class="message-bubble"
-              :class="{
-                'message-bubble--own': msg.sender._id === currentUserId,
-                'message-bubble--other': msg.sender._id !== currentUserId,
-              }"
+              :class="messageRowClass(msg).includes('message-row--own') ? 'message-bubble--own' : 'message-bubble--other'"
             >
               <div
                 class="message-sender"
-                v-if="msg.sender._id !== currentUserId"
+                v-if="messageRowClass(msg).includes('message-row--other')"
               >
                 {{ msg.sender.username }}
               </div>
@@ -64,12 +65,12 @@
               <span class="message-time">
                 {{ formatTime(msg.createdAt) }}
                 <i
-                  v-if="msg.read && msg.sender._id === currentUserId"
+                  v-if="msg.read && messageRowClass(msg).includes('message-row--own')"
                   class="pi pi-check-circle"
                   style="font-size: 0.7rem; margin-left: 3px"
                 ></i>
                 <i
-                  v-else-if="msg.sender._id === currentUserId"
+                  v-else-if="messageRowClass(msg).includes('message-row--own')"
                   class="pi pi-check"
                   style="font-size: 0.7rem; margin-left: 3px"
                 ></i>
@@ -98,7 +99,8 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits, watch, nextTick } from "vue";
+import { ref, defineProps, defineEmits, watch, nextTick, computed } from "vue";
+import { useAuthStore } from "../../stores/auth";
 
 const props = defineProps({
   selectedUser: {
@@ -116,6 +118,10 @@ const props = defineProps({
   currentUserId: {
     type: String,
     default: "",
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -142,6 +148,26 @@ const sendMessage = () => {
 const scrollToBottom = () => {
   if (messagesContainer.value) {
     messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+  }
+};
+
+const authStore = useAuthStore();
+const resolvedCurrentUserId = computed(() => props.currentUserId || authStore.user?._id);
+
+// Funkcja rozróżniająca stronę wiadomości zależnie od roli
+const messageRowClass = (msg) => {
+  const senderId = (msg.sender?._id?.toString?.() || msg.sender?._id || msg.sender)?.toString();
+  const role = msg.sender?.role;
+  const currentId = resolvedCurrentUserId.value?.toString();
+  if (props.isAdmin) {
+    // Admin widzi swoje po prawej, usera po lewej
+    if (senderId && currentId && senderId === currentId) return 'message-row--own';
+    return 'message-row--other';
+  } else {
+    // User widzi swoje po prawej, adminów po lewej
+    if (role === 'admin') return 'message-row--other';
+    if (senderId && currentId && senderId === currentId) return 'message-row--own';
+    return 'message-row--other';
   }
 };
 
