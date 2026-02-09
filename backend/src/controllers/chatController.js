@@ -10,15 +10,10 @@ exports.getConversations = async (req, res) => {
     const isAdmin = authService.isAdmin(req.user);
 
     let matchStage;
-
     if (isAdmin) {
-      matchStage = {
-        conversationId: { $regex: "^support_" },
-      };
+      matchStage = { conversationId: { $regex: "^support_" } };
     } else {
-      matchStage = {
-        conversationId: `support_${userId}`,
-      };
+      matchStage = { conversationId: `support_${userId}` };
     }
 
     const messages = await Message.aggregate([
@@ -27,7 +22,7 @@ exports.getConversations = async (req, res) => {
       {
         $group: {
           _id: "$conversationId",
-          lastMessage: { $first: "$$ROOT" }, //podgląd ostatniej wiadomości
+          lastMessage: { $first: "$$ROOT" },
           unreadCount: {
             $sum: {
               $cond: [
@@ -44,40 +39,25 @@ exports.getConversations = async (req, res) => {
           },
         },
       },
-      {
-        $sort: { "lastMessage.createdAt": -1 },
-      },
+      { $sort: { "lastMessage.createdAt": -1 } },
     ]);
 
     const conversations = await Promise.all(
       messages.map(async (conv) => {
         const chatPartnerId = conv._id.replace("support_", "");
-
         let otherUser = null;
+
         if (isAdmin) {
           otherUser = await User.findById(chatPartnerId).select(
             "username email avatar",
           );
         } else {
-          const lastMsg = conv.lastMessage;
-          const adminId =
-            lastMsg.sender.toString() === userId.toString()
-              ? lastMsg.receiver
-              : lastMsg.sender;
-
-          if (adminId) {
-            otherUser = await User.findById(adminId).select(
-              "username email avatar role",
-            );
-          }
-
-          if (!otherUser) {
-            otherUser = {
-              _id: "support",
-              username: "Wsparcie ProgTalk",
-              role: "system",
-            };
-          }
+          otherUser = {
+            _id: "support",
+            username: "Wsparcie ProgTalk",
+            avatar: null,
+            role: "system",
+          };
         }
 
         return {
@@ -98,7 +78,7 @@ exports.getConversations = async (req, res) => {
       data: { conversations },
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
@@ -109,7 +89,6 @@ exports.getMessages = async (req, res) => {
     const { recipientId } = req.params;
 
     const targetUserId = isAdmin ? recipientId : userId;
-
     const conversationId = `support_${targetUserId}`;
 
     const { page, limit, skip } = paginationService.getPaginationParams(
@@ -123,27 +102,24 @@ exports.getMessages = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    await Message.updateMany(
+    Message.updateMany(
       {
         conversationId,
         read: false,
         sender: { $ne: userId },
       },
       { read: true },
-    );
+    ).exec();
 
     res.status(200).json({
       status: "success",
       data: {
-        messages: messages.reverse(), //odrwacamy kolejnosc najnowsze na koniec
-        pagination: {
-          page,
-          limit,
-        },
+        messages: messages.reverse(),
+        pagination: { page, limit },
       },
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
@@ -151,12 +127,13 @@ exports.sendMessage = async (req, res) => {
   try {
     const { content } = req.body;
     const { recipientId } = req.params;
-
     const senderId = req.user._id;
     const isAdmin = authService.isAdmin(req.user);
 
     if (!content || !content.trim()) {
-      return res.status(400).json({ message: "Pusta wiadomość" });
+      return res
+        .status(400)
+        .json({ status: "fail", message: "Pusta wiadomość" });
     }
 
     let conversationId;
@@ -164,45 +141,18 @@ exports.sendMessage = async (req, res) => {
 
     if (isAdmin) {
       if (!recipientId)
-        return res.status(400).json({ message: "Komu odpisujesz?" });
+        return res
+          .status(400)
+          .json({ status: "fail", message: "Brak ID odbiorcy." });
+
       conversationId = `support_${recipientId}`;
       receiverId = recipientId;
     } else {
       conversationId = `support_${senderId}`;
-      // receiverId może być null jeśli nie ma admina, wiadomość i tak zostanie zapisana
-      let adminId =
-        recipientId && recipientId !== "support" ? recipientId : null;
 
-      if (!adminId) {
-        const existingMsg = await Message.findOne({ conversationId }).populate(
-          "sender receiver",
-        );
-        if (existingMsg) {
-          const otherUser =
-            existingMsg.sender._id.toString() === senderId.toString()
-              ? existingMsg.receiver
-              : existingMsg.sender;
-          if (otherUser && otherUser.role === "admin") {
-            adminId = otherUser._id;
-          }
-        }
-      }
-
-      if (!adminId) {
-        const firstAdmin = await User.findOne({
-          role: "admin",
-          status: "approved",
-        });
-        if (firstAdmin) {
-          adminId = firstAdmin._id;
-        }
-      }
-
-      if (adminId) {
-        const recipient = await User.findById(adminId);
-        if (recipient && recipient.role === "admin") {
-          receiverId = adminId;
-        }
+      const admin = await User.findOne({ role: "admin", isActive: true });
+      if (admin) {
+        receiverId = admin._id;
       }
     }
 
@@ -217,24 +167,20 @@ exports.sendMessage = async (req, res) => {
       .populate("sender", "username avatar role")
       .populate("receiver", "username avatar role");
 
+    notificationService.notifyMessageSent(senderId, populatedMsg);
+
     if (isAdmin) {
-      if (receiverId) {
+      if (receiverId)
         notificationService.notifyNewMessage(receiverId, populatedMsg);
-      }
     } else {
       notificationService.notifySupportMessage(populatedMsg);
-      if (receiverId) {
-        notificationService.notifyNewMessage(receiverId, populatedMsg);
-      }
     }
-
-    notificationService.notifyMessageSent(senderId, populatedMsg);
 
     res
       .status(201)
       .json({ status: "success", data: { message: populatedMsg } });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
@@ -255,12 +201,9 @@ exports.markAsRead = async (req, res) => {
       { read: true },
     );
 
-    res.status(200).json({
-      status: "success",
-      message: "Wiadomości oznaczone jako przeczytane.",
-    });
+    res.status(200).json({ status: "success", message: "Przeczytano." });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
@@ -273,7 +216,8 @@ exports.getUnreadCount = async (req, res) => {
 
     if (isAdmin) {
       count = await Message.countDocuments({
-        receiver: userId,
+        conversationId: { $regex: "^support_" },
+        sender: { $ne: userId },
         read: false,
       });
     } else {
@@ -284,11 +228,8 @@ exports.getUnreadCount = async (req, res) => {
       });
     }
 
-    res.status(200).json({
-      status: "success",
-      data: { unreadCount: count },
-    });
+    res.status(200).json({ status: "success", data: { unreadCount: count } });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
