@@ -1,10 +1,7 @@
 require("dotenv").config();
-const fs = require("fs");
-const https = require("https");
 const express = require("express");
 const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
-const { Server } = require("socket.io");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const swaggerDocs = require("./config/swagger");
@@ -39,7 +36,7 @@ app.use(
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20000,
+  max: 200,
   message: "Zbyt wiele zapytań z tego IP, spróbuj ponownie za 15 minut.",
 });
 app.use("/api", limiter);
@@ -61,6 +58,15 @@ app.use("/api/chat", chatRoutes);
 
 app.get("/", (req, res) => {
   res.send("Serwer ProgTalk działa!");
+});
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({
+    error: {
+      message: err.message || "Wystąpił błąd serwera.",
+    },
+  });
 });
 
 module.exports = app;

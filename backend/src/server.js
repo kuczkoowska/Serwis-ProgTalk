@@ -1,7 +1,6 @@
 require("dotenv").config();
 const fs = require("fs");
 const https = require("https");
-const http = require("http");
 const { Server } = require("socket.io");
 const connectDB = require("./config/db");
 const app = require("./app");

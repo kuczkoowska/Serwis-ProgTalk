@@ -43,7 +43,11 @@ module.exports = (io) => {
 
     if (userId) {
       socket.join(`user_${userId}`);
-      onlineUsers.set(userId, socket.id);
+
+      if (!onlineUsers.has(userId)) {
+        onlineUsers.set(userId, new Set());
+      }
+      onlineUsers.get(userId).add(socket.id);
 
       if (userRole === "admin") {
         socket.join("admins");
@@ -70,11 +74,15 @@ module.exports = (io) => {
     });
 
     socket.on("join_topic", (topicId) => {
-      socket.join(`topic_${topicId}`);
+      if (typeof topicId === "string") {
+        socket.join(`topic_${topicId}`);
+      }
     });
 
     socket.on("leave_topic", (topicId) => {
-      socket.leave(`topic_${topicId}`);
+      if (typeof topicId === "string") {
+        socket.leave(`topic_${topicId}`);
+      }
     });
 
     socket.on("join_topics_list", () => {
@@ -86,8 +94,13 @@ module.exports = (io) => {
     });
 
     socket.on("disconnect", () => {
-      if (userId) {
-        onlineUsers.delete(userId);
+      if (userId && onlineUsers.has(userId)) {
+        const userSockets = onlineUsers.get(userId);
+        userSockets.delete(socket.id);
+
+        if (userSockets.size === 0) {
+          onlineUsers.delete(userId);
+        }
       }
       console.log(`Klient rozłączony: ${socket.id}`);
     });
