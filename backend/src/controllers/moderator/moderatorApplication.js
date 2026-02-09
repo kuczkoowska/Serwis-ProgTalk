@@ -105,9 +105,9 @@ exports.getUserApplicationStatus = async (req, res) => {
 
     res.status(200).json({
       status: "success",
-      data: { 
+      data: {
         hasPendingApplication: !!application,
-        application: application || null 
+        application: application || null,
       },
     });
   } catch (error) {
@@ -197,9 +197,13 @@ exports.reviewModeratorApplication = async (req, res) => {
         populatedApp.topic.name,
         reviewNotes,
       );
-
-      await ModeratorApplication.findByIdAndDelete(applicationId);
     }
+
+    application.status = status;
+    application.reviewedBy = req.user._id;
+    application.reviewedAt = Date.now();
+    application.reviewNotes = reviewNotes || "";
+    await application.save();
 
     res.status(200).json({
       status: "success",

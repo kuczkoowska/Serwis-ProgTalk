@@ -58,7 +58,10 @@ exports.promoteModerator = async (req, res) => {
       req.user,
     );
 
-    res.status(200).json({ message: "Moderator dodany." });
+    res.status(200).json({
+      status: "success",
+      message: "Moderator dodany.",
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

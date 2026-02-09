@@ -48,7 +48,10 @@ const moderatorApplicationSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-moderatorApplicationSchema.index({ topic: 1, applicant: 1 }, { unique: true });
+moderatorApplicationSchema.index(
+  { topic: 1, applicant: 1 },
+  { unique: true, partialFilterExpression: { status: "pending" } },
+);
 
 module.exports = mongoose.model(
   "ModeratorApplication",

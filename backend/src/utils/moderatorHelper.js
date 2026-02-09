@@ -3,32 +3,44 @@ const Topic = require("../models/Topic");
 const removeModeratorFromSubtopics = async (parentTopicId, userId) => {
   const subtopics = await Topic.find({ parent: parentTopicId });
 
-  for (const subtopic of subtopics) {
-    if (subtopic.creator.toString() !== userId) {
-      subtopic.moderators = subtopic.moderators.filter(
-        (m) => m.user.toString() !== userId,
-      );
-      await subtopic.save();
-    }
+  await Promise.all(
+    subtopics.map(async (subtopic) => {
+      if (subtopic.creator.toString() !== userId) {
+        const originalLength = subtopic.moderators.length;
+        subtopic.moderators = subtopic.moderators.filter(
+          (m) => m.user.toString() !== userId.toString(),
+        );
 
-    await removeModeratorFromSubtopics(subtopic._id, userId);
-  }
+        if (subtopic.moderators.length !== originalLength) {
+          await subtopic.save();
+        }
+      }
+
+      await removeModeratorFromSubtopics(subtopic._id, userId);
+    }),
+  );
 };
 
 const moderatorToSubtopics = async (parentTopicId, userId, promotedBy) => {
   const subtopics = await Topic.find({ parent: parentTopicId });
 
-  for (const subtopic of subtopics) {
-    if (!subtopic.moderators.some((m) => m.user.toString() === userId)) {
-      subtopic.moderators.push({
-        user: userId,
-        promotedBy: promotedBy,
-      });
-      await subtopic.save();
-    }
+  await Promise.all(
+    subtopics.map(async (subtopic) => {
+      const alreadyMod = subtopic.moderators.some(
+        (m) => m.user.toString() === userId.toString(),
+      );
 
-    await moderatorToSubtopics(subtopic._id, userId, promotedBy);
-  }
+      if (!alreadyMod) {
+        subtopic.moderators.push({
+          user: userId,
+          promotedBy: promotedBy,
+        });
+        await subtopic.save();
+      }
+
+      await moderatorToSubtopics(subtopic._id, userId, promotedBy);
+    }),
+  );
 };
 
 module.exports = {
