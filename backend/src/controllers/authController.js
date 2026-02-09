@@ -1,13 +1,13 @@
-const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const SystemLogs = require("../models/SystemLogs");
 const { ACTION_TYPES } = require("../utils/constants/actionTypes");
 const { signToken } = require("../utils/jwtHelper");
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const crypto = require("crypto");
 const notificationService = require("../services/notificationService");
 const emailService = require("../services/emailService");
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 exports.register = async (req, res) => {
   try {
@@ -16,34 +16,34 @@ exports.register = async (req, res) => {
     if (!emailRegex.test(email)) {
       return res
         .status(400)
-        .json({ message: "Podany email jest nieprawidłowy." });
+        .json({ status: "fail", message: "Podany email jest nieprawidłowy." });
     }
-
-    if (password != passwordConfirm) {
-      return res.status(400).json({ message: "Hasła nie są identyczne" });
-    }
-
-    const existingUserEmail = await User.findOne({ email });
-    const existingUsername = await User.findOne({ username });
-
-    if (existingUserEmail) {
-      return res.status(400).json({ message: "Ten e-mail jest już zajęty" });
-    }
-
-    if (existingUsername) {
+    if (password !== passwordConfirm) {
       return res
         .status(400)
-        .json({ message: "Użytkownik o podanym loginie już istnieje" });
+        .json({ status: "fail", message: "Hasła nie są identyczne." });
     }
 
-    const newUser = await User.create({
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }],
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Użytkownik o takim emailu lub loginie już istnieje.",
+      });
+    }
+
+    const newUser = new User({
       email,
       username,
       password,
     });
 
     const verificationToken = newUser.createEmailVerificationToken();
-    await newUser.save({ validateBeforeSave: false });
+
+    await newUser.save();
 
     try {
       await emailService.sendVerificationEmail(
@@ -51,66 +51,72 @@ exports.register = async (req, res) => {
         verificationToken,
       );
     } catch (err) {
-      console.error("Błąd wysyłania maila weryfikacyjnego");
+      console.error("Błąd wysyłania maila (usuwam usera):", err);
+
+      await User.deleteOne({ _id: newUser._id });
+
+      return res.status(500).json({
+        status: "error",
+        message:
+          "Nie udało się wysłać e-maila weryfikacyjnego. Spróbuj ponownie później.",
+      });
     }
 
     notificationService.notifyNewUserRegistration(newUser);
 
     res.status(201).json({
       status: "success",
-      message:
-        "Konto zostało utworzone. Sprawdź swoją skrzynkę pocztową, aby zweryfikować adres e-mail.",
+      message: "Konto utworzone. Sprawdź swoją skrzynkę mailową.",
     });
   } catch (error) {
-    res.status(500).json({ message: "Błąd serwera", error: error.message });
+    console.error("Register error:", error);
+    res
+      .status(500)
+      .json({ status: "error", message: "Błąd serwera podczas rejestracji." });
   }
 };
 
 exports.login = async (req, res) => {
   try {
-    const username = req.body?.username;
-    const email = req.body?.email;
-    const password = req.body?.password;
-
-    if (email && !emailRegex.test(email)) {
-      return res
-        .status(400)
-        .json({ message: "Podany email jest nieprawidłowy." });
-    }
+    const { username, email, password } = req.body;
 
     if (!password || (!email && !username)) {
       return res
         .status(400)
-        .json({ message: "Podaj email lub login oraz hasło." });
+        .json({ status: "fail", message: "Podaj email/login oraz hasło." });
     }
 
     const user = await User.findOne({
       $or: [{ email: email }, { username: username }],
     }).select("+password");
 
-    if (!user) {
-      return res.status(401).json({ message: "Błędne dane logowania" });
-    }
+    if (!user || !(await user.checkPassword(password))) {
+      if (user) {
+        await SystemLogs.create({
+          performerEmailSnapshot: email || username,
+          actionType: ACTION_TYPES.LOGIN_FAILED,
+        });
+      }
 
-    if (!(await user.checkPassword(password))) {
-      await SystemLogs.create({
-        performerEmailSnapshot: email || username,
-        actionType: ACTION_TYPES.LOGIN_FAILED,
+      return res.status(401).json({
+        status: "fail",
+        message: "Błędny login lub hasło.",
       });
-      return res.status(401).json({ message: "Nieudana próba logowania" });
     }
 
     if (user.isBlocked) {
       return res.status(403).json({
+        status: "fail",
         message: "Twoje konto jest zablokowane.",
         reason: user.blockReason,
       });
     }
 
     if (!user.isEmailVerified) {
-      return res
-        .status(401)
-        .json({ message: "Musisz najpierw potwierdzić swój adres e-mail." });
+      return res.status(401).json({
+        status: "fail",
+        message: "Musisz najpierw potwierdzić swój adres e-mail.",
+      });
     }
 
     await SystemLogs.create({
@@ -133,10 +139,13 @@ exports.login = async (req, res) => {
           isActive: user.isActive,
         },
       },
-      message: "Użytkownik poprawnie zalogowany",
+      message: "Zalogowano pomyślnie.",
     });
   } catch (error) {
-    res.status(500).json({ message: "Błąd serwera", error: error.message });
+    console.error("Login error:", error);
+    res
+      .status(500)
+      .json({ status: "error", message: "Błąd serwera podczas logowania." });
   }
 };
 
@@ -153,9 +162,10 @@ exports.verifyEmail = async (req, res) => {
     });
 
     if (!user) {
-      return res
-        .status(400)
-        .json({ message: "Token jest nieprawidłowy lub wygasł." });
+      return res.status(400).json({
+        status: "fail",
+        message: "Link weryfikacyjny jest nieprawidłowy lub wygasł.",
+      });
     }
 
     user.isEmailVerified = true;
@@ -167,7 +177,7 @@ exports.verifyEmail = async (req, res) => {
     await SystemLogs.create({
       performer: user._id,
       actionType: ACTION_TYPES.EMAIL_VERIFIED,
-      details: "Adres e-mail został pomyślnie zweryfikowany.",
+      details: "Email zweryfikowany pomyślnie.",
     });
 
     res.status(200).json({
@@ -176,6 +186,9 @@ exports.verifyEmail = async (req, res) => {
         "Adres e-mail został zweryfikowany! Czekaj na akceptację administratora.",
     });
   } catch (error) {
-    res.status(500).json({ message: "Błąd serwera", error: error.message });
+    console.error("Verify error:", error);
+    res
+      .status(500)
+      .json({ status: "error", message: "Błąd serwera podczas weryfikacji." });
   }
 };
