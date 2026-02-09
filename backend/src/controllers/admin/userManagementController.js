@@ -115,64 +115,61 @@ exports.blockUser = async (req, res) => {
     const { reason } = req.body;
 
     if (req.user._id.toString() === userId) {
-      return res
-        .status(400)
-        .json({ message: "Nie możesz zablokować samego siebie." });
+      return res.status(400).json({
+        status: "fail",
+        message: "Nie możesz zablokować samego siebie.",
+      });
     }
 
     const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "Użytkownik nie znaleziony." });
-    }
+    if (!user)
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Użytkownik nie znaleziony." });
 
     if (authService.isAdmin(user)) {
-      return res
-        .status(403)
-        .json({ message: "Nie możesz zablokować administratora." });
+      return res.status(403).json({
+        status: "fail",
+        message: "Nie możesz zablokować administratora.",
+      });
     }
 
     if (user.isBlocked) {
-      return res
-        .status(400)
-        .json({ message: "Ten użytkownik jest już zablokowany." });
+      return res.status(400).json({
+        status: "fail",
+        message: "Ten użytkownik jest już zablokowany.",
+      });
     }
 
     user.isBlocked = true;
     user.blockReason = reason || "Zablokowany przez administratora";
     await user.save();
 
-    const userTopics = await Topic.find({ creator: user._id });
+    const { modifiedCount } = await Topic.updateMany(
+      { creator: user._id },
+      { creator: req.user._id },
+    );
 
-    if (userTopics.length > 0) {
-      for (const topic of userTopics) {
-        topic.creator = req.user._id;
-
-        await topic.save();
-
-        await SystemLogs.create({
-          performer: req.user._id,
-          actionType: ACTION_TYPES.TOPIC_TAKEOVER,
-          targetTopic: topic._id,
-          details: `Przejęcie tematu po zbanowaniu użytkownika ${user.username}`,
-        });
-      }
-    }
     await SystemLogs.create({
       performer: req.user._id,
       actionType: ACTION_TYPES.USER_BLOCK_GLOBAL,
       targetUser: user._id,
       reason: user.blockReason,
+      details:
+        modifiedCount > 0
+          ? `Przejęto ${modifiedCount} tematów.`
+          : "Brak tematów do przejęcia.",
     });
 
     notificationService.notifyUserBlocked(user, req.user, user.blockReason);
 
     res.status(200).json({
       status: "success",
-      message: "Użytkownik został zablokowany.",
+      message: `Użytkownik zablokowany. Przejęto ${modifiedCount} tematów.`,
       data: { user },
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
