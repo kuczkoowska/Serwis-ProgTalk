@@ -191,7 +191,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import { useTopicsStore } from "../../stores/topics";
 import { usePostsStore } from "../../stores/posts";
 import { useAuthStore } from "../../stores/auth";
@@ -266,15 +266,22 @@ onUnmounted(() => {
   postsStore.clearPosts();
 });
 
-// --- Handlers ---
+const onPostSubmit = async (payload) => {
+  const content = typeof payload === "object" ? payload.content : payload;
+  const tags = typeof payload === "object" ? payload.tags : [];
 
-const onPostSubmit = async (content) => {
-  if (!content.trim()) return;
+  if (!content || !content.trim()) return;
+
   sending.value = true;
   try {
     const replyId = replyToPost.value ? replyToPost.value._id : null;
 
-    await postsStore.addPost(topicsStore.currentTopic._id, content, replyId);
+    await postsStore.addPost(
+      topicsStore.currentTopic._id,
+      content,
+      replyId,
+      tags,
+    );
 
     showSuccess("Post dodany");
     replyToPost.value = null;
