@@ -1,52 +1,64 @@
 <template>
-  <div class="custom-card layout-container mb-3">
-    <div class="header-content">
+  <div
+    class="surface-card p-4 border-round shadow-1 border-1 surface-border flex flex-column md:flex-row gap-4"
+  >
+    <div class="flex-shrink-0 flex justify-content-center">
       <Avatar
-        :label="user?.username?.charAt(0).toUpperCase()"
+        :label="user?.username?.charAt(0).toUpperCase() || '?'"
         size="xlarge"
-        class="text-3xl"
+        shape="circle"
+        class="text-3xl bg-primary-50 text-primary font-bold w-6rem h-6rem"
       />
+    </div>
 
-      <div class="user-info-col">
-        <div class="usernametag">
-          <h1 class="username">{{ user?.username }}</h1>
-          <Tag
-            :value="getRoleLabel(user?.role)"
-            :severity="getRoleSeverity(user?.role)"
-            rounded
-          />
-        </div>
-
-        <p class="bio" v-if="user?.bio">{{ user.bio }}</p>
-
-        <div class="user-meta">
-          <span class="meta-item">
-            <i class="pi pi-calendar"></i>
-            Dołączył: {{ formatDate(user?.createdAt) }}
-          </span>
-          <span class="meta-item">
-            <i class="pi pi-envelope"></i>
-            {{ user?.email }}
-          </span>
-        </div>
+    <div class="flex-1">
+      <div
+        class="flex flex-column md:flex-row align-items-start md:align-items-center gap-3 mb-2"
+      >
+        <h1 class="text-3xl font-bold m-0 text-900">{{ user?.username }}</h1>
+        <Tag
+          :value="getRoleLabel(user?.role)"
+          :severity="getRoleSeverity(user?.role)"
+          rounded
+        />
       </div>
 
-      <div class="user-stats">
-        <div class="stat-box">
-          <Skeleton v-if="loading" width="3rem" height="1.5rem" />
-          <span v-else class="value">{{ stats.topics }}</span>
-          <span class="label">Tematów</span>
+      <p v-if="user?.bio" class="text-600 line-height-3 mt-0 mb-3 max-w-30rem">
+        {{ user.bio }}
+      </p>
+
+      <div class="flex gap-4 text-sm text-500">
+        <div class="flex align-items-center gap-2">
+          <i class="pi pi-calendar"></i>
+          <span>Dołączył: {{ formatDate(user?.createdAt) }}</span>
         </div>
-        <div class="stat-box">
-          <Skeleton v-if="loading" width="3rem" height="1.5rem" />
-          <span v-else class="value">{{ stats.posts }}</span>
-          <span class="label">Postów</span>
+        <div class="flex align-items-center gap-2">
+          <i class="pi pi-envelope"></i>
+          <span>{{ user?.email }}</span>
         </div>
-        <div class="stat-box">
-          <Skeleton v-if="loading" width="3rem" height="1.5rem" />
-          <span v-else class="value">{{ stats.likes }}</span>
-          <span class="label">Polubień</span>
-        </div>
+      </div>
+    </div>
+
+    <div
+      class="flex md:flex-column gap-4 md:gap-2 justify-content-center md:text-right border-top-1 md:border-top-none md:border-left-1 border-gray-200 pt-3 md:pt-0 md:pl-4"
+    >
+      <div class="flex flex-column align-items-center md:align-items-end">
+        <span class="text-2xl font-bold text-primary">{{
+          loading ? "-" : stats.topics
+        }}</span>
+        <span class="text-xs text-500 uppercase font-semibold">Tematów</span>
+      </div>
+      <div class="flex flex-column align-items-center md:align-items-end">
+        <span class="text-2xl font-bold text-primary">{{
+          loading ? "-" : stats.posts
+        }}</span>
+        <span class="text-xs text-500 uppercase font-semibold">Postów</span>
+      </div>
+      <div class="flex flex-column align-items-center md:align-items-end">
+        <span class="text-2xl font-bold text-primary">{{
+          loading ? "-" : stats.likes
+        }}</span>
+        <span class="text-xs text-500 uppercase font-semibold">Polubień</span>
       </div>
     </div>
   </div>
@@ -54,18 +66,9 @@
 
 <script setup>
 defineProps({
-  user: {
-    type: Object,
-    default: () => ({}),
-  },
-  stats: {
-    type: Object,
-    default: () => ({ topics: 0, posts: 0, likes: 0 }),
-  },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
+  user: Object,
+  stats: Object,
+  loading: Boolean,
 });
 
 const getRoleLabel = (role) => {
@@ -93,79 +96,3 @@ const formatDate = (dateStr) => {
   });
 };
 </script>
-
-<style scoped>
-.header-content {
-  display: flex;
-  align-items: flex-start;
-  gap: 2rem;
-}
-
-.user-info-col {
-  flex: 1;
-}
-
-.usernametag {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-}
-
-.username {
-  margin: 0;
-  font-size: 2rem;
-  color: #1e293b;
-}
-
-.bio {
-  color: #475569;
-  margin: 0.5rem 0 1rem 0;
-  font-size: 0.95rem;
-  line-height: 1.5;
-}
-
-.user-meta {
-  display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #64748b;
-  font-size: 0.9rem;
-}
-
-.meta-item i {
-  color: #94a3b8;
-}
-
-.user-stats {
-  margin-left: auto;
-  display: flex;
-  gap: 2rem;
-}
-
-.stat-box {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  min-width: 70px;
-}
-
-.stat-box .value {
-  font-weight: 800;
-  font-size: 1.5rem;
-  color: var(--p-primary-color);
-}
-
-.stat-box .label {
-  font-size: 0.8rem;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-</style>

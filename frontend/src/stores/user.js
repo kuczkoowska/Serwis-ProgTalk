@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useAuthStore } from "./auth";
 import api from "../plugins/axios";
+import socketService from "../plugins/socket"; // Dodajemy sockety
 
 const getError = (err) => {
   return err.response?.data?.message || err.message || "Błąd operacji";
@@ -150,6 +151,19 @@ export const useUserStore = defineStore("user", () => {
     error.value = null;
   }
 
+  // sockets
+
+  function initUserSockets() {
+    const authStore = useAuthStore();
+
+    socketService.on("user_blocked_globally", (data) => {
+      if (authStore.user && authStore.user._id === data.userId) {
+        alert(data.message || "Twoje konto zostało zablokowane.");
+        authStore.logout();
+      }
+    });
+  }
+
   return {
     profile,
     stats,
@@ -165,5 +179,6 @@ export const useUserStore = defineStore("user", () => {
     saveLastViewedPage,
     getLastViewedPage,
     clearProfile,
+    initUserSockets,
   };
 });

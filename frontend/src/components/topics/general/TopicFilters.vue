@@ -74,7 +74,7 @@ const onSearchInput = () => {
   debounceTimer = setTimeout(() => {
     updateFilter("search", localSearch.value);
   }, 500);
-
+};
 
 const sortModel = computed({
   get: () => props.filters.sort,
@@ -85,7 +85,6 @@ const showAllLevelsModel = computed({
   get: () => props.filters.showAllLevels,
   set: (val) => updateFilter("showAllLevels", val),
 });
-
 
 const updateFilter = (key, value) => {
   const newFilters = { ...props.filters, [key]: value };
