@@ -13,10 +13,8 @@ import "./assets/main.css";
 
 import hljsVuePlugin from "@highlightjs/vue-plugin";
 import "./plugins/highlight";
-
+import { useChatStore } from "./stores/chat";
 import socketService from "./plugins/socket";
-
-import { useAuthStore } from "./stores/auth";
 
 const MyPinkPreset = definePreset(Aura, {
   semantic: {
@@ -40,10 +38,13 @@ const app = createApp(App);
 const pinia = createPinia();
 
 app.use(pinia);
-app.use(router);
 
+import { useAuthStore } from "./stores/auth";
 const authStore = useAuthStore();
+
 authStore.restore();
+
+app.use(router);
 
 app.use(PrimeVue, {
   theme: {
@@ -55,6 +56,29 @@ app.use(PrimeVue, {
 });
 app.use(ToastService);
 app.use(hljsVuePlugin);
+
+const chatStore = useChatStore();
+
+socketService.on("new_message", (data) => {
+  if (data && data.message) {
+    chatStore.addMessage(data.message);
+    chatStore.fetchConversations();
+  }
+});
+
+socketService.on("new_support_message", (data) => {
+  if (data && data.message) {
+    chatStore.addMessage(data.message);
+    chatStore.fetchConversations();
+  }
+});
+
+socketService.on("message_sent", (data) => {
+  if (data && data.message) {
+    chatStore.addMessage(data.message);
+    chatStore.fetchConversations();
+  }
+});
 
 app.provide("socket", socketService);
 

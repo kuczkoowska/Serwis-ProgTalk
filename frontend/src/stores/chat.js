@@ -101,7 +101,7 @@ export const useChatStore = defineStore("chat", () => {
 
   async function fetchUnreadCount() {
     try {
-      const { data } = await api.get("/chat/unread");
+      const { data } = await api.get("/chat/unread-count");
       unreadCount.value = data.data.unreadCount || 0;
     } catch (error) {
       console.error("Błąd pobierania liczby nieprzeczytanych:", error);

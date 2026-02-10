@@ -93,6 +93,8 @@ declare module 'vue' {
     UsersTableTab: typeof import('./src/components/admin/UsersTableTab.vue')['default']
   }
   export interface GlobalDirectives {
+    BadgeDirective: typeof import('primevue/badgedirective')['default']
+    Ripple: typeof import('primevue/ripple')['default']
     Tooltip: typeof import('primevue/tooltip')['default']
   }
 }

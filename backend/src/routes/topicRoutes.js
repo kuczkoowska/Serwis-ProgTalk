@@ -9,7 +9,7 @@ router.use(authMiddleware.protect);
 
 router.post("/", topicController.createTopic);
 router.get("/", topicController.getAllTopics);
-router.get("/:topicId", topicController.getTopicDetails);
+router.get("/:id", topicController.getTopicDetails);
 
 router.patch("/:topicId/metadata", topicController.updateTopicMetadata);
 

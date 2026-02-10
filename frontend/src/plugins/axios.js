@@ -1,43 +1,41 @@
 import axios from "axios";
 import router from "../router";
 
+const baseURL = import.meta.env.VITE_API_URL || "https://localhost:3001/api";
+
 const apiClient = axios.create({
-  baseURL: "/api",
+  baseURL,
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error),
 );
 
 apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
 
-      router.push({
-        path: "/login",
-        query: { redirect: router.currentRoute.value.fullPath },
-      });
+      if (router.currentRoute.value.path !== "/login") {
+        router.push({
+          path: "/login",
+          query: { redirect: router.currentRoute.value.fullPath },
+        });
+      }
     }
-
     return Promise.reject(error);
   },
 );

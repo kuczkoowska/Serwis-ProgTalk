@@ -148,7 +148,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useToastHelper } from "../../composables/useToastHelper";
-import { useTopicSocketHandlers } from "../../composables/topic/useTopicSocketHandlers";
+import { useTopicSocketHandlers } from "../../composables/useSocketNotifications";
 import TopicBreadcrumb from "../../components/topic/TopicBreadcrumb.vue";
 import TopicPagination from "../../components/topic/TopicPagination.vue";
 

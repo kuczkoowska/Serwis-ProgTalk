@@ -3,9 +3,7 @@ import { reactive } from "vue";
 
 class SocketService {
   constructor() {
-    const host = window.location.hostname || "localhost";
-    const port = 3001;
-    const url = `https://${host}:${port}`;
+    const url = import.meta.env.VITE_SOCKET_URL || "https://localhost:3001";
 
     this.socket = io(url, {
       autoConnect: false,
@@ -21,12 +19,13 @@ class SocketService {
     this.activeRooms = new Set();
 
     this.socket.on("connect", () => {
+      console.log("Socket połączony:", this.socket.id);
       this.state.connected = true;
-
       this.rejoinActiveRooms();
     });
 
     this.socket.on("disconnect", (reason) => {
+      console.log("Socket rozłączony:", reason);
       this.state.connected = false;
     });
 
@@ -35,36 +34,45 @@ class SocketService {
     });
   }
 
-  connect() {
-    const token = localStorage.getItem("token");
+  connect(token) {
+    const authToken = token || localStorage.getItem("token");
 
-    if (token) {
-      this.socket.auth = { token };
-      this.socket.connect();
+    if (authToken) {
+      this.socket.auth = { token: authToken };
+
+      if (!this.socket.connected) {
+        this.socket.connect();
+      }
     } else {
-      console.warn("Próba połączenia z socketem bez tokenu! Anulowano.");
+      console.warn("Brak tokenu - nie łączę z socketem.");
     }
   }
 
   disconnect() {
-    this.socket.disconnect();
+    if (this.socket.connected) {
+      this.socket.disconnect();
+    }
     this.activeRooms.clear();
   }
 
   joinTopic(topicId) {
-    if (!topicId || this.activeRooms.has(`topic_${topicId}`)) return;
+    if (!topicId) return;
+    const roomName = `topic_${topicId}`;
+
+    if (this.activeRooms.has(roomName) && this.socket.connected) return;
 
     this.emit("join_topic", topicId);
-    this.activeRooms.add(`topic_${topicId}`);
+    this.activeRooms.add(roomName);
   }
 
   leaveTopic(topicId) {
+    const roomName = `topic_${topicId}`;
     this.emit("leave_topic", topicId);
-    this.activeRooms.delete(`topic_${topicId}`);
+    this.activeRooms.delete(roomName);
   }
 
   joinTopicsList() {
-    if (this.activeRooms.has("topics_list")) return;
+    if (this.activeRooms.has("topics_list") && this.socket.connected) return;
     this.emit("join_topics_list");
     this.activeRooms.add("topics_list");
   }
@@ -75,25 +83,31 @@ class SocketService {
   }
 
   joinAdminRoom() {
+    if (this.activeRooms.has("admins") && this.socket.connected) return;
     this.emit("join_admin_room");
+    this.activeRooms.add("admins");
   }
 
   rejoinActiveRooms() {
     if (this.activeRooms.size === 0) return;
 
-    console.log("Przywracam sesje w pokojach...");
+    console.log("Przywracam pokoje socketowe...");
     this.activeRooms.forEach((roomName) => {
       if (roomName.startsWith("topic_")) {
         const id = roomName.replace("topic_", "");
         this.socket.emit("join_topic", id);
       } else if (roomName === "topics_list") {
         this.socket.emit("join_topics_list");
+      } else if (roomName === "admins") {
+        this.socket.emit("join_admin_room");
       }
     });
   }
 
   emit(event, data) {
-    this.socket.emit(event, data);
+    if (this.socket.connected) {
+      this.socket.emit(event, data);
+    }
   }
 
   on(event, callback) {

@@ -37,8 +37,10 @@
 import { ref, onMounted, watch } from "vue";
 import { useAuthStore } from "../stores/auth";
 import { useChatStore } from "../stores/chat";
-import { useUserSocketNotifications } from "../composables/useSocketNotifications";
-import { useChatSocketHandlers } from "../composables/chat";
+import {
+  useUserSocketNotifications,
+  useChatSocketHandlers,
+} from "../composables/useSocketNotifications";
 import { useToastHelper } from "../composables/useToastHelper";
 import ConversationsList from "../components/chat/ConversationsList.vue";
 import ChatMessages from "../components/chat/ChatMessages.vue";
