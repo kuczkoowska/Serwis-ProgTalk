@@ -12,26 +12,43 @@ const props = defineProps({
   content: { type: String, required: true },
 });
 
+const escapeHtml = (str) =>
+  str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 const formattedHtml = computed(() => {
   let text = props.content;
 
-  text = text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-
+  const codeBlocks = [];
   text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
     const language = lang || "plaintext";
+    let highlighted;
     try {
-      const highlighted = hljs.highlight(code.trim(), { language }).value;
-      return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`;
+      highlighted = hljs.highlight(code.trim(), { language }).value;
     } catch (e) {
-      const highlighted = hljs.highlightAuto(code.trim()).value;
-      return `<pre><code class="hljs">${highlighted}</code></pre>`;
+      highlighted = hljs.highlightAuto(code.trim()).value;
     }
+    const placeholder = `%%CODEBLOCK_${codeBlocks.length}%%`;
+    codeBlocks.push(
+      `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`,
+    );
+    return placeholder;
   });
 
-  text = text.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+  const inlineBlocks = [];
+  text = text.replace(/`([^`]+)`/g, (match, code) => {
+    const placeholder = `%%INLINE_${inlineBlocks.length}%%`;
+    inlineBlocks.push(`<code class="inline-code">${escapeHtml(code)}</code>`);
+    return placeholder;
+  });
+
+  text = escapeHtml(text);
+
+  codeBlocks.forEach((block, i) => {
+    text = text.replace(`%%CODEBLOCK_${i}%%`, block);
+  });
+  inlineBlocks.forEach((block, i) => {
+    text = text.replace(`%%INLINE_${i}%%`, block);
+  });
 
   text = text.replace(/\n/g, "<br>");
 
