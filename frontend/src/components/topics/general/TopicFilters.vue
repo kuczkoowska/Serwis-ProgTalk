@@ -1,45 +1,43 @@
 <template>
-  <div class="search-section">
-    <div class="search-row">
-      <IconField iconPosition="left" class="search-input">
+  <div
+    class="surface-card p-4 border-round shadow-1 mb-4 border-1 surface-border"
+  >
+    <div class="flex flex-column md:flex-row gap-3 mb-3">
+      <IconField iconPosition="left" class="flex-1">
         <InputIcon class="pi pi-search" />
         <InputText
-          v-model="localFilters.search"
-          placeholder="Szukaj po nazwie tematu..."
+          v-model="localSearch"
+          placeholder="Szukaj tematu..."
+          class="w-full"
           @input="onSearchInput"
         />
       </IconField>
 
       <Select
-        v-model="localFilters.sort"
+        v-model="sortModel"
         :options="sortOptions"
         optionLabel="label"
         optionValue="value"
         placeholder="Sortuj"
-        @change="emitChange"
-        class="sort-select"
+        class="w-full md:w-15rem"
       />
     </div>
 
-    <div class="filter-options">
-      <div class="checkbox-wrapper">
-        <Checkbox
-          v-model="localFilters.showAllLevels"
-          inputId="showAllLevels"
-          :binary="true"
-          @change="emitChange"
-        />
-        <label for="showAllLevels" class="checkbox-label">
-          Pokazuj podtematy
+    <div class="flex align-items-center justify-content-between">
+      <div class="flex align-items-center gap-2">
+        <Checkbox v-model="showAllLevelsModel" inputId="showAllLevels" binary />
+        <label for="showAllLevels" class="cursor-pointer text-gray-700">
+          Pokaż podtematy
         </label>
       </div>
 
       <Button
         v-if="hasActiveFilters"
-        label="Wyczyść filtry"
+        label="Wyczyść"
         icon="pi pi-times"
-        size="small"
+        severity="secondary"
         text
+        size="small"
         @click="clearFilters"
       />
     </div>
@@ -50,17 +48,10 @@
 import { ref, computed, watch } from "vue";
 
 const props = defineProps({
-  // Przyjmujemy początkowe wartości z rodzica
-  initialFilters: {
-    type: Object,
-    required: true,
-  },
+  filters: { type: Object, required: true },
 });
 
 const emit = defineEmits(["update:filters", "change"]);
-
-// Kopiujemy propsy do lokalnego stanu, żeby nie mutować ich bezpośrednio
-const localFilters = ref({ ...props.initialFilters });
 
 const sortOptions = [
   { label: "Najnowsze", value: "newest" },
@@ -68,90 +59,58 @@ const sortOptions = [
   { label: "Nazwa A-Z", value: "name" },
 ];
 
-let searchTimeout = null;
+const localSearch = ref(props.filters.search);
+let debounceTimer = null;
 
-// Obliczamy czy są aktywne filtry
-const hasActiveFilters = computed(() => {
-  return (
-    localFilters.value.search ||
-    localFilters.value.sort !== "newest" ||
-    localFilters.value.showAllLevels
-  );
+watch(
+  () => props.filters.search,
+  (newVal) => {
+    localSearch.value = newVal;
+  },
+);
+
+const onSearchInput = () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    updateFilter("search", localSearch.value);
+  }, 500);
+
+
+const sortModel = computed({
+  get: () => props.filters.sort,
+  set: (val) => updateFilter("sort", val),
 });
 
-// Obsługa wpisywania (debounce)
-const onSearchInput = () => {
-  if (searchTimeout) clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(() => {
-    emitChange();
-  }, 500);
+const showAllLevelsModel = computed({
+  get: () => props.filters.showAllLevels,
+  set: (val) => updateFilter("showAllLevels", val),
+});
+
+
+const updateFilter = (key, value) => {
+  const newFilters = { ...props.filters, [key]: value };
+
+  emit("update:filters", newFilters);
+
+  emit("change", newFilters);
 };
 
-// Emitujemy zmianę do rodzica
-const emitChange = () => {
-  emit("change", localFilters.value);
-};
+const hasActiveFilters = computed(
+  () =>
+    props.filters.search ||
+    props.filters.sort !== "newest" ||
+    props.filters.showAllLevels,
+);
 
 const clearFilters = () => {
-  localFilters.value = {
+  localSearch.value = "";
+  const resetFilters = {
     search: "",
     tags: [],
     sort: "newest",
     showAllLevels: false,
   };
-  emitChange();
+  emit("update:filters", resetFilters);
+  emit("change", resetFilters);
 };
-
-// Synchronizacja w drugą stronę (jeśli rodzic zresetuje filtry)
-watch(
-  () => props.initialFilters,
-  (newVal) => {
-    localFilters.value = { ...newVal };
-  },
-  { deep: true },
-);
 </script>
-
-<style scoped>
-.search-section {
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: #f8f9fa;
-  border-radius: 12px;
-  border: 1px solid #e9ecef;
-}
-
-.search-row {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-}
-
-.search-input {
-  flex: 1;
-  min-width: 250px;
-}
-
-.sort-select {
-  width: 180px;
-}
-
-.filter-options {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.checkbox-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #495057;
-}
-
-.checkbox-label {
-  cursor: pointer;
-  user-select: none;
-}
-</style>

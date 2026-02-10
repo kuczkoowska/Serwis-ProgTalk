@@ -27,7 +27,7 @@
     </div>
 
     <TopicFilters
-      :initial-filters="topicsStore.searchFilters"
+      v-model:filters="topicsStore.searchFilters"
       @change="handleFilterChange"
       class="mb-4"
     />
@@ -104,9 +104,9 @@ const refreshList = async () => {
   showSuccess("Lista odświeżona");
 };
 
-const handleFilterChange = (newFilters) => {
+const handleFilterChange = () => {
   topicsStore.pagination.currentPage = 1;
-  topicsStore.fetchRootTopics(newFilters);
+  topicsStore.fetchRootTopics();
 };
 
 const changePage = (delta) => {

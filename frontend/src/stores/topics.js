@@ -37,6 +37,10 @@ export const useTopicsStore = defineStore("topics", () => {
   const hasMoreTopics = computed(() => pagination.value.hasNextPage);
   const topicsCount = computed(() => rootTopics.value.length);
 
+  function updateFilter(key, value) {
+    searchFilters.value[key] = value;
+  }
+
   function canManageTopic(userId) {
     if (!currentTopic.value || !userId) return false;
 
@@ -383,6 +387,8 @@ export const useTopicsStore = defineStore("topics", () => {
     topicsCount,
     hasMoreTopics,
     canManageTopic,
+
+    updateFilter,
 
     fetchRootTopics,
     subscribeToTopicsList,
