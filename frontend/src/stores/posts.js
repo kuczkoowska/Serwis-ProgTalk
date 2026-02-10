@@ -14,12 +14,12 @@ export const usePostsStore = defineStore("posts", () => {
     page: 1,
     limit: 10,
     hasNextPage: false,
+    hasPrevPage: false,
+    totalPages: 1,
   });
 
   const waitingForOwnPost = ref(false);
-  const ownPostId = ref(null);
-
-  const currentPage = computed(() => pagination.value.page);
+  const isLastPage = computed(() => !pagination.value.hasNextPage);
 
   async function fetchPosts(topicId, page = 1, limit = 10) {
     loading.value = true;
@@ -31,11 +31,14 @@ export const usePostsStore = defineStore("posts", () => {
       });
 
       posts.value = res.data.data.posts;
+      const backendPag = res.data.data.pagination || {};
 
       pagination.value = {
         page: page,
         limit: limit,
-        hasNextPage: res.data.data.hasNextPage || false,
+        hasNextPage: backendPag.hasNextPage || false,
+        hasPrevPage: page > 1,
+        totalPages: backendPag.totalPages || 1,
       };
     } catch (err) {
       error.value = "Nie udało się pobrać wpisów.";
@@ -54,9 +57,9 @@ export const usePostsStore = defineStore("posts", () => {
         tags,
         replyTo,
       });
-      handleNewPost(data.data.post);
-
-      return data.data;
+      const newPost = data.data.post;
+      posts.value.push(newPost);
+      return newPost;
     } catch (err) {
       throw getError(err);
     } finally {
@@ -67,7 +70,6 @@ export const usePostsStore = defineStore("posts", () => {
   async function toggleLike(postId) {
     try {
       const { data } = await api.patch(`/posts/${postId}/like`);
-      // Aktualizuj lokalnie
       const updatedPost = data.data?.post;
       const postIndex = posts.value.findIndex((p) => p._id === postId);
       if (postIndex !== -1 && updatedPost) {
@@ -81,22 +83,14 @@ export const usePostsStore = defineStore("posts", () => {
 
   async function deletePost(postId) {
     try {
-      const res = await api.delete(`/posts/${postId}`);
-      posts.value = posts.value.filter((p) => p._id !== postId);
-      return res.data;
-    } catch (err) {
-      throw getError(err);
-    }
-  }
+      await api.delete(`/posts/${postId}`);
 
-  async function updatePost(postId, content) {
-    try {
-      const { data } = await api.patch(`/posts/${postId}`, { content });
-      const postIndex = posts.value.findIndex((p) => p._id === postId);
-      if (postIndex !== -1 && data.data?.post) {
-        posts.value[postIndex] = data.data.post;
+      const post = posts.value.find((p) => p._id === postId);
+      if (post) {
+        post.isDeleted = true;
       }
-      return data;
+
+      return true;
     } catch (err) {
       throw getError(err);
     }
@@ -104,31 +98,36 @@ export const usePostsStore = defineStore("posts", () => {
 
   function clearPosts() {
     posts.value = [];
-    pagination.value = { page: 1, limit: 10, hasNextPage: false };
+    pagination.value = {
+      page: 1,
+      limit: 10,
+      hasNextPage: false,
+      hasPrevPage: false,
+      totalPages: 1,
+    };
     waitingForOwnPost.value = false;
   }
 
   const handleNewPost = (post) => {
-    const exists = posts.value.find((p) => p._id === post._id);
-    if (!exists) {
-      posts.value.push(post);
+    if (isLastPage.value) {
+      const exists = posts.value.find((p) => p._id === post._id);
+      if (!exists) posts.value.push(post);
     }
   };
 
   function initPostSockets() {
-    socketService.on("new_post", (data) => {
-      handleNewPost(data.post);
-    });
+    socketService.on("new_post", (data) => handleNewPost(data.post));
 
     socketService.on("post_liked", (data) => {
       const post = posts.value.find((p) => p._id === data.postId);
-      if (post) {
-        post.likesCount = data.likesCount;
-      }
+      if (post) post.likesCount = data.likesCount;
     });
 
     socketService.on("post_deleted", (data) => {
-      posts.value = posts.value.filter((p) => p._id !== data.postId);
+      const post = posts.value.find((p) => p._id === data.postId);
+      if (post) {
+        post.isDeleted = true;
+      }
     });
   }
 
@@ -144,16 +143,13 @@ export const usePostsStore = defineStore("posts", () => {
     error,
     pagination,
     waitingForOwnPost,
-    ownPostId,
-    currentPage,
+    isLastPage,
 
     fetchPosts,
     addPost,
     toggleLike,
     deletePost,
-    updatePost,
     clearPosts,
-
     initPostSockets,
     cleanupPostSockets,
   };

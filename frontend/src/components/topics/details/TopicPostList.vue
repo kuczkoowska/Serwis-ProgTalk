@@ -7,6 +7,7 @@
         :post="post"
         :currentUserId="currentUserId"
         :isModerator="isModerator"
+        :isAdmin="isAdmin"
         @like="$emit('like', $event)"
         @reply="$emit('reply', $event)"
         @delete="$emit('delete', $event)"
@@ -24,13 +25,17 @@
 </template>
 
 <script setup>
-import TopicPost from "./TopicPost.vue";
+import { computed } from "vue";
+import { useAuthStore } from "../../../stores/auth";
 
-defineProps({
+const props = defineProps({
   posts: { type: Array, default: () => [] },
   currentUserId: String,
   isModerator: Boolean,
 });
 
 defineEmits(["like", "reply", "delete"]);
+
+const authStore = useAuthStore();
+const isAdmin = computed(() => authStore.user?.role === "admin");
 </script>

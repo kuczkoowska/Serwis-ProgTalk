@@ -30,37 +30,26 @@
         <div class="col-12 lg:col-9 flex flex-column gap-4">
           <TopicHeader :topic="topicsStore.currentTopic" />
 
-          <div
-            v-if="postsStore.loading && postsStore.posts.length === 0"
-            class="flex justify-content-center p-5"
-          >
-            <ProgressSpinner style="width: 40px" />
+          <div class="relative">
+            <div
+              v-if="postsStore.loading"
+              class="absolute top-0 left-0 w-full h-full bg-white-alpha-80 z-5 flex justify-content-center pt-5"
+              style="min-height: 200px"
+            >
+              <ProgressSpinner style="width: 40px" />
+            </div>
+
+            <TopicPostList
+              :posts="postsStore.posts"
+              :currentUserId="authStore.user?._id"
+              :isModerator="topicsStore.canManage"
+              @like="handleLike"
+              @delete="handleDeletePost"
+              @reply="handleReply"
+            />
+
+            <div id="bottom-anchor"></div>
           </div>
-
-          <TopicPostList
-            v-else
-            :posts="postsStore.posts"
-            :currentUserId="authStore.user?._id"
-            :isModerator="topicsStore.canManage"
-            @like="handleLike"
-            @delete="handleDeletePost"
-            @reply="handleReply"
-          />
-
-          <Paginator
-            v-if="
-              postsStore.pagination.hasNextPage ||
-              postsStore.pagination.page > 1
-            "
-            :rows="postsStore.pagination.limit"
-            :totalRecords="1000"
-            :first="
-              (postsStore.pagination.page - 1) * postsStore.pagination.limit
-            "
-            @page="onPageChange"
-            template="PrevPageLink CurrentPageReport NextPageLink"
-            class="mt-2"
-          />
 
           <div class="mt-3">
             <Message
@@ -296,15 +285,6 @@ const handleReply = (post) => {
   replyToPost.value = post;
   const editor = document.getElementById("post-editor-section");
   if (editor) editor.scrollIntoView({ behavior: "smooth" });
-};
-
-const onPageChange = (event) => {
-  postsStore.fetchPosts(
-    topicsStore.currentTopic._id,
-    event.page + 1,
-    event.rows,
-  );
-  window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
 const onModeratorApplicationSubmitted = () => {
