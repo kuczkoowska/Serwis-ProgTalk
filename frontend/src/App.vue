@@ -1,16 +1,20 @@
 <script setup>
 import NavBarComponent from "./components/NavBarComponent.vue";
 import { useGlobalUserSocketNotifications } from "./composables/useSocketNotifications";
+import Toast from "primevue/toast";
 
 useGlobalUserSocketNotifications();
 </script>
 
 <template>
   <div class="app-container">
+    <Toast />
+
     <nav-bar-component />
     <router-view></router-view>
   </div>
 </template>
+
 <style>
 * {
   box-sizing: border-box;
