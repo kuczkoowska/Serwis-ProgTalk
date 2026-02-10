@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import api from "../plugins/axios";
+import socketService from "../plugins/socket";
+import { useAuthStore } from "./auth";
 
 const getError = (err) => err.response?.data?.message || "Błąd operacji";
 
@@ -8,12 +10,15 @@ export const useTopicsStore = defineStore("topics", () => {
   const rootTopics = ref([]);
   const currentTopic = ref(null);
   const subtopics = ref([]);
+
   const canPost = ref(false);
   const canManage = ref(false);
   const isBlocked = ref(false);
   const isClosed = ref(false);
+
   const loading = ref(false);
   const error = ref(null);
+  const hasNewTopics = ref(false);
 
   const pagination = ref({
     currentPage: 1,
@@ -30,6 +35,7 @@ export const useTopicsStore = defineStore("topics", () => {
   });
 
   const hasMoreTopics = computed(() => pagination.value.hasNextPage);
+  const topicsCount = computed(() => rootTopics.value.length);
 
   function canManageTopic(userId) {
     if (!currentTopic.value || !userId) return false;
@@ -45,40 +51,30 @@ export const useTopicsStore = defineStore("topics", () => {
     );
   }
 
-  async function fetchRootTopics(customFilters = {}) {
-    loading.value = true;
-    error.value = null;
+  // WEBSOCKETS
 
-    const filters = { ...searchFilters.value, ...customFilters };
+  function subscribeToTopicsList() {
+    const authStore = useAuthStore();
 
-    try {
-      const params = {
-        page: filters.page || 1,
-        limit: filters.limit || 12,
-        search: filters.search || undefined,
-        sort: filters.sort || "newest",
-        root: !filters.showAllLevels ? "true" : undefined,
-      };
+    socketService.joinTopicsList();
 
-      const res = await api.get("/topics", { params });
+    socketService.on("new_topic", (data) => {
+      const creatorName = data.topic?.creator?.username || data.topic?.creator;
+      const myName = authStore.user?.username;
 
-      rootTopics.value = res.data.data.topics;
-
-      if (res.data.data.pagination) {
-        const backendPag = res.data.data.pagination;
-        pagination.value = {
-          currentPage: backendPag.currentPage || params.page,
-          limit: backendPag.limit || params.limit,
-          hasNextPage: backendPag.hasNextPage || false,
-        };
+      if (creatorName !== myName) {
+        hasNewTopics.value = true;
       }
-    } catch (err) {
-      error.value = "Błąd pobierania tematów.";
-      console.error(err);
-    } finally {
-      loading.value = false;
-    }
+    });
   }
+
+  function unsubscribeFromTopicsList() {
+    socketService.leaveTopicsList();
+    socketService.off("new_topic");
+    hasNewTopics.value = false;
+  }
+
+  // http
 
   function setSearchFilters(filters) {
     searchFilters.value = { ...searchFilters.value, ...filters };
@@ -94,6 +90,45 @@ export const useTopicsStore = defineStore("topics", () => {
     pagination.value.currentPage = 1;
   }
 
+  async function fetchRootTopics(customFilters = {}) {
+    loading.value = true;
+    error.value = null;
+
+    if (customFilters) {
+      searchFilters.value = { ...searchFilters.value, ...customFilters };
+    }
+
+    try {
+      const params = {
+        page: searchFilters.value.page || pagination.value.currentPage,
+        limit: pagination.value.limit,
+        search: searchFilters.value.search || undefined,
+        sort: searchFilters.value.sort || "newest",
+        root: !searchFilters.value.showAllLevels ? "true" : undefined,
+      };
+
+      const res = await api.get("/topics", { params });
+
+      rootTopics.value = res.data.data.topics;
+
+      if (res.data.data.pagination) {
+        const backendPag = res.data.data.pagination;
+        pagination.value = {
+          currentPage: backendPag.currentPage || params.page,
+          limit: backendPag.limit || 12,
+          hasNextPage: backendPag.hasNextPage || false,
+        };
+      }
+
+      hasNewTopics.value = false;
+    } catch (err) {
+      error.value = "Błąd pobierania tematów.";
+      console.error(err);
+    } finally {
+      loading.value = false;
+    }
+  }
+
   async function fetchTopicDetails(id) {
     loading.value = true;
     error.value = null;
@@ -106,7 +141,6 @@ export const useTopicsStore = defineStore("topics", () => {
 
     try {
       const res = await api.get(`/topics/${id}`);
-
       const data = res.data.data;
 
       currentTopic.value = data.topic;
@@ -132,6 +166,7 @@ export const useTopicsStore = defineStore("topics", () => {
   async function createTopic(payload) {
     try {
       const res = await api.post("/topics", payload);
+      await fetchRootTopics({ page: 1 });
       return res.data;
     } catch (err) {
       throw getError(err);
@@ -343,12 +378,15 @@ export const useTopicsStore = defineStore("topics", () => {
     error,
     pagination,
     searchFilters,
+    hasNewTopics,
 
-    topicsCount: computed(() => rootTopics.value.length),
+    topicsCount,
     hasMoreTopics,
     canManageTopic,
 
     fetchRootTopics,
+    subscribeToTopicsList,
+    unsubscribeFromTopicsList,
     setSearchFilters,
     resetSearchFilters,
     fetchTopicDetails,
