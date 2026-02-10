@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useAuthStore } from "./auth";
 import api from "../plugins/axios";
-import socketService from "../plugins/socket"; // Dodajemy sockety
+import socketService from "../plugins/socket";
 
 const getError = (err) => {
   return err.response?.data?.message || err.message || "Błąd operacji";
@@ -24,7 +24,6 @@ export const useUserStore = defineStore("user", () => {
     error.value = null;
     try {
       const { data } = await api.get("/users/profile");
-
       profile.value = data.data.user;
       stats.value = data.data.stats;
     } catch (err) {
@@ -42,8 +41,6 @@ export const useUserStore = defineStore("user", () => {
       const { data } = await api.get(`/users/${userId}`);
       return data.data;
     } catch (err) {
-      error.value = "Nie udało się pobrać profilu użytkownika.";
-      console.error(err);
       throw getError(err);
     } finally {
       loading.value = false;
@@ -54,10 +51,7 @@ export const useUserStore = defineStore("user", () => {
     loading.value = true;
     error.value = null;
     try {
-      const { data } = await api.patch("/users/profile", {
-        bio,
-        username,
-      });
+      const { data } = await api.patch("/users/profile", { bio, username });
 
       profile.value = { ...profile.value, ...data.data.user };
 
@@ -108,7 +102,6 @@ export const useUserStore = defineStore("user", () => {
       searchResults.value = [];
       return;
     }
-
     loading.value = true;
     try {
       const { data } = await api.get(`/users/search?query=${query}`);
@@ -123,10 +116,7 @@ export const useUserStore = defineStore("user", () => {
 
   async function saveLastViewedPage(topicId, page) {
     try {
-      await api.post("/users/last-viewed-page", {
-        topicId,
-        page,
-      });
+      await api.post("/users/last-viewed-page", { topicId, page });
     } catch (err) {
       console.warn("Błąd zapisu ostatniej strony:", err);
     }
@@ -143,25 +133,27 @@ export const useUserStore = defineStore("user", () => {
 
   function clearProfile() {
     profile.value = null;
-    stats.value = {
-      topics: 0,
-      posts: 0,
-      likes: 0,
-    };
+    stats.value = { topics: 0, posts: 0, likes: 0 };
     error.value = null;
   }
 
-  // sockets
+  const handleUserBlocked = (data) => {
+    const authStore = useAuthStore();
+    if (authStore.user && authStore.user._id === data.userId) {
+      alert(
+        data.message ||
+          "Twoje konto zostało zablokowane. Zostaniesz wylogowany.",
+      );
+      authStore.logout();
+    }
+  };
 
   function initUserSockets() {
-    const authStore = useAuthStore();
+    socketService.on("user_blocked_globally", handleUserBlocked);
+  }
 
-    socketService.on("user_blocked_globally", (data) => {
-      if (authStore.user && authStore.user._id === data.userId) {
-        alert(data.message || "Twoje konto zostało zablokowane.");
-        authStore.logout();
-      }
-    });
+  function cleanupUserSockets() {
+    socketService.off("user_blocked_globally", handleUserBlocked);
   }
 
   return {
@@ -170,7 +162,6 @@ export const useUserStore = defineStore("user", () => {
     searchResults,
     loading,
     error,
-
     fetchMyProfile,
     fetchUserProfile,
     updateProfile,
@@ -180,5 +171,6 @@ export const useUserStore = defineStore("user", () => {
     getLastViewedPage,
     clearProfile,
     initUserSockets,
+    cleanupUserSockets,
   };
 });

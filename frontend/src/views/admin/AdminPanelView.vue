@@ -1,109 +1,100 @@
 <template>
-  <div class="admin-panel">
+  <div class="layout-container p-4">
     <Toast />
 
-    <div class="admin-header">
-      <h1>
-        <i class="pi pi-shield mr-2" style="font-size: 2rem"></i> Panel
-        Administratora
+    <div class="flex flex-column gap-2 mb-4 text-center md:text-left">
+      <h1
+        class="m-0 text-900 flex align-items-center justify-content-center md:justify-content-start gap-2"
+      >
+        <i class="pi pi-shield text-3xl text-primary"></i>
+        Panel Administratora
       </h1>
-      <p>Zarządzaj użytkownikami, tematami i systemem.</p>
+      <p class="text-600 m-0">
+        Zarządzaj użytkownikami, tematami i systemem w jednym miejscu.
+      </p>
     </div>
 
     <AdminStatsCard :stats="adminStore.stats" :loading="adminStore.loading" />
 
-    <Tabs
-      :value="String(activeTab)"
-      @update:value="activeTab = Number($event)"
-      class="admin-tabs"
-    >
-      <TabList>
-        <Tab value="0">
-          <div class="flex align-items-center gap-2">
-            <span>Oczekujący</span>
-            <Badge
-              v-if="adminStore.stats.users.pending > 0"
-              :value="adminStore.stats.users.pending"
-              severity="warning"
-            />
-          </div>
-        </Tab>
-        <Tab value="1">Wszyscy użytkownicy</Tab>
-        <Tab value="2">Wszystkie tematy</Tab>
-        <Tab value="3">Logi Systemowe</Tab>
-        <Tab value="4">Rozszerzone statystyki</Tab>
-      </TabList>
+    <div class="card mt-4">
+      <Tabs
+        :value="String(activeTab)"
+        @update:value="activeTab = Number($event)"
+      >
+        <TabList>
+          <Tab value="0">
+            <div class="flex align-items-center gap-2">
+              <span>Oczekujący</span>
+              <Badge
+                v-if="adminStore.stats.users.pending > 0"
+                :value="adminStore.stats.users.pending"
+                severity="warning"
+              />
+            </div>
+          </Tab>
+          <Tab value="1">Użytkownicy</Tab>
+          <Tab value="2">Tematy</Tab>
+          <Tab value="3">Logi</Tab>
+          <Tab value="4">Statystyki</Tab>
+        </TabList>
 
-      <TabPanels>
-        <TabPanel value="0">
-          <PendingUsersTab />
-        </TabPanel>
+        <TabPanels>
+          <TabPanel value="0">
+            <PendingUsersTab />
+          </TabPanel>
 
-        <TabPanel value="1">
-          <UsersTableTab />
-        </TabPanel>
+          <TabPanel value="1">
+            <UsersTableTab />
+          </TabPanel>
 
-        <TabPanel value="2">
-          <TopicsTableTab />
-        </TabPanel>
+          <TabPanel value="2">
+            <TopicsTableTab />
+          </TabPanel>
 
-        <TabPanel value="3">
-          <SystemLogsTab />
-        </TabPanel>
+          <TabPanel value="3">
+            <SystemLogsTab />
+          </TabPanel>
 
-        <TabPanel value="4">
-          <ExtendedStatsTab />
-        </TabPanel>
-      </TabPanels>
-    </Tabs>
+          <TabPanel value="4">
+            <ExtendedStatsTab />
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted, watch } from "vue";
 import { useAdminStore } from "../../stores/admin";
-import { useAdminSocketNotifications } from "../../composables/useSocketNotifications";
+import AdminStatsCard from "../../components/admin/AdminStatsCard.vue";
+import PendingUsersTab from "../../components/admin/PendingUsersTab.vue";
+import UsersTableTab from "../../components/admin/UsersTableTab.vue";
+import TopicsTableTab from "../../components/admin/TopicsTableTab.vue";
+import SystemLogsTab from "../../components/admin/SystemLogsTab.vue";
+import ExtendedStatsTab from "../../components/admin/ExtendedStatsTab.vue";
+
 const adminStore = useAdminStore();
 const activeTab = ref(0);
 
-const refreshData = async () => {
-  await adminStore.fetchStats();
-
+// Ładowanie danych zależnie od zakładki
+const loadTabData = async () => {
   if (activeTab.value === 0) await adminStore.fetchPendingUsers();
-  if (activeTab.value === 1) await adminStore.fetchAllUsers();
+  else if (activeTab.value === 1) await adminStore.fetchAllUsers();
+  else if (activeTab.value === 2) await adminStore.fetchAdminTopics();
+  else if (activeTab.value === 3) await adminStore.fetchLogs();
+  else if (activeTab.value === 4) await adminStore.fetchExtendedStats();
 };
+
+watch(activeTab, loadTabData);
 
 onMounted(() => {
   adminStore.fetchStats();
+  adminStore.initAdminSockets();
+  loadTabData();
 });
 
-useAdminSocketNotifications(refreshData);
+onUnmounted(() => {
+  adminStore.cleanupAdminSockets();
+});
 </script>
-
-<style scoped>
-.admin-panel {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.admin-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.admin-header h1 {
-  color: #2c3e50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.admin-header p {
-  color: #64748b;
-}
-
-.admin-tabs {
-  margin-top: 2rem;
-}
-</style>

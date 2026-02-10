@@ -1,64 +1,86 @@
 <template>
-  <div v-if="stats" class="stats-grid">
-    <Card class="stat-card">
-      <template #content>
-        <div class="stat-content">
-          <div class="stat-icon users">
-            <i class="pi pi-users"></i>
-          </div>
-          <div class="stat-info">
-            <h3 class="stat-value">{{ stats.users?.total || 0 }}</h3>
-            <p class="stat-label">Użytkowników</p>
-          </div>
+  <div v-if="stats" class="grid">
+    <div class="col-12 md:col-6 lg:col-3">
+      <div
+        class="surface-card shadow-1 p-3 border-round border-1 surface-border flex align-items-center gap-3"
+      >
+        <div
+          class="flex align-items-center justify-content-center bg-indigo-100 border-round"
+          style="width: 3.5rem; height: 3.5rem"
+        >
+          <i class="pi pi-users text-indigo-600 text-xl"></i>
         </div>
-      </template>
-    </Card>
+        <div>
+          <span class="block text-900 font-bold text-2xl mb-1">{{
+            stats.users?.total || 0
+          }}</span>
+          <span class="text-600 font-medium text-sm">Użytkowników</span>
+        </div>
+      </div>
+    </div>
 
-    <Card class="stat-card">
-      <template #content>
-        <div class="stat-content">
-          <div class="stat-icon pending">
-            <i class="pi pi-clock"></i>
-          </div>
-          <div class="stat-info">
-            <h3 class="stat-value">{{ stats.users?.pending || 0 }}</h3>
-            <p class="stat-label">Oczekujących</p>
-          </div>
+    <div class="col-12 md:col-6 lg:col-3">
+      <div
+        class="surface-card shadow-1 p-3 border-round border-1 surface-border flex align-items-center gap-3"
+      >
+        <div
+          class="flex align-items-center justify-content-center bg-purple-100 border-round"
+          style="width: 3.5rem; height: 3.5rem"
+        >
+          <i class="pi pi-clock text-purple-600 text-xl"></i>
         </div>
-      </template>
-    </Card>
+        <div>
+          <span class="block text-900 font-bold text-2xl mb-1">{{
+            stats.users?.pending || 0
+          }}</span>
+          <span class="text-600 font-medium text-sm">Oczekujących</span>
+        </div>
+      </div>
+    </div>
 
-    <Card class="stat-card">
-      <template #content>
-        <div class="stat-content">
-          <div class="stat-icon topic">
-            <i class="pi pi-folder"></i>
-          </div>
-          <div class="stat-info">
-            <h3 class="stat-value">{{ stats.topics?.total || 0 }}</h3>
-            <p class="stat-label">Tematów</p>
-          </div>
+    <div class="col-12 md:col-6 lg:col-3">
+      <div
+        class="surface-card shadow-1 p-3 border-round border-1 surface-border flex align-items-center gap-3"
+      >
+        <div
+          class="flex align-items-center justify-content-center bg-green-100 border-round"
+          style="width: 3.5rem; height: 3.5rem"
+        >
+          <i class="pi pi-folder text-green-600 text-xl"></i>
         </div>
-      </template>
-    </Card>
+        <div>
+          <span class="block text-900 font-bold text-2xl mb-1">{{
+            stats.topics?.total || 0
+          }}</span>
+          <span class="text-600 font-medium text-sm">Tematów</span>
+        </div>
+      </div>
+    </div>
 
-    <Card class="stat-card">
-      <template #content>
-        <div class="stat-content">
-          <div class="stat-icon blocked">
-            <i class="pi pi-ban"></i>
-          </div>
-          <div class="stat-info">
-            <h3 class="stat-value">{{ stats.users?.blocked || 0 }}</h3>
-            <p class="stat-label">Zablokowanych</p>
-          </div>
+    <div class="col-12 md:col-6 lg:col-3">
+      <div
+        class="surface-card shadow-1 p-3 border-round border-1 surface-border flex align-items-center gap-3"
+      >
+        <div
+          class="flex align-items-center justify-content-center bg-red-100 border-round"
+          style="width: 3.5rem; height: 3.5rem"
+        >
+          <i class="pi pi-ban text-red-600 text-xl"></i>
         </div>
-      </template>
-    </Card>
+        <div>
+          <span class="block text-900 font-bold text-2xl mb-1">{{
+            stats.users?.blocked || 0
+          }}</span>
+          <span class="text-600 font-medium text-sm">Zablokowanych</span>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div v-else class="stats-grid">
-    <Skeleton height="100px" class="stat-card" v-for="i in 4" :key="i" />
+  <div v-else class="grid">
+    <div class="col-12 md:col-6 lg:col-3" v-for="i in 4" :key="i">
+      <Skeleton height="5rem" class="border-round" />
+    </div>
   </div>
 </template>
 
@@ -74,47 +96,3 @@ defineProps({
   },
 });
 </script>
-
-<style scoped>
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-.stat-card {
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-}
-.stat-content {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.stat-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  color: white;
-}
-
-.stat-icon.users {
-  background: #667eea;
-}
-
-.stat-icon.pending {
-  background: #f093fb;
-}
-
-.stat-icon.topic {
-  background: #43e97b;
-}
-.stat-icon.blocked {
-  background: #ef4444;
-}
-</style>

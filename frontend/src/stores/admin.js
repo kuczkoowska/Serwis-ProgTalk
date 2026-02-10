@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import api from "../plugins/axios";
+import socketService from "../plugins/socket";
+import { useAuthStore } from "./auth";
 
 const getError = (err) => err.response?.data?.message || "Błąd operacji";
 
@@ -27,6 +29,7 @@ export const useAdminStore = defineStore("admin", () => {
     currentPage: 1,
     totalPages: 1,
     limit: 20,
+    totalItems: 0,
   });
 
   const loading = ref(false);
@@ -50,15 +53,13 @@ export const useAdminStore = defineStore("admin", () => {
 
   const fetchExtendedStats = async (limit = 10) => {
     loading.value = true;
-    error.value = null;
     try {
       const res = await api.get("/admin/extended-stats", {
         params: { limit },
       });
       extendedStats.value = res.data.data;
     } catch (err) {
-      error.value = "Błąd pobierania rozszerzonych statystyk.";
-      console.error(err);
+      console.error("Błąd pobierania rozszerzonych statystyk:", err);
     } finally {
       loading.value = false;
     }
@@ -66,13 +67,11 @@ export const useAdminStore = defineStore("admin", () => {
 
   const fetchPendingUsers = async () => {
     loading.value = true;
-    error.value = null;
     try {
       const res = await api.get("/admin/users/pending");
       pendingUsers.value = res.data.data.users;
     } catch (err) {
-      error.value = "Błąd pobierania oczekujących użytkowników.";
-      console.error(err);
+      console.error("Błąd pobierania oczekujących:", err);
     } finally {
       loading.value = false;
     }
@@ -80,13 +79,11 @@ export const useAdminStore = defineStore("admin", () => {
 
   const fetchAllUsers = async () => {
     loading.value = true;
-    error.value = null;
     try {
       const res = await api.get("/admin/users");
       users.value = res.data.data.users;
     } catch (err) {
-      error.value = "Błąd pobierania listy użytkowników.";
-      console.error(err);
+      console.error("Błąd pobierania listy użytkowników:", err);
     } finally {
       loading.value = false;
     }
@@ -97,7 +94,7 @@ export const useAdminStore = defineStore("admin", () => {
       await api.patch(`/admin/users/${userId}/approve`);
 
       pendingUsers.value = pendingUsers.value.filter((u) => u._id !== userId);
-      stats.value.users.pending--;
+      stats.value.users.pending = Math.max(0, stats.value.users.pending - 1);
       stats.value.users.total++;
 
       return true;
@@ -111,7 +108,7 @@ export const useAdminStore = defineStore("admin", () => {
       await api.delete(`/admin/users/${userId}/reject`, { data: { reason } });
 
       pendingUsers.value = pendingUsers.value.filter((u) => u._id !== userId);
-      stats.value.users.pending--;
+      stats.value.users.pending = Math.max(0, stats.value.users.pending - 1);
 
       return true;
     } catch (err) {
@@ -128,6 +125,7 @@ export const useAdminStore = defineStore("admin", () => {
         user.isBlocked = true;
         user.blockReason = reason;
       }
+      stats.value.users.blocked++;
 
       return true;
     } catch (err) {
@@ -144,6 +142,7 @@ export const useAdminStore = defineStore("admin", () => {
         user.isBlocked = false;
         user.blockReason = null;
       }
+      stats.value.users.blocked = Math.max(0, stats.value.users.blocked - 1);
 
       return true;
     } catch (err) {
@@ -153,25 +152,16 @@ export const useAdminStore = defineStore("admin", () => {
 
   const fetchLogs = async (page = 1, limit = 20, filters = {}) => {
     loading.value = true;
-    error.value = null;
     try {
-      const params = {
-        page,
-        limit,
-        ...filters,
-      };
-
+      const params = { page, limit, ...filters };
       const res = await api.get("/admin/logs", { params });
 
       logs.value = res.data.data.logs;
 
-      // Zapisz typy akcji i etykiety z odpowiedzi backendu
-      if (res.data.data.actionTypes) {
+      if (res.data.data.actionTypes)
         actionTypes.value = res.data.data.actionTypes;
-      }
-      if (res.data.data.actionLabels) {
+      if (res.data.data.actionLabels)
         actionLabels.value = res.data.data.actionLabels;
-      }
 
       if (res.data.data.pagination) {
         logsPagination.value = {
@@ -182,8 +172,7 @@ export const useAdminStore = defineStore("admin", () => {
         };
       }
     } catch (err) {
-      error.value = "Błąd pobierania logów.";
-      console.error(err);
+      console.error("Błąd pobierania logów:", err);
     } finally {
       loading.value = false;
     }
@@ -191,13 +180,11 @@ export const useAdminStore = defineStore("admin", () => {
 
   const fetchAdminTopics = async () => {
     loading.value = true;
-    error.value = null;
     try {
       const res = await api.get("/admin/topics");
       topics.value = res.data.data.topics;
     } catch (err) {
-      error.value = "Błąd pobierania tematów.";
-      console.error(err);
+      console.error("Błąd pobierania tematów:", err);
     } finally {
       loading.value = false;
     }
@@ -213,6 +200,74 @@ export const useAdminStore = defineStore("admin", () => {
     }
   };
 
+  function initAdminSockets() {
+    socketService.joinAdminRoom();
+    const authStore = useAuthStore();
+    const myUsername = authStore.user?.username;
+
+    socketService.on("new_user_registration", (data) => {
+      const exists = pendingUsers.value.find((u) => u._id === data.id);
+      if (!exists) {
+        pendingUsers.value.unshift({
+          _id: data.id,
+          email: data.email,
+          username: "Nowy Użytkownik",
+          createdAt: new Date().toISOString(),
+        });
+        stats.value.users.pending++;
+      }
+    });
+
+    socketService.on("user_approved", (data) => {
+      if (data.approvedBy === myUsername) return;
+
+      pendingUsers.value = pendingUsers.value.filter(
+        (u) => u._id !== data.userId,
+      );
+      stats.value.users.pending = Math.max(0, stats.value.users.pending - 1);
+      stats.value.users.total++;
+
+      if (users.value.length > 0) fetchAllUsers();
+    });
+
+    socketService.on("user_rejected", (data) => {
+      if (data.rejectedBy === myUsername) return;
+
+      fetchPendingUsers();
+      stats.value.users.pending = Math.max(0, stats.value.users.pending - 1);
+    });
+
+    socketService.on("user_blocked", (data) => {
+      if (data.blockedBy === myUsername) return;
+
+      const user = users.value.find((u) => u._id === data.userId);
+      if (user) {
+        user.isBlocked = true;
+        user.blockReason = data.reason;
+      }
+      stats.value.users.blocked++;
+    });
+
+    socketService.on("user_unblocked", (data) => {
+      if (data.unblockedBy === myUsername) return;
+
+      const user = users.value.find((u) => u._id === data.userId);
+      if (user) {
+        user.isBlocked = false;
+        user.blockReason = null;
+      }
+      stats.value.users.blocked = Math.max(0, stats.value.users.blocked - 1);
+    });
+  }
+
+  function cleanupAdminSockets() {
+    socketService.off("new_user_registration");
+    socketService.off("user_approved");
+    socketService.off("user_rejected");
+    socketService.off("user_blocked");
+    socketService.off("user_unblocked");
+  }
+
   return {
     stats,
     extendedStats,
@@ -225,7 +280,6 @@ export const useAdminStore = defineStore("admin", () => {
     logsPagination,
     loading,
     error,
-
     hasPendingUsers,
 
     fetchStats,
@@ -239,5 +293,8 @@ export const useAdminStore = defineStore("admin", () => {
     fetchLogs,
     fetchAdminTopics,
     transferTopicOwnership,
+
+    initAdminSockets,
+    cleanupAdminSockets,
   };
 });
