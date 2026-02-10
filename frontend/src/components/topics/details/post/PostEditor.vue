@@ -14,7 +14,7 @@
     <div class="flex justify-content-between align-items-center">
       <small class="text-gray-500">
         <i class="pi pi-info-circle mr-1"></i>
-        Możesz używać Markdown (np. **pogrubienie**, `kod`)
+        Możesz używać Markdown (np. **pogrubienie**, ```kod```)
       </small>
 
       <Button

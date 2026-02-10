@@ -36,6 +36,7 @@
           <Tab value="2">Tematy</Tab>
           <Tab value="3">Logi</Tab>
           <Tab value="4">Statystyki</Tab>
+          <Tab value="5">Tagi</Tab>
         </TabList>
 
         <TabPanels>
@@ -58,6 +59,10 @@
           <TabPanel value="4">
             <ExtendedStatsTab />
           </TabPanel>
+
+          <TabPanel value="5">
+            <TagsManagementTab />
+          </TabPanel>
         </TabPanels>
       </Tabs>
     </div>
@@ -67,8 +72,10 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from "vue";
 import { useAdminStore } from "../../stores/admin";
+import { useTagsStore } from "../../stores/tags";
 
 const adminStore = useAdminStore();
+const tagsStore = useTagsStore();
 const activeTab = ref(0);
 
 const loadTabData = async () => {
@@ -77,6 +84,7 @@ const loadTabData = async () => {
   else if (activeTab.value === 2) await adminStore.fetchAdminTopics();
   else if (activeTab.value === 3) await adminStore.fetchLogs();
   else if (activeTab.value === 4) await adminStore.fetchExtendedStats();
+  else if (activeTab.value === 5) await tagsStore.fetchTags();
 };
 
 watch(activeTab, loadTabData);
