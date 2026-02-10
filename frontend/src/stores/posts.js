@@ -48,6 +48,18 @@ export const usePostsStore = defineStore("posts", () => {
     }
   }
 
+  async function fetchLastPage(topicId) {
+    await fetchPosts(topicId, pagination.value.page, pagination.value.limit);
+
+    if (pagination.value.totalPages > pagination.value.page) {
+      await fetchPosts(
+        topicId,
+        pagination.value.totalPages,
+        pagination.value.limit,
+      );
+    }
+  }
+
   async function addPost(topicId, content, replyTo = null, tags = []) {
     waitingForOwnPost.value = true;
     try {
@@ -57,9 +69,7 @@ export const usePostsStore = defineStore("posts", () => {
         tags,
         replyTo,
       });
-      const newPost = data.data.post;
-      posts.value.push(newPost);
-      return newPost;
+      return data.data;
     } catch (err) {
       throw getError(err);
     } finally {
@@ -84,12 +94,8 @@ export const usePostsStore = defineStore("posts", () => {
   async function deletePost(postId) {
     try {
       await api.delete(`/posts/${postId}`);
-
       const post = posts.value.find((p) => p._id === postId);
-      if (post) {
-        post.isDeleted = true;
-      }
-
+      if (post) post.isDeleted = true;
       return true;
     } catch (err) {
       throw getError(err);
@@ -109,9 +115,16 @@ export const usePostsStore = defineStore("posts", () => {
   }
 
   const handleNewPost = (post) => {
-    if (isLastPage.value) {
-      const exists = posts.value.find((p) => p._id === post._id);
-      if (!exists) posts.value.push(post);
+    const exists = posts.value.find((p) => p._id === post._id);
+    if (exists) return;
+
+    if (!isLastPage.value) return;
+
+    if (posts.value.length < pagination.value.limit) {
+      posts.value.push(post);
+    } else {
+      pagination.value.hasNextPage = true;
+      pagination.value.totalPages++;
     }
   };
 
@@ -125,9 +138,7 @@ export const usePostsStore = defineStore("posts", () => {
 
     socketService.on("post_deleted", (data) => {
       const post = posts.value.find((p) => p._id === data.postId);
-      if (post) {
-        post.isDeleted = true;
-      }
+      if (post) post.isDeleted = true;
     });
   }
 
@@ -146,6 +157,7 @@ export const usePostsStore = defineStore("posts", () => {
     isLastPage,
 
     fetchPosts,
+    fetchLastPage,
     addPost,
     toggleLike,
     deletePost,

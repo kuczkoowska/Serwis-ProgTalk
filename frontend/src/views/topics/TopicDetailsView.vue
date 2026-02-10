@@ -51,32 +51,52 @@
             <div id="bottom-anchor"></div>
           </div>
 
+          <div
+            v-if="postsStore.pagination.totalPages > 1"
+            class="flex justify-content-between align-items-center mt-2 px-2 border-top-1 border-gray-200 pt-3"
+          >
+            <Button
+              label="Wcześniejsze"
+              icon="pi pi-arrow-left"
+              text
+              :disabled="
+                !postsStore.pagination.hasPrevPage || postsStore.loading
+              "
+              @click="loadPage(postsStore.pagination.page - 1)"
+            />
+
+            <span class="text-sm text-500 hidden md:block">
+              Strona {{ postsStore.pagination.page }} z
+              {{ postsStore.pagination.totalPages }}
+            </span>
+
+            <Button
+              label="Nowsze"
+              icon="pi pi-arrow-right"
+              iconPos="right"
+              text
+              :disabled="
+                !postsStore.pagination.hasNextPage || postsStore.loading
+              "
+              @click="loadPage(postsStore.pagination.page + 1)"
+            />
+          </div>
+
           <div class="mt-3">
             <Message
               v-if="topicsStore.isBlocked"
               severity="error"
               :closable="false"
-              class="w-full"
             >
-              <div class="flex align-items-center gap-2">
-                <i class="pi pi-ban"></i>
-                <span
-                  >Zostałeś zablokowany w tym temacie. Nie możesz dodawać
-                  postów.</span
-                >
-              </div>
+              Zostałeś zablokowany w tym temacie.
             </Message>
 
             <Message
               v-else-if="topicsStore.isClosed && !topicsStore.canManage"
               severity="warn"
               :closable="false"
-              class="w-full"
             >
-              <div class="flex align-items-center gap-2">
-                <i class="pi pi-lock"></i>
-                <span>Temat jest zamknięty. Tylko moderatorzy mogą pisać.</span>
-              </div>
+              Temat zamknięty. Tylko moderatorzy mogą pisać.
             </Message>
 
             <div v-else id="post-editor-section">
@@ -119,9 +139,7 @@
             :subtopics="topicsStore.subtopics"
             @create="showCreateSubtopic = true"
           />
-
           <TagManagementCard :topicId="topicsStore.currentTopic._id" />
-
           <ModerationCard
             v-if="topicsStore.canManage"
             :topic="topicsStore.currentTopic"
@@ -163,7 +181,6 @@
       :parentId="topicsStore.currentTopic?._id"
       @created="onSubtopicCreated"
     />
-
     <ModeratorApplicationDialog
       v-model:visible="showModeratorApp"
       :topicId="topicsStore.currentTopic?._id"
@@ -173,12 +190,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from "vue";
-import { useRoute } from "vue-router";
+import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useTopicsStore } from "../../stores/topics";
 import { usePostsStore } from "../../stores/posts";
 import { useAuthStore } from "../../stores/auth";
 import { useApplicationsStore } from "../../stores/applications";
+import { useUserStore } from "../../stores/user";
 import { useToastHelper } from "../../composables/useToastHelper";
 
 const route = useRoute();
@@ -186,6 +204,7 @@ const topicsStore = useTopicsStore();
 const postsStore = usePostsStore();
 const authStore = useAuthStore();
 const applicationsStore = useApplicationsStore();
+const userStore = useUserStore();
 const { showSuccess, showError } = useToastHelper();
 
 const sending = ref(false);
@@ -198,7 +217,15 @@ const initView = async (id) => {
   await topicsStore.fetchTopicDetails(id);
   if (topicsStore.error) return;
 
-  await postsStore.fetchPosts(id);
+  let pageToLoad = 1;
+  if (authStore.isAuthenticated) {
+    try {
+      const savedPage = await userStore.getLastViewedPage(id);
+      if (savedPage && savedPage > 1) pageToLoad = savedPage;
+    } catch (e) {}
+  }
+
+  await postsStore.fetchPosts(id, pageToLoad);
 
   if (authStore.user && !topicsStore.canManage) {
     const status = await applicationsStore.checkUserApplicationStatus(id);
@@ -207,9 +234,7 @@ const initView = async (id) => {
 
   topicsStore.initTopicSockets(id);
   postsStore.initPostSockets();
-  if (topicsStore.canManage) {
-    applicationsStore.initApplicationSockets(id);
-  }
+  if (topicsStore.canManage) applicationsStore.initApplicationSockets(id);
 };
 
 onMounted(() => {
@@ -241,25 +266,47 @@ onUnmounted(() => {
   postsStore.clearPosts();
 });
 
+// --- Handlers ---
+
 const onPostSubmit = async (content) => {
   if (!content.trim()) return;
-
   sending.value = true;
   try {
     const replyId = replyToPost.value ? replyToPost.value._id : null;
+
     await postsStore.addPost(topicsStore.currentTopic._id, content, replyId);
 
     showSuccess("Post dodany");
     replyToPost.value = null;
 
-    setTimeout(() => {
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-    }, 100);
+    await postsStore.fetchLastPage(topicsStore.currentTopic._id);
+
+    await nextTick();
+    const anchor = document.getElementById("bottom-anchor");
+    if (anchor) {
+      anchor.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
   } catch (e) {
     showError(e);
   } finally {
     sending.value = false;
   }
+};
+
+const loadPage = async (newPage) => {
+  if (newPage < 1) return;
+
+  await postsStore.fetchPosts(
+    topicsStore.currentTopic._id,
+    newPage,
+    postsStore.pagination.limit,
+  );
+
+  if (authStore.isAuthenticated) {
+    userStore.saveLastViewedPage(topicsStore.currentTopic._id, newPage);
+  }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
 const handleLike = async (postId) => {
@@ -290,7 +337,6 @@ const handleReply = (post) => {
 const onModeratorApplicationSubmitted = () => {
   hasPendingApplication.value = true;
 };
-
 const onSubtopicCreated = () => {
   showSuccess("Podtemat utworzony");
 };

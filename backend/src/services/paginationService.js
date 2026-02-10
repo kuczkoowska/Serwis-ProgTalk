@@ -7,7 +7,23 @@ class PaginationService {
     return { page, limit, skip };
   }
 
-  formatResponse(items, page, limit) {
+  formatResponse(items, page, limit, totalItems = null) {
+    if (totalItems !== null) {
+      const totalPages = Math.ceil(totalItems / limit);
+      const hasNextPage = page < totalPages;
+
+      return {
+        items,
+        pagination: {
+          page,
+          limit,
+          hasNextPage,
+          totalPages,
+          totalItems,
+        },
+      };
+    }
+
     const hasNextPage = items.length > limit;
     const results = hasNextPage ? items.slice(0, -1) : items;
 
@@ -17,6 +33,7 @@ class PaginationService {
         page,
         limit,
         hasNextPage,
+        totalPages: undefined,
       },
     };
   }

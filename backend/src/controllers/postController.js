@@ -74,40 +74,45 @@ exports.createPost = async (req, res) => {
 exports.getTopicPosts = async (req, res) => {
   try {
     const { topicId } = req.params;
+
     const { page, limit, skip } = paginationService.getPaginationParams(
       req.query,
+      10,
     );
 
     const topic = await Topic.findById(topicId);
     if (!topic) {
       return res
         .status(404)
-        .json({ status: "fail", message: "Temat nie istnieje." });
+        .json({ status: "fail", message: "Temat nie znaleziony." });
     }
 
-    const filter = { topic: topicId };
-    if (!authService.isAdmin(req.user)) {
-      filter.isDeleted = false;
-    }
+    const filter = { topic: topicId, isDeleted: false };
+
+    if (req.user && req.user.role === "admin") delete filter.isDeleted;
+
+    const totalPosts = await Post.countDocuments(filter);
 
     const posts = await Post.find(filter)
-      .populate("author", "username _id role")
-      .populate("tags", "name color")
+      .populate("author", "username email role avatar")
       .populate("replyTo", "content author isDeleted")
       .sort("createdAt")
       .skip(skip)
-      .limit(limit + 1);
+      .limit(limit);
 
-    const { items: results, pagination } = paginationService.formatResponse(
+    const responseData = paginationService.formatResponse(
       posts,
       page,
       limit,
+      totalPosts,
     );
 
     res.status(200).json({
       status: "success",
-      results: results.length,
-      data: { posts: results, hasNextPage: pagination.hasNextPage },
+      data: {
+        posts: responseData.items,
+        pagination: responseData.pagination,
+      },
     });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
