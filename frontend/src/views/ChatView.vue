@@ -1,9 +1,13 @@
 <template>
-  <div class="chat-view">
+  <div class="chat-wrapper surface-ground p-3">
     <Toast />
 
-    <div class="chat-container">
+    <div
+      class="chat-container surface-card shadow-2 border-round-xl overflow-hidden flex h-full"
+    >
       <ConversationsList
+        class="hidden md:flex flex-column w-full md:w-20rem border-right-1 surface-border h-full"
+        :class="{ 'flex w-full': !chatStore.selectedUserId }"
         :conversations="chatStore.conversations"
         :selectedUserId="chatStore.selectedUserId"
         :loading="chatStore.loading"
@@ -13,13 +17,15 @@
       />
 
       <ChatMessages
+        class="flex-1 h-full flex flex-column bg-white"
+        :class="{ 'hidden md:flex': !chatStore.selectedUserId }"
         :selectedUser="chatStore.selectedUser"
         :messages="chatStore.messages"
         :loading="chatStore.loadingMessages"
         :currentUserId="authStore.user?._id"
         :isAdmin="authStore.user?.role === 'admin'"
         @send-message="sendMessage"
-        @back="chatStore.selectedUserId = null"
+        @back="chatStore.selectConversation(null)"
       />
     </div>
 
@@ -34,13 +40,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, onUnmounted, watch } from "vue";
 import { useAuthStore } from "../stores/auth";
 import { useChatStore } from "../stores/chat";
-import {
-  useUserSocketNotifications,
-  useChatSocketHandlers,
-} from "../composables/useSocketNotifications";
 import { useToastHelper } from "../composables/useToastHelper";
 import ConversationsList from "../components/chat/ConversationsList.vue";
 import ChatMessages from "../components/chat/ChatMessages.vue";
@@ -49,10 +51,33 @@ import NewChatDialog from "../components/chat/NewChatDialog.vue";
 const authStore = useAuthStore();
 const chatStore = useChatStore();
 const { showError } = useToastHelper();
-const { handleNewMessage, handleMessageSent, handleSupportMessage } =
-  useChatSocketHandlers();
 
 const showNewChatDialog = ref(false);
+
+onMounted(async () => {
+  chatStore.initChatSockets();
+
+  try {
+    await chatStore.fetchConversations();
+    await chatStore.fetchUnreadCount();
+
+    if (
+      authStore.user?.role !== "admin" &&
+      chatStore.conversations.length > 0
+    ) {
+      const firstConv = chatStore.conversations[0];
+      if (firstConv?.otherUser?._id) {
+        await selectConversation(firstConv.otherUser._id);
+      }
+    }
+  } catch (error) {
+    showError("Nie udało się załadować konwersacji");
+  }
+});
+
+onUnmounted(() => {
+  chatStore.cleanupChatSockets();
+});
 
 const selectConversation = async (userId) => {
   chatStore.selectConversation(userId);
@@ -65,16 +90,19 @@ const startNewChat = async (userId) => {
   showNewChatDialog.value = false;
   const isAdmin = authStore.user?.role === "admin";
   const targetId = isAdmin ? userId : "support";
+
   chatStore.selectConversation(targetId);
 
   const existing = chatStore.conversations.find(
     (c) => c.otherUser._id === targetId,
   );
+
   if (existing) {
     await chatStore.fetchMessages(targetId);
   } else {
     const user = chatStore.availableUsers.find((u) => u._id === targetId);
     if (user || !isAdmin) {
+      chatStore.clearMessages();
       chatStore.addOrUpdateConversation({
         conversationId: `temp_${targetId}`,
         otherUser: isAdmin
@@ -84,7 +112,6 @@ const startNewChat = async (userId) => {
         unreadCount: 0,
       });
     }
-    chatStore.clearMessages();
   }
 };
 
@@ -106,45 +133,10 @@ watch(showNewChatDialog, async (visible) => {
     await chatStore.fetchAvailableUsers(authStore.user?.role === "admin");
   }
 });
-
-useUserSocketNotifications({
-  onNewMessage: handleNewMessage,
-  onMessageSent: handleMessageSent,
-  onSupportMessage: handleSupportMessage,
-});
-
-onMounted(async () => {
-  try {
-    await chatStore.fetchConversations();
-    await chatStore.fetchUnreadCount();
-
-    if (
-      authStore.user?.role !== "admin" &&
-      chatStore.conversations.length > 0
-    ) {
-      const firstConv = chatStore.conversations[0];
-      if (firstConv?.otherUser?._id) {
-        await selectConversation(firstConv.otherUser._id);
-      }
-    }
-  } catch (error) {
-    showError("Nie udało się załadować konwersacji");
-  }
-});
 </script>
 
 <style scoped>
-.chat-view {
-  height: calc(100vh - 80px);
-  padding: 1rem;
-}
-
-.chat-container {
-  display: flex;
-  height: 100%;
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.chat-wrapper {
+  height: calc(100vh - 70px);
 }
 </style>

@@ -13,7 +13,6 @@ import "./assets/main.css";
 
 import hljsVuePlugin from "@highlightjs/vue-plugin";
 import "./plugins/highlight";
-import { useChatStore } from "./stores/chat";
 import socketService from "./plugins/socket";
 
 const MyPinkPreset = definePreset(Aura, {
@@ -56,29 +55,6 @@ app.use(PrimeVue, {
 });
 app.use(ToastService);
 app.use(hljsVuePlugin);
-
-const chatStore = useChatStore();
-
-socketService.on("new_message", (data) => {
-  if (data && data.message) {
-    chatStore.addMessage(data.message);
-    chatStore.fetchConversations();
-  }
-});
-
-socketService.on("new_support_message", (data) => {
-  if (data && data.message) {
-    chatStore.addMessage(data.message);
-    chatStore.fetchConversations();
-  }
-});
-
-socketService.on("message_sent", (data) => {
-  if (data && data.message) {
-    chatStore.addMessage(data.message);
-    chatStore.fetchConversations();
-  }
-});
 
 app.provide("socket", socketService);
 

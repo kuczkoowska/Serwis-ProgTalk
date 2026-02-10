@@ -2,37 +2,63 @@
   <Dialog
     :visible="visible"
     header="Nowa konwersacja"
-    :style="{ width: '400px' }"
     modal
+    class="w-full md:w-30rem"
     @update:visible="$emit('update:visible', $event)"
   >
-    <div class="new-chat-content">
+    <div class="flex flex-column h-20rem">
       <template v-if="isAdmin">
-        <div v-if="loading" class="loading-state">
-          <ProgressSpinner strokeWidth="4" style="width: 40px; height: 40px" />
+        <div
+          v-if="loading"
+          class="flex align-items-center justify-content-center h-full"
+        >
+          <ProgressSpinner />
         </div>
-        <div v-else-if="users.length === 0" class="empty-state">
+
+        <div
+          v-else-if="users.length === 0"
+          class="flex align-items-center justify-content-center h-full text-gray-500"
+        >
           <p>Brak dostępnych użytkowników</p>
         </div>
-        <div v-else class="users-list">
-          <div
-            v-for="user in users"
-            :key="user._id"
-            class="user-item"
-            @click="$emit('select-user', user._id)"
-          >
-            <Avatar :user="user" size="normal" />
-            <div class="user-info">
-              <span class="username">{{ user.username }}</span>
-              <span class="email">{{ user.email }}</span>
+
+        <div v-else class="flex-1 overflow-y-auto">
+          <div class="flex flex-column gap-1">
+            <div
+              v-for="user in users"
+              :key="user._id"
+              class="flex align-items-center gap-3 p-3 border-round cursor-pointer hover:surface-hover transition-colors transition-duration-150"
+              @click="$emit('select-user', user._id)"
+            >
+              <Avatar
+                :label="user.username?.[0]?.toUpperCase()"
+                shape="circle"
+                class="bg-primary-50 text-primary font-bold"
+              />
+              <div class="flex-1">
+                <span class="font-bold text-900 block">{{
+                  user.username
+                }}</span>
+                <span class="text-sm text-600">{{ user.email }}</span>
+              </div>
+              <Badge
+                v-if="user.role === 'admin'"
+                value="Admin"
+                severity="danger"
+              />
             </div>
-            <Badge v-if="user.role === 'admin'" value="Admin" severity="danger" />
           </div>
         </div>
       </template>
+
       <template v-else>
-        <div class="empty-state">
-          <Button label="Napisz do administracji" icon="pi pi-send" @click="$emit('select-user', 'support')" />
+        <div class="flex align-items-center justify-content-center h-full">
+          <Button
+            label="Napisz do administracji"
+            icon="pi pi-send"
+            size="large"
+            @click="$emit('select-user', 'support')"
+          />
         </div>
       </template>
     </div>
@@ -40,74 +66,12 @@
 </template>
 
 <script setup>
-
-import { defineProps, defineEmits } from "vue";
-
-const props = defineProps({
-  visible: {
-    type: Boolean,
-    required: true,
-  },
-  users: {
-    type: Array,
-    required: true,
-  },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
-  isAdmin: {
-    type: Boolean,
-    default: false,
-  },
+defineProps({
+  visible: Boolean,
+  users: Array,
+  loading: Boolean,
+  isAdmin: Boolean,
 });
 
 defineEmits(["update:visible", "select-user"]);
 </script>
-
-<style scoped>
-.new-chat-content {
-  min-height: 200px;
-}
-
-.users-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.user-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.user-item:hover {
-  background: #f3f4f6;
-}
-
-.user-item .user-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.user-item .email {
-  font-size: 0.8rem;
-  color: #6b7280;
-}
-
-.loading-state,
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 2rem;
-  color: #9ca3af;
-}
-</style>
