@@ -82,10 +82,10 @@
 
 <script setup>
 import { ref, computed, watch } from "vue";
-import { useToastHelper } from "../../../composables/useToastHelper";
-import { useModeratorStore } from "../../../stores/moderator";
-import { useTopicsStore } from "../../../stores/topics";
-import axios from "../../../plugins/axios";
+import { useToastHelper } from "../../../../composables/useToastHelper";
+import { useModeratorStore } from "../../../../stores/moderator";
+import { useTopicsStore } from "../../../../stores/topics";
+import axios from "../../../../plugins/axios";
 
 const props = defineProps({
   visible: { type: Boolean, default: false },

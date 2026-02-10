@@ -70,9 +70,9 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import { useToastHelper } from "../../../composables/useToastHelper";
-import { useTopicsStore } from "../../../stores/topics";
-import { useAuthStore } from "../../../stores/auth";
+import { useToastHelper } from "../../../../composables/useToastHelper";
+import { useTopicsStore } from "../../../../stores/topics";
+import { useAuthStore } from "../../../../stores/auth";
 import PromoteUserDialog from "./PromoteUserDialog.vue";
 
 const props = defineProps({

@@ -31,8 +31,8 @@
 
 <script setup>
 import { ref, computed, watch } from "vue";
-import { useToastHelper } from "../../../composables/useToastHelper";
-import { useTopicsStore } from "../../../stores/topics";
+import { useToastHelper } from "../../../../composables/useToastHelper";
+import { useTopicsStore } from "../../../../stores/topics";
 
 const props = defineProps({
   visible: { type: Boolean, default: false },

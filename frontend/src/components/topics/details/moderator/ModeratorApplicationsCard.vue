@@ -110,9 +110,9 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import { useToastHelper } from "../../../composables/useToastHelper";
-import { useApplicationsStore } from "../../../stores/applications";
-import { useTopicsStore } from "../../../stores/topics";
+import { useToastHelper } from "../../../../composables/useToastHelper";
+import { useApplicationsStore } from "../../../../stores/applications";
+import { useTopicsStore } from "../../../../stores/topics";
 
 const props = defineProps({
   topicId: { type: String, required: true },

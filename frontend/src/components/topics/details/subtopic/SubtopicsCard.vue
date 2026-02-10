@@ -46,8 +46,8 @@
 
 <script setup>
 import { computed } from "vue";
-import { useAuthStore } from "../../../stores/auth";
-import { useTopicsStore } from "../../../stores/topics";
+import { useAuthStore } from "../../../../stores/auth";
+import { useTopicsStore } from "../../../../stores/topics";
 
 defineProps({
   subtopics: { type: Array, default: () => [] },

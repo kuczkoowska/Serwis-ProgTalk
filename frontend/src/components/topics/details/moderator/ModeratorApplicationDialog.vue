@@ -66,8 +66,8 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import { useToastHelper } from "../../../composables/useToastHelper";
-import { useApplicationsStore } from "../../../stores/applications";
+import { useToastHelper } from "../../../../composables/useToastHelper";
+import { useApplicationsStore } from "../../../../stores/applications";
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },

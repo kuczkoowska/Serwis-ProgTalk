@@ -43,9 +43,9 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import { useToastHelper } from "../../../composables/useToastHelper";
-import { useTopicsStore } from "../../../stores/topics";
-import api from "../../../plugins/axios.js";
+import { useToastHelper } from "../../../../composables/useToastHelper.js";
+import { useTopicsStore } from "../../../../stores/topics.js";
+import api from "../../../../plugins/axios.js";
 
 const props = defineProps({
   visible: { type: Boolean, default: false },

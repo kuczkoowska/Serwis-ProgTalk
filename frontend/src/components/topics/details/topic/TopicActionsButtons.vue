@@ -48,11 +48,9 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import { useToastHelper } from "../../../composables/useToastHelper";
-import { useTopicsStore } from "../../../stores/topics";
-import { useAuthStore } from "../../../stores/auth";
-import EditDescriptionDialog from "./EditDescriptionDialog.vue";
-import CloseTopicDialog from "../../topic/CloseTopicDialog.vue";
+import { useToastHelper } from "../../../../composables/useToastHelper";
+import { useTopicsStore } from "../../../../stores/topics";
+import { useAuthStore } from "../../../../stores/auth";
 
 const props = defineProps({
   topic: { type: Object, required: true },

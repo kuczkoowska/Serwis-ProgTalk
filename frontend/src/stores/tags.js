@@ -15,14 +15,14 @@ export const useTagsStore = defineStore("tags", () => {
   );
 
   async function fetchTags() {
+    if (allTags.value.length > 0) return;
+
     loading.value = true;
-    error.value = null;
     try {
       const res = await api.get("/tags");
       allTags.value = res.data.data.tags;
     } catch (err) {
-      error.value = "Nie udało się pobrać tagów.";
-      console.error(err);
+      console.error("Błąd pobierania tagów:", err);
     } finally {
       loading.value = false;
     }
@@ -30,13 +30,11 @@ export const useTagsStore = defineStore("tags", () => {
 
   async function fetchTagsForTopic(topicId) {
     loading.value = true;
-    error.value = null;
     try {
       const res = await api.get(`/tags/topic/${topicId}`);
       topicTags.value = res.data.data.tags;
     } catch (err) {
-      error.value = "Nie udało się pobrać tagów tematu.";
-      console.error(err);
+      console.error("Błąd pobierania tagów tematu:", err);
     } finally {
       loading.value = false;
     }
@@ -45,8 +43,31 @@ export const useTagsStore = defineStore("tags", () => {
   async function createTag(name) {
     try {
       const res = await api.post("/tags", { name });
-      await fetchTags();
+      const newTag = res.data.data.tag;
+
+      allTags.value.push(newTag);
+
       return res.data;
+    } catch (err) {
+      throw getError(err);
+    }
+  }
+
+  async function assignTagToTopic(topicId, tagId) {
+    try {
+      await api.post("/tags/assign", { topicId, tagId });
+      await fetchTagsForTopic(topicId);
+      return true;
+    } catch (err) {
+      throw getError(err);
+    }
+  }
+
+  async function removeTagFromTopic(topicId, tagId) {
+    try {
+      await api.post("/tags/remove", { topicId, tagId });
+      topicTags.value = topicTags.value.filter((t) => t._id !== tagId);
+      return true;
     } catch (err) {
       throw getError(err);
     }
@@ -62,43 +83,18 @@ export const useTagsStore = defineStore("tags", () => {
     }
   }
 
-  async function assignTagToTopic(topicId, tagId) {
-    try {
-      await api.post("/tags/assign", { topicId, tagId });
-      return true;
-    } catch (err) {
-      throw getError(err);
-    }
-  }
-
-  async function removeTagFromTopic(topicId, tagId) {
-    try {
-      await api.post("/tags/remove", { topicId, tagId });
-      return true;
-    } catch (err) {
-      throw getError(err);
-    }
-  }
-
-  function clearTags() {
-    allTags.value = [];
-    topicTags.value = [];
-  }
-
   return {
     allTags,
     topicTags,
+    sortedTags,
     loading,
     error,
-
-    sortedTags,
 
     fetchTags,
     fetchTagsForTopic,
     createTag,
-    deleteTag,
     assignTagToTopic,
     removeTagFromTopic,
-    clearTags,
+    deleteTag,
   };
 });

@@ -89,10 +89,10 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import { useToastHelper } from "../../../composables/useToastHelper";
+import { useToastHelper } from "../../../../composables/useToastHelper";
 import BlockUserDialog from "./BlockUserDialog.vue";
-import { useModeratorStore } from "../../../stores/moderator";
-import { useTopicsStore } from "../../../stores/topics";
+import { useModeratorStore } from "../../../../stores/moderator";
+import { useTopicsStore } from "../../../../stores/topics";
 
 const props = defineProps({
   topic: { type: Object, required: true },
