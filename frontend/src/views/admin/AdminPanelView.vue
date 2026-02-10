@@ -1,22 +1,22 @@
 <template>
-  <div class="layout-container p-4">
+  <div class="layout-container p-4 max-w-8xl mx-auto">
     <Toast />
 
-    <div class="flex flex-column gap-2 mb-4 text-center md:text-left">
+    <div class="text-center mb-5">
       <h1
-        class="m-0 text-900 flex align-items-center justify-content-center md:justify-content-start gap-2"
+        class="text-3xl font-bold text-900 mb-2 flex align-items-center justify-content-center gap-2"
       >
-        <i class="pi pi-shield text-3xl text-primary"></i>
+        <i class="pi pi-shield text-primary text-3xl"></i>
         Panel Administratora
       </h1>
-      <p class="text-600 m-0">
-        Zarządzaj użytkownikami, tematami i systemem w jednym miejscu.
+      <p class="text-600 text-lg">
+        Zarządzaj użytkownikami, tematami i systemem.
       </p>
     </div>
 
     <AdminStatsCard :stats="adminStore.stats" :loading="adminStore.loading" />
 
-    <div class="card mt-4">
+    <div class="card mt-5">
       <Tabs
         :value="String(activeTab)"
         @update:value="activeTab = Number($event)"
@@ -67,17 +67,10 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from "vue";
 import { useAdminStore } from "../../stores/admin";
-import AdminStatsCard from "../../components/admin/AdminStatsCard.vue";
-import PendingUsersTab from "../../components/admin/PendingUsersTab.vue";
-import UsersTableTab from "../../components/admin/UsersTableTab.vue";
-import TopicsTableTab from "../../components/admin/TopicsTableTab.vue";
-import SystemLogsTab from "../../components/admin/SystemLogsTab.vue";
-import ExtendedStatsTab from "../../components/admin/ExtendedStatsTab.vue";
 
 const adminStore = useAdminStore();
 const activeTab = ref(0);
 
-// Ładowanie danych zależnie od zakładki
 const loadTabData = async () => {
   if (activeTab.value === 0) await adminStore.fetchPendingUsers();
   else if (activeTab.value === 1) await adminStore.fetchAllUsers();

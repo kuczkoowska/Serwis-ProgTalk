@@ -3,26 +3,32 @@
     :visible="visible"
     @update:visible="$emit('update:visible', $event)"
     modal
-    header="Zablokuj Użytkownika (Globalnie)"
-    :style="{ width: '25rem' }"
+    header="Zablokuj Użytkownika"
+    :style="{ width: '400px' }"
   >
-    <div class="field mt-3">
-      <label for="reason" class="font-bold block mb-2"
-        >Powód blokady (opcjonalnie)</label
-      >
-      <Textarea
-        id="reason"
-        v-model="reason"
-        rows="4"
-        fluid
-        placeholder="Dlaczego blokujesz tego użytkownika?"
-      />
+    <div class="flex flex-column gap-2 mt-2">
+      <p class="m-0 text-600">
+        Użytkownik <strong>{{ user?.username }}</strong> zostanie wylogowany i
+        straci dostęp do serwisu.
+      </p>
+
+      <div class="flex flex-column gap-2 mt-3">
+        <label for="reason" class="font-bold">Powód blokady</label>
+        <Textarea
+          id="reason"
+          v-model="reason"
+          rows="4"
+          autoResize
+          class="w-full"
+          placeholder="Np. Spam, obraźliwe treści..."
+        />
+      </div>
     </div>
 
     <template #footer>
       <Button label="Anuluj" severity="secondary" text @click="closeDialog" />
       <Button
-        label="Zablokuj"
+        label="Potwierdź blokadę"
         severity="danger"
         icon="pi pi-ban"
         @click="confirm"
@@ -66,15 +72,11 @@ const closeDialog = () => {
 };
 
 const confirm = async () => {
-  if (!props.user?._id) {
-    showError("Błąd: Nie wybrano użytkownika.");
-    return;
-  }
+  if (!props.user?._id) return;
 
   loading.value = true;
   try {
     await adminStore.blockUser(props.user._id, reason.value);
-
     showSuccess(`Użytkownik ${props.user.username} został zablokowany.`);
     emit("blocked");
     closeDialog();

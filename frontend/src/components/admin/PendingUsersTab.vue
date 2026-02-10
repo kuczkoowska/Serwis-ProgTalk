@@ -2,60 +2,78 @@
   <div>
     <div
       v-if="adminStore.loading && adminStore.pendingUsers.length === 0"
-      class="loading-container"
+      class="flex justify-content-center p-5"
     >
       <ProgressSpinner />
     </div>
 
-    <div v-else-if="adminStore.pendingUsers.length === 0" class="empty-state">
-      <i class="pi pi-check-circle success-icon"></i>
-      <p>Brak oczekujących użytkowników</p>
+    <div
+      v-else-if="adminStore.pendingUsers.length === 0"
+      class="text-center p-5 text-600"
+    >
+      <i class="pi pi-check-circle text-green-500 text-6xl mb-3"></i>
+      <p class="text-xl m-0">
+        Wszystko wyczyszczone! Brak oczekujących użytkowników.
+      </p>
     </div>
 
-    <div v-else class="pending-grid">
-      <Card
+    <div v-else class="grid">
+      <div
+        class="col-12 md:col-6 lg:col-4 xl:col-3"
         v-for="user in adminStore.pendingUsers"
         :key="user._id"
-        class="user-card"
       >
-        <template #header>
-          <div class="card-header-content">
+        <div
+          class="surface-card shadow-2 p-0 border-round h-full flex flex-column"
+        >
+          <div class="p-3 flex align-items-center gap-3">
             <Avatar
               :label="user.username.charAt(0).toUpperCase()"
               shape="circle"
               size="large"
+              class="bg-orange-100 text-orange-700 font-bold"
             />
-            <div class="user-info">
-              <span class="username">{{ user.username }}</span>
-              <span>{{ user.email }}</span>
-              <small class="date"
-                >Zarejestrowany: {{ formatDate(user.createdAt) }}</small
+            <div class="flex-1 overflow-hidden">
+              <span
+                class="block font-bold text-900 text-lg mb-1 white-space-nowrap text-overflow-ellipsis"
+                >{{ user.username }}</span
               >
+              <span
+                class="block text-600 text-sm mb-1 white-space-nowrap text-overflow-ellipsis"
+                >{{ user.email }}</span
+              >
+              <div class="text-xs text-500">
+                <i class="pi pi-calendar mr-1"></i>
+                {{ formatDate(user.createdAt) }}
+              </div>
             </div>
           </div>
-        </template>
-        <template #footer>
-          <div class="card-actions">
+
+          <div
+            class="mt-auto p-3 border-top-1 surface-border flex justify-content-between gap-2"
+          >
             <Button
               label="Odrzuć"
               icon="pi pi-times"
               severity="danger"
               outlined
               size="small"
+              class="flex-1"
               @click="handleReject(user._id)"
               :loading="processingId === user._id"
             />
             <Button
-              label="Zaakceptuj"
+              label="Zatwierdź"
               icon="pi pi-check"
               severity="success"
               size="small"
+              class="flex-1"
               @click="handleApprove(user._id)"
               :loading="processingId === user._id"
             />
           </div>
-        </template>
-      </Card>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -77,7 +95,7 @@ const handleApprove = async (id) => {
   processingId.value = id;
   try {
     await adminStore.approveUser(id);
-    showSuccess("Użytkownik aktywowany", "Zaakceptowano");
+    showSuccess("Użytkownik aktywowany");
   } catch (err) {
     showError(err);
   } finally {
@@ -89,7 +107,7 @@ const handleReject = async (id) => {
   processingId.value = id;
   try {
     await adminStore.rejectUser(id, "Odrzucony przez administratora");
-    showInfo("Użytkownik usunięty", "Odrzucono");
+    showInfo("Użytkownik usunięty");
   } catch (err) {
     showError(err);
   } finally {
@@ -100,65 +118,10 @@ const handleReject = async (id) => {
 const formatDate = (dateString) => {
   if (!dateString) return "-";
   return new Date(dateString).toLocaleDateString("pl-PL", {
-    year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
 };
 </script>
-
-<style scoped>
-.loading-container {
-  display: flex;
-  justify-content: center;
-  padding: 2rem;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 3rem;
-  color: #64748b;
-}
-
-.success-icon {
-  font-size: 3rem;
-  color: #22c55e;
-  margin-bottom: 1rem;
-}
-
-.pending-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-top: 1rem;
-}
-
-.user-card {
-  border-radius: 12px;
-  border: 2px solid #fbbf24;
-  background: #fffbeb;
-}
-
-.card-header-content {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.5rem;
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.card-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #fde68a;
-  background: #fff;
-}
-</style>
