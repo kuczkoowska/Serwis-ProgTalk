@@ -1,33 +1,46 @@
 <template>
-  <div class="navbar-wrapper" v-if="isActive">
-    <Menubar class="custom-menubar">
+  <div
+    class="sticky top-0 z-5 bg-white border-bottom-1 surface-border"
+    v-if="isActive !== undefined"
+  >
+    <Menubar class="border-none bg-transparent px-4 py-2">
       <template #start>
-        <router-link to="/" class="logo-link">
-          <i class="pi pi-code logo-icon"></i>
-          <span class="logo-text">ProgTalk</span>
+        <router-link
+          to="/"
+          class="flex align-items-center gap-2 no-underline text-900 hover:text-primary transition-colors transition-duration-200"
+        >
+          <i class="pi pi-code text-2xl text-primary"></i>
+          <span class="text-xl font-bold">ProgTalk</span>
         </router-link>
       </template>
 
       <template #end>
-        <div>
-          <div v-if="authStore.user">
-            <div class="nav-actions">
+        <div class="flex align-items-center gap-3">
+          <template v-if="authStore.user">
+            <div class="flex align-items-center gap-3">
               <router-link
                 to="/chat"
-                class="nav-icon-link"
+                class="p-link relative flex align-items-center justify-content-center w-2rem h-2rem border-circle text-700 hover:bg-gray-100 transition-colors transition-duration-200"
                 v-tooltip.bottom="'Wiadomości'"
               >
-                <i class="pi pi-comments nav-icon"></i>
+                <i class="pi pi-comments text-xl"></i>
                 <Badge
                   v-if="chatStore.unreadCount > 0"
                   :value="chatStore.unreadCount"
                   severity="danger"
-                  class="nav-badge"
+                  class="absolute -top-1 -right-1"
+                  style="
+                    min-width: 1rem;
+                    height: 1rem;
+                    line-height: 1rem;
+                    font-size: 0.7rem;
+                    padding: 0;
+                  "
                 />
               </router-link>
 
               <div
-                class="avatar-container"
+                class="flex align-items-center gap-2 cursor-pointer p-1 border-round hover:bg-gray-50 transition-colors transition-duration-200"
                 @click="toggleMenu"
                 aria-haspopup="true"
                 aria-controls="overlay_menu"
@@ -35,9 +48,9 @@
                 <Avatar
                   :label="authStore.user?.username?.charAt(0).toUpperCase()"
                   shape="circle"
-                  size="normal"
+                  class="bg-primary-50 text-primary font-bold"
                 />
-                <i class="pi pi-angle-down"></i>
+                <i class="pi pi-angle-down text-gray-500 text-sm"></i>
               </div>
             </div>
 
@@ -47,13 +60,18 @@
               :model="userMenuItems"
               :popup="true"
             />
-          </div>
+          </template>
 
-          <div v-else>
+          <template v-else>
             <router-link to="/login">
-              <Button label="Zaloguj" size="small" rounded />
+              <Button
+                label="Zaloguj"
+                size="small"
+                rounded
+                icon="pi pi-sign-in"
+              />
             </router-link>
-          </div>
+          </template>
         </div>
       </template>
     </Menubar>
@@ -72,7 +90,11 @@ const chatStore = useChatStore();
 const menu = ref(null);
 
 const isAdmin = computed(() => authStore.user?.role === "admin");
-const isActive = computed(() => authStore.user?.isActive !== false);
+const isActive = computed(() => authStore.user?.isActive);
+
+const handleLogout = async () => {
+  await authStore.logout();
+};
 
 const userMenuItems = computed(() => {
   const menuItems = [
@@ -92,9 +114,7 @@ const userMenuItems = computed(() => {
   }
 
   menuItems.push(
-    {
-      separator: true,
-    },
+    { separator: true },
     {
       label: "Wyloguj",
       icon: "pi pi-sign-out",
@@ -108,86 +128,4 @@ const userMenuItems = computed(() => {
 const toggleMenu = (event) => {
   menu.value.toggle(event);
 };
-
-const handleLogout = async () => {
-  await authStore.logout();
-};
 </script>
-
-<style scoped>
-.navbar-wrapper {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-}
-
-.custom-menubar {
-  padding: 0.5rem 2rem;
-}
-
-.logo-link {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  text-decoration: none;
-  margin-right: 2rem;
-}
-
-.logo-icon {
-  font-size: 1.5rem;
-  color: var(--p-primary-color);
-}
-
-.logo-text {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #1e293b;
-  letter-spacing: -0.5px;
-}
-
-.avatar-container {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  padding: 4px;
-  border-radius: 8px;
-}
-
-.nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.nav-icon-link {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  transition: background 0.2s;
-  text-decoration: none;
-  color: #475569;
-}
-
-.nav-icon-link:hover {
-  background: #f1f5f9;
-  color: var(--p-primary-color);
-}
-
-.nav-icon {
-  font-size: 1.25rem;
-}
-
-.nav-badge {
-  position: absolute;
-  top: 0;
-  right: -2px;
-  font-size: 0.6rem;
-  min-width: 18px;
-  height: 18px;
-  line-height: 18px;
-}
-</style>

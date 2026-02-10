@@ -1,11 +1,17 @@
 <template>
-  <div class="flex justify-content-center align-items-center min-h-screen">
-    <Card class="auth-card w-full md:w-30rem">
+  <div
+    class="flex justify-content-center align-items-center min-h-screen surface-ground p-4"
+  >
+    <Card class="w-full md:w-30rem shadow-4">
       <template #title>
-        <div class="text-center text-2xl font-bold mb-2">Witaj w ProgTalk</div>
+        <div class="text-center text-2xl font-bold mb-2 text-900">
+          Witaj w ProgTalk
+        </div>
       </template>
       <template #subtitle>
-        <div class="text-center mb-4">Zaloguj się, aby kontynuować</div>
+        <div class="text-center mb-4 text-600">
+          Zaloguj się, aby kontynuować
+        </div>
       </template>
 
       <template #content>
@@ -15,15 +21,13 @@
           class="mb-4"
           :closable="false"
         >
-          <div class="flex flex-column gap-2">
-            <div class="font-bold">Twoje konto zostało zablokowane</div>
-            <div>{{ blockedReason }}</div>
-          </div>
+          <div class="font-bold mb-1">Konto zablokowane</div>
+          <div>{{ blockedReason }}</div>
         </Message>
 
         <form @submit.prevent="handleLogin">
-          <div class="field mb-3">
-            <label for="username" class="block mb-2 font-medium"
+          <div class="flex flex-column gap-2 mb-3">
+            <label for="username" class="font-medium text-900"
               >Email lub Login</label
             >
             <InputText
@@ -31,16 +35,15 @@
               v-model="emailOrLogin"
               placeholder="Wpisz login..."
               :invalid="submitted && !emailOrLogin"
-              fluid
               class="w-full"
             />
             <small v-if="submitted && !emailOrLogin" class="text-red-500"
-              >To pole jest wymagane</small
+              >Pole wymagane</small
             >
           </div>
 
-          <div class="field mb-3">
-            <label for="password" class="block mb-2 font-medium">Hasło</label>
+          <div class="flex flex-column gap-2 mb-4">
+            <label for="password" class="font-medium text-900">Hasło</label>
             <Password
               id="password"
               v-model="password"
@@ -48,30 +51,30 @@
               toggleMask
               placeholder="••••••••"
               :invalid="submitted && !password"
-              fluid
               class="w-full"
               inputClass="w-full"
             />
             <small v-if="submitted && !password" class="text-red-500"
-              >Hasło jest wymagane</small
+              >Hasło wymagane</small
             >
           </div>
 
           <Button
             type="submit"
             label="Zaloguj się"
+            icon="pi pi-sign-in"
             :loading="isLoading"
-            fluid
-            class="w-full mt-2"
+            class="w-full"
           />
 
-          <div class="text-center mt-4">
-            <span class="text-gray-600">Nie masz konta? </span>
+          <div class="text-center mt-4 text-600">
+            Nie masz konta?
             <router-link
               to="/register"
-              class="font-bold no-underline text-primary"
-              >Zarejestruj się</router-link
+              class="font-bold no-underline text-primary hover:underline"
             >
+              Zarejestruj się
+            </router-link>
           </div>
         </form>
       </template>
@@ -109,7 +112,6 @@ const handleLogin = async () => {
   if (!emailOrLogin.value || !password.value) return;
 
   isLoading.value = true;
-
   try {
     await authStore.login({
       identifier: emailOrLogin.value,
@@ -123,9 +125,3 @@ const handleLogin = async () => {
   }
 };
 </script>
-
-<style scoped>
-.auth-card {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-</style>

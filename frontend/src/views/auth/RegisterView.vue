@@ -1,24 +1,25 @@
 <template>
-  <div class="flex justify-content-center align-items-center min-h-screen py-5">
-    <Card class="auth-card w-full md:w-30rem">
+  <div
+    class="flex justify-content-center align-items-center min-h-screen surface-ground p-4"
+  >
+    <Card class="w-full md:w-30rem shadow-4">
       <template #title>
-        <div class="text-center text-2xl font-bold mb-2">
-          Dołącz do ProgTalk
+        <div class="text-center text-2xl font-bold mb-2 text-900">
+          Dołącz do nas
         </div>
       </template>
       <template #subtitle>
-        <div class="text-center mb-4">Utwórz nowe konto</div>
+        <div class="text-center mb-4 text-600">Utwórz nowe konto</div>
       </template>
 
       <template #content>
         <form @submit.prevent="handleRegister">
-          <div class="field mb-3">
-            <label class="block mb-2 font-medium">Email</label>
+          <div class="flex flex-column gap-2 mb-3">
+            <label class="font-medium text-900">Email</label>
             <InputText
               v-model="form.email"
               placeholder="jan@przyklad.pl"
               :invalid="submitted && !form.email"
-              fluid
               class="w-full"
             />
             <small v-if="submitted && !form.email" class="text-red-500"
@@ -26,26 +27,24 @@
             >
           </div>
 
-          <div class="field mb-3">
-            <label class="block mb-2 font-medium">Nazwa użytkownika</label>
+          <div class="flex flex-column gap-2 mb-3">
+            <label class="font-medium text-900">Nazwa użytkownika</label>
             <InputText
               v-model="form.username"
               placeholder="jankowalski"
               :invalid="submitted && !form.username"
-              fluid
               class="w-full"
             />
             <small v-if="submitted && !form.username" class="text-red-500"
-              >Nazwa użytkownika jest wymagana</small
+              >Nazwa wymagana</small
             >
           </div>
 
-          <div class="field mb-3">
-            <label class="block mb-2 font-medium">Hasło</label>
+          <div class="flex flex-column gap-2 mb-3">
+            <label class="font-medium text-900">Hasło</label>
             <Password
               v-model="form.password"
               toggleMask
-              fluid
               class="w-full"
               inputClass="w-full"
               placeholder="••••••••"
@@ -57,23 +56,22 @@
             >
               <template #footer>
                 <Divider />
-                <ul class="pl-2 ml-2 mt-0" style="line-height: 1.5">
+                <ul class="pl-2 ml-2 mt-0 line-height-3 text-600">
                   <li>Minimum 6 znaków</li>
                 </ul>
               </template>
             </Password>
             <small v-if="submitted && !form.password" class="text-red-500"
-              >Hasło jest wymagane</small
+              >Hasło wymagane</small
             >
           </div>
 
-          <div class="field mb-3">
-            <label class="block mb-2 font-medium">Powtórz hasło</label>
+          <div class="flex flex-column gap-2 mb-4">
+            <label class="font-medium text-900">Powtórz hasło</label>
             <Password
               v-model="form.passwordConfirm"
               :feedback="false"
               toggleMask
-              fluid
               class="w-full"
               inputClass="w-full"
               placeholder="Potwierdź hasło"
@@ -82,23 +80,26 @@
             <small
               v-if="submitted && !form.passwordConfirm"
               class="text-red-500"
-              >Potwierdzenie hasła jest wymagane</small
+              >Potwierdzenie wymagane</small
             >
           </div>
 
           <Button
             type="submit"
             label="Zarejestruj się"
+            icon="pi pi-user-plus"
             :loading="isLoading"
-            fluid
-            class="w-full mt-2"
+            class="w-full"
           />
 
-          <div class="text-center mt-4">
-            <span class="text-gray-600">Masz już konto? </span>
-            <router-link to="/login" class="font-bold no-underline text-primary"
-              >Zaloguj się</router-link
+          <div class="text-center mt-4 text-600">
+            Masz już konto?
+            <router-link
+              to="/login"
+              class="font-bold no-underline text-primary hover:underline"
             >
+              Zaloguj się
+            </router-link>
           </div>
         </form>
       </template>
@@ -126,7 +127,6 @@ const { showSuccess, showError } = useToastHelper();
 
 const handleRegister = async () => {
   submitted.value = true;
-
   if (!form.email || !form.username || !form.password || !form.passwordConfirm)
     return;
 
@@ -136,16 +136,15 @@ const handleRegister = async () => {
   }
 
   isLoading.value = true;
-
   try {
     const response = await authStore.register({ ...form });
-
     showSuccess(response.message, "Witamy!");
-
-    form.email = "";
-    form.username = "";
-    form.password = "";
-    form.passwordConfirm = "";
+    Object.assign(form, {
+      email: "",
+      username: "",
+      password: "",
+      passwordConfirm: "",
+    });
     submitted.value = false;
   } catch (error) {
     showError(error);
@@ -154,9 +153,3 @@ const handleRegister = async () => {
   }
 };
 </script>
-
-<style scoped>
-.auth-card {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-</style>

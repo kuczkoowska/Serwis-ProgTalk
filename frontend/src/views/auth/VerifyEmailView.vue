@@ -1,41 +1,41 @@
 <template>
-  <div class="auth-wrapper">
-    <Card class="auth-card text-center">
+  <div
+    class="flex justify-content-center align-items-center min-h-screen surface-ground p-4"
+  >
+    <Card class="w-full md:w-30rem text-center shadow-4">
       <template #title>
-        <div class="header-text">Weryfikacja Email</div>
+        <div class="text-2xl font-bold text-900">Weryfikacja Email</div>
       </template>
 
       <template #content>
-        <div v-if="status === 'loading'" class="status-container">
+        <div
+          v-if="status === 'loading'"
+          class="flex flex-column align-items-center gap-3 py-4"
+        >
           <ProgressSpinner style="width: 50px; height: 50px" />
-          <p>Trwa weryfikacja Twojego adresu e-mail...</p>
+          <p class="text-700 m-0">Weryfikujemy Twój adres e-mail...</p>
         </div>
 
-        <div v-if="status === 'success'" class="status-container success">
-          <i
-            class="pi pi-check-circle"
-            style="font-size: 3rem; color: var(--primary-color)"
-          ></i>
-          <h3>Sukces!</h3>
-          <p>{{ message }}</p>
-          <small class="text-gray"
-            >Za chwilę nastąpi przekierowanie do logowania...</small
-          >
+        <div
+          v-if="status === 'success'"
+          class="flex flex-column align-items-center gap-3 py-4"
+        >
+          <i class="pi pi-check-circle text-green-500 text-6xl"></i>
+          <h3 class="text-xl font-bold m-0 text-900">Sukces!</h3>
+          <p class="text-700 m-0">{{ message }}</p>
+          <small class="text-500">Przekierowanie do logowania...</small>
         </div>
 
-        <div v-if="status === 'error'" class="status-container error">
-          <i
-            class="pi pi-times-circle"
-            style="font-size: 3rem; color: #ef4444"
-          ></i>
-          <h3>Wystąpił błąd</h3>
-          <p>{{ message }}</p>
-
-          <div class="mt-3">
-            <router-link to="/login">
-              <Button label="Wróć do logowania" severity="secondary" />
-            </router-link>
-          </div>
+        <div
+          v-if="status === 'error'"
+          class="flex flex-column align-items-center gap-3 py-4"
+        >
+          <i class="pi pi-times-circle text-red-500 text-6xl"></i>
+          <h3 class="text-xl font-bold m-0 text-900">Błąd</h3>
+          <p class="text-700 m-0">{{ message }}</p>
+          <router-link to="/login" class="mt-2">
+            <Button label="Wróć do logowania" severity="secondary" />
+          </router-link>
         </div>
       </template>
     </Card>
@@ -55,7 +55,6 @@ const message = ref("");
 
 onMounted(async () => {
   const token = route.params.token;
-
   if (!token) {
     status.value = "error";
     message.value = "Brak tokena weryfikacyjnego.";
@@ -64,11 +63,9 @@ onMounted(async () => {
 
   try {
     const response = await api.get(`/auth/verify-email/${token}`);
-
     status.value = "success";
     message.value =
       response.data.message || "E-mail został zweryfikowany pomyślnie!";
-
     setTimeout(() => {
       router.push("/login");
     }, 3000);
@@ -80,22 +77,3 @@ onMounted(async () => {
   }
 });
 </script>
-
-<style scoped>
-.status-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 0;
-}
-
-h3 {
-  margin: 0;
-  color: var(--text-dark);
-}
-
-.text-gray {
-  color: var(--text-muted);
-}
-</style>

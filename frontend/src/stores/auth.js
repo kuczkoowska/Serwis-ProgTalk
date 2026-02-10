@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import router from "../router";
 import socketService from "../plugins/socket";
-import api from "../plugins/axios"; // Upewnij się, że to importuje Twoją instancję axios
+import api from "../plugins/axios";
 
 const getError = (err) =>
   err.response?.data?.message || err.message || "Wystąpił nieoczekiwany błąd";
@@ -83,8 +83,13 @@ export const useAuthStore = defineStore("auth", () => {
   const fetchUser = async () => {
     if (!token.value) return;
     try {
+      const response = await api.get("/users/profile");
       user.value = response.data.data.user;
       localStorage.setItem("user", JSON.stringify(user.value));
+
+      if (!socketService.socket?.connected) {
+        socketService.connect(token.value);
+      }
     } catch (error) {
       if (error.response?.status === 401) {
         logout();
