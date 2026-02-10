@@ -29,7 +29,7 @@
           id="experience"
           v-model="form.experience"
           rows="3"
-          placeholder="Opisz swoje doświadczenie w moderacji lub znajomość tematu..."
+          placeholder="Opisz swoje doświadczenie..."
           class="w-full"
           autoResize
         />
@@ -52,7 +52,7 @@
     </div>
 
     <template #footer>
-      <Button label="Anuluj" icon="pi pi-times" text @click="visible = false" />
+      <Button label="Anuluj" icon="pi pi-times" text @click="closeDialog" />
       <Button
         label="Wyślij zgłoszenie"
         icon="pi pi-send"
@@ -98,11 +98,11 @@ const visible = computed({
 });
 
 const resetForm = () => {
-  form.value = {
-    motivation: "",
-    experience: "",
-    availability: "moderate",
-  };
+  form.value = { motivation: "", experience: "", availability: "moderate" };
+};
+
+const closeDialog = () => {
+  visible.value = false;
 };
 
 const submitApplication = async () => {
@@ -118,14 +118,14 @@ const submitApplication = async () => {
       experience: form.value.experience.trim(),
       availability: form.value.availability,
     });
-    showSuccess(
-      "Zgłoszenie wysłane! Oczekuje na rozpatrzenie przez moderatorów.",
-    );
-    visible.value = false;
+
+    showSuccess("Zgłoszenie wysłane! Oczekuje na rozpatrzenie.");
+
+    closeDialog();
+
     emit("submitted");
   } catch (error) {
-    const errorMsg = "Błąd wysyłania zgłoszenia";
-    showError(errorMsg);
+    showError(error);
   } finally {
     sending.value = false;
   }

@@ -1,366 +1,317 @@
 <template>
-  <div class="layout-wrapper">
+  <div class="layout-container max-w-7xl mx-auto p-4">
     <Toast />
 
-    <TopicBreadcrumb
-      v-if="currentTopic"
-      :topic="currentTopic"
-      :homeItem="homeItem"
-    />
-
-    <div v-if="loading && !currentTopic" class="loading-container">
+    <div
+      v-if="topicsStore.loading && !topicsStore.currentTopic"
+      class="flex justify-content-center align-items-center h-20rem"
+    >
       <ProgressSpinner />
     </div>
 
-    <div v-else-if="!currentTopic && !loading" class="not-found-container">
-      <Message severity="error" :closable="false">
-        <div class="flex flex-column align-items-center">
-          <i
-            class="pi pi-exclamation-triangle"
-            style="font-size: 3rem; margin-bottom: 1rem"
-          ></i>
-          <h3>Temat nie znaleziony</h3>
-          <p>Ten temat nie istnieje lub został usunięty.</p>
-          <Button
-            label="Powrót do strony głównej"
-            icon="pi pi-home"
-            @click="$router.push('/')"
-            class="mt-3"
-          />
-        </div>
-      </Message>
+    <div
+      v-else-if="topicsStore.error"
+      class="flex flex-column align-items-center justify-content-center h-20rem text-center"
+    >
+      <i class="pi pi-exclamation-triangle text-4xl text-orange-500 mb-3"></i>
+      <h3 class="text-900 m-0 mb-2">Wystąpił problem</h3>
+      <p class="text-600 mb-4">{{ topicsStore.error }}</p>
+      <Button
+        label="Wróć do listy tematów"
+        icon="pi pi-arrow-left"
+        @click="$router.push('/')"
+      />
     </div>
 
-    <div
-      v-else-if="currentTopic"
-      class="main-container"
-      :class="{ 'loading-overlay': loading }"
-    >
-      <div v-if="loading" class="loading-indicator">
-        <ProgressSpinner style="width: 50px; height: 50px" strokeWidth="4" />
-      </div>
+    <div v-else-if="topicsStore.currentTopic" class="flex flex-column gap-4">
+      <TopicBreadcrumb :topic="topicsStore.currentTopic" />
 
-      <TopicHeader :topic="currentTopic" />
+      <div class="grid">
+        <div class="col-12 lg:col-9 flex flex-column gap-4">
+          <TopicHeader :topic="topicsStore.currentTopic" />
 
-      <TopicPagination
-        v-if="postsStore.posts.length > 0"
-        :currentPage="currentPage"
-        :hasNextPage="postsStore.pagination.hasNextPage"
-        :topicId="route.params.id"
-        :rowsPerPage="rowsPerPage"
-        @page-change="handlePageChange"
-        @rows-per-page-change="handleRowsPerPageChange"
-      />
+          <div
+            v-if="postsStore.loading && postsStore.posts.length === 0"
+            class="flex justify-content-center p-5"
+          >
+            <ProgressSpinner style="width: 40px" />
+          </div>
 
-      <div class="layout-with-sidebar">
-        <div class="posts-column">
           <TopicPostList
+            v-else
             :posts="postsStore.posts"
-            :tags="tagsStore.topicTags"
-            :sending="sending"
-            :replyToId="replyToId"
-            :canPost="topicsStore.canPost"
-            :topicClosed="currentTopic?.isClosed || false"
-            :isBlocked="topicsStore.isBlocked"
+            :currentUserId="authStore.user?._id"
+            :isModerator="topicsStore.canManage"
             @like="handleLike"
+            @delete="handleDeletePost"
             @reply="handleReply"
-            @delete="handleDelete"
-            @submit="handleAddPost"
-            @update:replyToId="replyToId = $event"
           />
+
+          <Paginator
+            v-if="
+              postsStore.pagination.hasNextPage ||
+              postsStore.pagination.page > 1
+            "
+            :rows="postsStore.pagination.limit"
+            :totalRecords="1000"
+            :first="
+              (postsStore.pagination.page - 1) * postsStore.pagination.limit
+            "
+            @page="onPageChange"
+            template="PrevPageLink CurrentPageReport NextPageLink"
+            class="mt-2"
+          />
+
+          <div class="mt-3">
+            <Message
+              v-if="topicsStore.isBlocked"
+              severity="error"
+              :closable="false"
+              class="w-full"
+            >
+              <div class="flex align-items-center gap-2">
+                <i class="pi pi-ban"></i>
+                <span
+                  >Zostałeś zablokowany w tym temacie. Nie możesz dodawać
+                  postów.</span
+                >
+              </div>
+            </Message>
+
+            <Message
+              v-else-if="topicsStore.isClosed && !topicsStore.canManage"
+              severity="warn"
+              :closable="false"
+              class="w-full"
+            >
+              <div class="flex align-items-center gap-2">
+                <i class="pi pi-lock"></i>
+                <span>Temat jest zamknięty. Tylko moderatorzy mogą pisać.</span>
+              </div>
+            </Message>
+
+            <div v-else id="post-editor-section">
+              <div
+                v-if="replyToPost"
+                class="flex align-items-center justify-content-between bg-primary-50 p-3 border-round mb-2 border-left-3 border-primary"
+              >
+                <div class="flex align-items-center gap-2">
+                  <i class="pi pi-reply text-primary"></i>
+                  <span class="text-sm text-700">
+                    Odpowiedź do:
+                    <strong>{{ replyToPost.author?.username }}</strong>
+                  </span>
+                </div>
+                <Button
+                  icon="pi pi-times"
+                  text
+                  rounded
+                  size="small"
+                  severity="secondary"
+                  @click="replyToPost = null"
+                />
+              </div>
+
+              <PostEditor
+                :loading="sending"
+                :placeholder="
+                  replyToPost
+                    ? 'Napisz odpowiedź...'
+                    : 'Napisz coś w tym temacie...'
+                "
+                @submit="onPostSubmit"
+              />
+            </div>
+          </div>
         </div>
 
-        <div class="sidebar-column">
+        <div class="col-12 lg:col-3 flex flex-column gap-4">
           <SubtopicsCard
             :subtopics="topicsStore.subtopics"
-            @create="showSubtopicDialog = true"
+            @create="showCreateSubtopic = true"
           />
 
-          <ModerationCard v-if="currentTopic" :topic="currentTopic" />
+          <TagManagementCard :topicId="topicsStore.currentTopic._id" />
 
-          <Message
-            v-if="
-              hasPendingApplication &&
-              !topicsStore.canManage &&
-              authStore.user?.role !== 'admin'
-            "
-            severity="info"
-            :closable="false"
-            class="mt-2"
-          >
-            Twoje zgłoszenie na moderatora oczekuje na rozpatrzenie
-          </Message>
-
-          <Button
-            v-if="canApplyForModerator"
-            label="Zgłoś się na moderatora"
-            icon="pi pi-user-plus"
-            severity="secondary"
-            outlined
-            fluid
-            class="mt-2"
-            @click="showModeratorApplicationDialog = true"
+          <ModerationCard
+            v-if="topicsStore.canManage"
+            :topic="topicsStore.currentTopic"
           />
 
-          <TagManagementCard
-            :topicId="route.params.id"
-            :moderators="currentTopic?.moderators || []"
-          />
-
-          <Button
-            label="Wróć do listy"
-            icon="pi pi-arrow-left"
-            text
-            fluid
-            class="mt-3"
-            @click="$router.push('/')"
-          />
-
-          <Button
-            v-if="authStore.user?.role === 'admin'"
-            label="Panel Admina"
-            icon="pi pi-shield"
-            severity="secondary"
-            text
-            fluid
-            class="mt-2"
-            @click="$router.push('/admin')"
-          />
+          <div v-else-if="authStore.isAuthenticated && !topicsStore.isBlocked">
+            <div
+              class="surface-card p-3 border-round shadow-1 border-1 surface-border"
+            >
+              <div class="font-bold mb-2 text-900">Rekrutacja</div>
+              <p class="text-sm text-600 mb-3">
+                Chcesz pomóc w prowadzeniu tego tematu?
+              </p>
+              <Button
+                v-if="!hasPendingApplication"
+                label="Zostań moderatorem"
+                icon="pi pi-star"
+                severity="help"
+                outlined
+                fluid
+                @click="showModeratorApp = true"
+              />
+              <Message
+                v-else
+                severity="info"
+                :closable="false"
+                class="m-0 text-sm"
+              >
+                Twoje zgłoszenie oczekuje na decyzję.
+              </Message>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
     <CreateTopicDialog
-      v-model:visible="showSubtopicDialog"
-      :parentId="route.params.id"
+      v-model:visible="showCreateSubtopic"
+      :parentId="topicsStore.currentTopic?._id"
       @created="onSubtopicCreated"
     />
 
     <ModeratorApplicationDialog
-      v-model="showModeratorApplicationDialog"
-      :topicId="route.params.id"
+      v-model:visible="showModeratorApp"
+      :topicId="topicsStore.currentTopic?._id"
       @submitted="onModeratorApplicationSubmitted"
     />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { ref, onMounted, onUnmounted, watch } from "vue";
+import { useRoute } from "vue-router";
+import { useTopicsStore } from "../../stores/topics";
+import { usePostsStore } from "../../stores/posts";
+import { useAuthStore } from "../../stores/auth";
+import { useApplicationsStore } from "../../stores/applications";
 import { useToastHelper } from "../../composables/useToastHelper";
-import { useTopicSocketHandlers } from "../../composables/useSocketNotifications";
-import TopicBreadcrumb from "../../components/topic/TopicBreadcrumb.vue";
-import TopicPagination from "../../components/topic/TopicPagination.vue";
-
-import { useTopicsStore } from "../../stores/topics.js";
-import { usePostsStore } from "../../stores/posts.js";
-import { useTagsStore } from "../../stores/tags.js";
-import { useAuthStore } from "../../stores/auth.js";
-import { useApplicationsStore } from "../../stores/applications.js";
-import { useUserStore } from "../../stores/user.js";
 
 const route = useRoute();
-const router = useRouter();
-const { showSuccess, showError } = useToastHelper();
-
 const topicsStore = useTopicsStore();
 const postsStore = usePostsStore();
-const tagsStore = useTagsStore();
 const authStore = useAuthStore();
 const applicationsStore = useApplicationsStore();
-const userStore = useUserStore();
+const { showSuccess, showError } = useToastHelper();
 
 const sending = ref(false);
-const showSubtopicDialog = ref(false);
-const showModeratorApplicationDialog = ref(false);
+const showCreateSubtopic = ref(false);
+const showModeratorApp = ref(false);
 const hasPendingApplication = ref(false);
-const replyToId = ref(null);
-const rowsPerPage = ref(10);
-const loading = ref(false);
+const replyToPost = ref(null);
 
-const currentTopicId = computed(() => route.params.id);
-const currentTopic = computed(() => topicsStore.currentTopic);
-const currentPage = computed(() => postsStore.pagination.page || 1);
+const initView = async (id) => {
+  await topicsStore.fetchTopicDetails(id);
+  if (topicsStore.error) return;
 
-const homeItem = ref({ icon: "pi pi-home", command: () => router.push("/") });
+  await postsStore.fetchPosts(id);
 
-const canApplyForModerator = computed(() => {
-  if (!authStore.user || !currentTopic.value) return false;
-  if (authStore.user.role === "admin") return false;
-  if (topicsStore.canManage) return false;
-  if (currentTopic.value.isClosed || currentTopic.value.isHidden) return false;
-  if (hasPendingApplication.value) return false;
-  return true;
-});
+  if (authStore.user && !topicsStore.canManage) {
+    const status = await applicationsStore.checkUserApplicationStatus(id);
+    hasPendingApplication.value = status.hasPendingApplication;
+  }
 
-const loadAllData = async (id, initialPage = null) => {
-  if (!id) return;
-
-  loading.value = true;
-  try {
-    postsStore.posts = [];
-    await topicsStore.fetchTopicDetails(id);
-
-    let startPage = initialPage || 1;
-    if (authStore.user && !initialPage) {
-      startPage = await userStore.getLastViewedPage(id);
-    }
-
-    await postsStore.fetchPosts(id, startPage, rowsPerPage.value);
-    await tagsStore.fetchTagsForTopic(id);
-
-    if (authStore.user) {
-      const status = await applicationsStore.checkUserApplicationStatus(id);
-      hasPendingApplication.value = status.hasPendingApplication;
-    }
-  } finally {
-    loading.value = false;
+  topicsStore.initTopicSockets(id);
+  postsStore.initPostSockets();
+  if (topicsStore.canManage) {
+    applicationsStore.initApplicationSockets(id);
   }
 };
 
-const { setupSocketListeners } = useTopicSocketHandlers(
-  topicsStore,
-  postsStore,
-  authStore,
-);
-const cleanup = setupSocketListeners(currentTopicId);
-
-onUnmounted(() => {
-  if (cleanup) cleanup();
-});
-
 onMounted(() => {
-  loadAllData(route.params.id);
+  if (route.params.id) initView(route.params.id);
 });
 
 watch(
   () => route.params.id,
-  async (newId, oldId) => {
-    if (!oldId || oldId === newId) return;
-    await loadAllData(newId);
-    window.scrollTo(0, 0);
+  (newId, oldId) => {
+    if (oldId) {
+      topicsStore.cleanupTopicSockets(oldId);
+      postsStore.cleanupPostSockets();
+      applicationsStore.cleanupApplicationSockets();
+    }
+    if (newId) {
+      replyToPost.value = null;
+      initView(newId);
+    }
   },
 );
 
-const handlePageChange = async (newPage) => {
-  await postsStore.fetchPosts(route.params.id, newPage, rowsPerPage.value);
-};
-
-const handleRowsPerPageChange = async (newRowsPerPage) => {
-  rowsPerPage.value = newRowsPerPage;
-  await postsStore.fetchPosts(route.params.id, 1, rowsPerPage.value);
-  window.scrollTo({ top: 0, behavior: "smooth" });
-};
-
-const focusEditor = () => {
-  document.getElementById("reply-form").scrollIntoView({ behavior: "smooth" });
-};
-
-const handleReply = (postId) => {
-  replyToId.value = postId;
-  focusEditor();
-};
-
-const handleLike = async (postId) => {
-  try {
-    await postsStore.toggleLike(postId);
-  } catch (error) {
-    showError(error);
+onUnmounted(() => {
+  if (route.params.id) {
+    topicsStore.cleanupTopicSockets(route.params.id);
+    postsStore.cleanupPostSockets();
+    applicationsStore.cleanupApplicationSockets();
   }
-};
+  topicsStore.clearCurrentTopic();
+  postsStore.clearPosts();
+});
 
-const handleDelete = async (postId) => {
-  try {
-    await postsStore.deletePost(postId);
-    await postsStore.fetchPosts(route.params.id);
-  } catch (e) {
-    const msg =
-      e?.response?.data?.message || e?.message || "Nie udało się usunąć posta";
-    showError(msg);
-  }
-};
+const onPostSubmit = async (content) => {
+  if (!content.trim()) return;
 
-const handleAddPost = async (data) => {
   sending.value = true;
   try {
-    const content = typeof data === "string" ? data : data.content;
-    const tags = typeof data === "object" ? data.tags : [];
+    const replyId = replyToPost.value ? replyToPost.value._id : null;
+    await postsStore.addPost(topicsStore.currentTopic._id, content, replyId);
 
-    postsStore.waitingForOwnPost = true;
+    showSuccess("Post dodany");
+    replyToPost.value = null;
 
-    await postsStore.addPost(route.params.id, content, replyToId.value, tags);
-
-    replyToId.value = null;
-    showSuccess("Post zostanie dodany za chwilę...", "Wysłano");
+    setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    }, 100);
   } catch (e) {
-    postsStore.waitingForOwnPost = false;
-    const msg = e?.response?.data?.message || e?.message || "Błąd wysyłania";
-    showError(msg);
+    showError(e);
   } finally {
     sending.value = false;
   }
 };
 
-const onModeratorApplicationSubmitted = async () => {
-  showSuccess("Aplikacja wysłana!");
-  const status = await applicationsStore.checkUserApplicationStatus(
-    route.params.id,
+const handleLike = async (postId) => {
+  if (!authStore.isAuthenticated) return showError("Musisz być zalogowany");
+  try {
+    await postsStore.toggleLike(postId);
+  } catch (e) {
+    showError(e);
+  }
+};
+
+const handleDeletePost = async (postId) => {
+  if (!confirm("Czy na pewno chcesz usunąć ten post?")) return;
+  try {
+    await postsStore.deletePost(postId);
+    showSuccess("Post usunięty");
+  } catch (e) {
+    showError(e);
+  }
+};
+
+const handleReply = (post) => {
+  replyToPost.value = post;
+  const editor = document.getElementById("post-editor-section");
+  if (editor) editor.scrollIntoView({ behavior: "smooth" });
+};
+
+const onPageChange = (event) => {
+  postsStore.fetchPosts(
+    topicsStore.currentTopic._id,
+    event.page + 1,
+    event.rows,
   );
-  hasPendingApplication.value = status.hasPendingApplication;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+const onModeratorApplicationSubmitted = () => {
+  hasPendingApplication.value = true;
 };
 
 const onSubtopicCreated = () => {
-  showSuccess("Nowy podtemat został dodany", "Podtemat utworzony");
+  showSuccess("Podtemat utworzony");
 };
 </script>
-
-<style scoped>
-.main-container {
-  position: relative;
-}
-
-.main-container.loading-overlay {
-  opacity: 0.6;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
-.loading-indicator {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1000;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.not-found-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
-  padding: 2rem;
-}
-
-.not-found-container .p-message {
-  width: 100%;
-  max-width: 600px;
-}
-
-.sidebar-column {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-.layout-with-sidebar {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 2rem;
-}
-</style>

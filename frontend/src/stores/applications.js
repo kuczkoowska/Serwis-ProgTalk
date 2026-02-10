@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import api from "../plugins/axios";
+import socketService from "../plugins/socket";
 
 const getError = (err) => err.response?.data?.message || "Błąd operacji";
 
@@ -47,7 +48,6 @@ export const useApplicationsStore = defineStore("applications", () => {
 
   async function reviewApplication(applicationId, status, reviewNotes = "") {
     loading.value = true;
-    error.value = null;
     try {
       const { data } = await api.patch(
         `/moderator-applications/review/${applicationId}`,
@@ -61,9 +61,7 @@ export const useApplicationsStore = defineStore("applications", () => {
         applications.value[appIndex].status = status;
         applications.value[appIndex].reviewedBy =
           data.data.application.reviewedBy;
-        applications.value[appIndex].reviewNotes = reviewNotes;
       }
-
       return data;
     } catch (err) {
       throw getError(err);
@@ -83,45 +81,34 @@ export const useApplicationsStore = defineStore("applications", () => {
       );
       return data.data;
     } catch (err) {
-      console.error("Błąd sprawdzania statusu aplikacji:", err);
       return { hasPendingApplication: false, application: null };
     }
   }
 
-  function addOrUpdateApplication(application) {
-    const existingIndex = applications.value.findIndex(
-      (app) => app._id === application._id,
-    );
-
-    if (existingIndex !== -1) {
-      applications.value[existingIndex] = application;
-    } else {
-      applications.value.unshift(application);
-    }
+  function initApplicationSockets(topicId) {
+    socketService.on("new_moderator_application", (data) => {
+      if (data.topicId === topicId) {
+        fetchApplications(topicId);
+      }
+    });
   }
 
-  async function refreshApplicationsForTopic(topicId) {
-    try {
-      await fetchApplications(topicId);
-    } catch (err) {
-      console.error("Błąd odświeżania aplikacji:", err);
-    }
+  function cleanupApplicationSockets() {
+    socketService.off("new_moderator_application");
   }
 
   return {
     applications,
     loading,
     error,
-
     pendingApplications,
     pendingCount,
-
     submitApplication,
     fetchApplications,
     reviewApplication,
     clearApplications,
     checkUserApplicationStatus,
-    addOrUpdateApplication,
-    refreshApplicationsForTopic,
+    initApplicationSockets,
+    cleanupApplicationSockets,
   };
 });

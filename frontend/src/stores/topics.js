@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import api from "../plugins/axios";
 import socketService from "../plugins/socket";
 import { useAuthStore } from "./auth";
+import router from "../router";
 
 const getError = (err) => err.response?.data?.message || "Błąd operacji";
 
@@ -37,48 +38,18 @@ export const useTopicsStore = defineStore("topics", () => {
   const hasMoreTopics = computed(() => pagination.value.hasNextPage);
   const topicsCount = computed(() => rootTopics.value.length);
 
-  function updateFilter(key, value) {
-    searchFilters.value[key] = value;
-  }
-
   function canManageTopic(userId) {
     if (!currentTopic.value || !userId) return false;
-
-    const creatorId = currentTopic.value.creator?._id;
+    const creatorId =
+      currentTopic.value.creator?._id || currentTopic.value.creator;
     if (creatorId === userId) return true;
-
     return (
       currentTopic.value.moderators?.some((mod) => {
-        const modId = mod.user?._id;
+        const modId = mod.user?._id || mod.user;
         return modId === userId;
       }) || false
     );
   }
-
-  // WEBSOCKETS
-
-  function subscribeToTopicsList() {
-    const authStore = useAuthStore();
-
-    socketService.joinTopicsList();
-
-    socketService.on("new_topic", (data) => {
-      const creatorName = data.topic?.creator?.username || data.topic?.creator;
-      const myName = authStore.user?.username;
-
-      if (creatorName !== myName) {
-        hasNewTopics.value = true;
-      }
-    });
-  }
-
-  function unsubscribeFromTopicsList() {
-    socketService.leaveTopicsList();
-    socketService.off("new_topic");
-    hasNewTopics.value = false;
-  }
-
-  // http
 
   function setSearchFilters(filters) {
     searchFilters.value = { ...searchFilters.value, ...filters };
@@ -97,33 +68,28 @@ export const useTopicsStore = defineStore("topics", () => {
   async function fetchRootTopics(customFilters = {}) {
     loading.value = true;
     error.value = null;
-
-    if (customFilters) {
-      searchFilters.value = { ...searchFilters.value, ...customFilters };
-    }
+    if (customFilters) setSearchFilters(customFilters);
 
     try {
       const params = {
         page: searchFilters.value.page || pagination.value.currentPage,
         limit: pagination.value.limit,
-        search: searchFilters.value.search || undefined,
-        sort: searchFilters.value.sort || "newest",
+        search: searchFilters.value.search,
+        sort: searchFilters.value.sort,
         root: !searchFilters.value.showAllLevels ? "true" : undefined,
       };
 
       const res = await api.get("/topics", { params });
-
       rootTopics.value = res.data.data.topics;
 
       if (res.data.data.pagination) {
         const backendPag = res.data.data.pagination;
         pagination.value = {
           currentPage: backendPag.currentPage || params.page,
-          limit: backendPag.limit || 12,
-          hasNextPage: backendPag.hasNextPage || false,
+          limit: backendPag.limit,
+          hasNextPage: backendPag.hasNextPage,
         };
       }
-
       hasNewTopics.value = false;
     } catch (err) {
       error.value = "Błąd pobierania tematów.";
@@ -137,8 +103,7 @@ export const useTopicsStore = defineStore("topics", () => {
     loading.value = true;
     error.value = null;
 
-    const isNewTopic = currentTopic.value?._id !== id;
-    if (isNewTopic) {
+    if (currentTopic.value?._id !== id) {
       currentTopic.value = null;
       subtopics.value = [];
     }
@@ -149,19 +114,17 @@ export const useTopicsStore = defineStore("topics", () => {
 
       currentTopic.value = data.topic;
       subtopics.value = data.subtopics || [];
+
       canPost.value = data.canPost;
       canManage.value = data.canManage;
       isBlocked.value = data.isBlocked || false;
       isClosed.value = data.isClosed || false;
     } catch (err) {
-      if (err.response?.status === 404) {
+      if (err.response?.status === 404)
         error.value = "Temat nie został znaleziony.";
-      } else if (err.response?.status === 403) {
+      else if (err.response?.status === 403)
         error.value = "Brak dostępu do tego tematu.";
-      } else {
-        error.value = "Nie udało się pobrać tematu.";
-      }
-      console.error(err);
+      else error.value = "Nie udało się pobrać tematu.";
     } finally {
       loading.value = false;
     }
@@ -180,10 +143,8 @@ export const useTopicsStore = defineStore("topics", () => {
   async function updateTopicMetadata(topicId, description) {
     try {
       await api.patch(`/topics/${topicId}/metadata`, { description });
-
-      if (currentTopic.value && currentTopic.value._id === topicId) {
+      if (currentTopic.value?._id === topicId)
         currentTopic.value.description = description;
-      }
       return true;
     } catch (err) {
       throw getError(err);
@@ -193,10 +154,8 @@ export const useTopicsStore = defineStore("topics", () => {
   async function deleteTopic(topicId) {
     try {
       await api.delete(`/topics/${topicId}`);
-
       rootTopics.value = rootTopics.value.filter((t) => t._id !== topicId);
       subtopics.value = subtopics.value.filter((t) => t._id !== topicId);
-
       return true;
     } catch (err) {
       throw getError(err);
@@ -206,74 +165,47 @@ export const useTopicsStore = defineStore("topics", () => {
   async function closeTopic(topicId, includeSubtopics = false) {
     try {
       await api.patch(`/topics/${topicId}/close`, { includeSubtopics });
-
-      if (currentTopic.value && currentTopic.value._id === topicId) {
-        currentTopic.value.isClosed = true;
-        isClosed.value = true;
-        canPost.value = false;
-      }
-
-      if (includeSubtopics) {
-        subtopics.value = subtopics.value.map((s) => ({
-          ...s,
-          isClosed: true,
-        }));
-      }
-
       return true;
     } catch (err) {
       throw getError(err);
     }
   }
-
   async function openTopic(topicId, includeSubtopics = false) {
     try {
       await api.patch(`/topics/${topicId}/open`, { includeSubtopics });
-
-      if (currentTopic.value && currentTopic.value._id === topicId) {
-        currentTopic.value.isClosed = false;
-        isClosed.value = false;
-      }
-
-      if (includeSubtopics) {
-        subtopics.value = subtopics.value.map((s) => ({
-          ...s,
-          isClosed: false,
-        }));
-      }
-
       return true;
     } catch (err) {
       throw getError(err);
     }
   }
-
   async function hideTopic(topicId) {
     try {
       await api.patch(`/topics/${topicId}/hide`);
-
-      if (currentTopic.value && currentTopic.value._id === topicId) {
-        currentTopic.value.isHidden = true;
-      }
-
+      return true;
+    } catch (err) {
+      throw getError(err);
+    }
+  }
+  async function unhideTopic(topicId) {
+    try {
+      await api.patch(`/topics/${topicId}/unhide`);
       return true;
     } catch (err) {
       throw getError(err);
     }
   }
 
-  async function unhideTopic(topicId) {
-    try {
-      await api.patch(`/topics/${topicId}/unhide`);
-
-      if (currentTopic.value && currentTopic.value._id === topicId) {
-        currentTopic.value.isHidden = false;
-      }
-
-      return true;
-    } catch (err) {
-      throw getError(err);
-    }
+  async function toggleTopicClosed(
+    topicId,
+    isCurrentlyClosed,
+    includeSubtopics = false,
+  ) {
+    return isCurrentlyClosed
+      ? openTopic(topicId, includeSubtopics)
+      : closeTopic(topicId, includeSubtopics);
+  }
+  async function toggleTopicHidden(topicId, isCurrentlyHidden) {
+    return isCurrentlyHidden ? unhideTopic(topicId) : hideTopic(topicId);
   }
 
   async function blockUser(
@@ -288,25 +220,21 @@ export const useTopicsStore = defineStore("topics", () => {
         reason,
         allowedSubtopicsIds,
       });
-      await fetchTopicDetails(topicId);
       return true;
     } catch (err) {
       throw getError(err);
     }
   }
-
   async function unblockUser(topicId, userId) {
     try {
       await api.post(`/moderators/${topicId}/unblock`, {
         userIdToUnblock: userId,
       });
-      await fetchTopicDetails(topicId);
       return true;
     } catch (err) {
       throw getError(err);
     }
   }
-
   async function promoteModerator(topicId, userId) {
     try {
       await api.post(`/moderators/${topicId}/moderators`, {
@@ -317,7 +245,6 @@ export const useTopicsStore = defineStore("topics", () => {
       throw getError(err);
     }
   }
-
   async function revokeModerator(topicId, userId) {
     try {
       await api.post(`/moderators/${topicId}/moderators/revoke`, {
@@ -329,36 +256,104 @@ export const useTopicsStore = defineStore("topics", () => {
     }
   }
 
-  async function toggleTopicClosed(
-    topicId,
-    isCurrentlyClosed,
-    includeSubtopics = false,
-  ) {
-    try {
-      if (isCurrentlyClosed) {
-        await openTopic(topicId, includeSubtopics);
-      } else {
-        await closeTopic(topicId, includeSubtopics);
+  function subscribeToTopicsList() {
+    const authStore = useAuthStore();
+    socketService.joinTopicsList();
+    socketService.on("new_topic", (data) => {
+      const creatorName = data.topic?.creator?.username || data.topic?.creator;
+      if (creatorName !== authStore.user?.username) {
+        hasNewTopics.value = true;
       }
-
-      return true;
-    } catch (err) {
-      throw getError(err);
-    }
+    });
   }
 
-  async function toggleTopicHidden(topicId, isCurrentlyHidden) {
-    try {
-      if (isCurrentlyHidden) {
-        await unhideTopic(topicId);
-      } else {
-        await hideTopic(topicId);
-      }
+  function unsubscribeFromTopicsList() {
+    socketService.leaveTopicsList();
+    socketService.off("new_topic");
+    hasNewTopics.value = false;
+  }
 
-      return true;
-    } catch (err) {
-      throw getError(err);
-    }
+  function initTopicSockets(topicId) {
+    const authStore = useAuthStore();
+    const myId = authStore.user?._id;
+
+    socketService.joinTopic(topicId);
+
+    socketService.on("new_subtopic", (data) => {
+      if (!subtopics.value.some((s) => s._id === data.topic._id)) {
+        subtopics.value.push(data.topic);
+      }
+    });
+
+    socketService.on("topic_closed", (data) => {
+      if (currentTopic.value && currentTopic.value._id === data.topicId) {
+        currentTopic.value.isClosed = true;
+        isClosed.value = true;
+        if (!canManage.value) canPost.value = false;
+      }
+      const sub = subtopics.value.find((s) => s._id === data.topicId);
+      if (sub) sub.isClosed = true;
+    });
+
+    socketService.on("topic_opened", (data) => {
+      if (currentTopic.value && currentTopic.value._id === data.topicId) {
+        currentTopic.value.isClosed = false;
+        isClosed.value = false;
+        if (!isBlocked.value) canPost.value = true;
+      }
+      const sub = subtopics.value.find((s) => s._id === data.topicId);
+      if (sub) sub.isClosed = false;
+    });
+
+    socketService.on("topic_hidden", (data) => {
+      if (currentTopic.value && currentTopic.value._id === data.topicId) {
+        currentTopic.value.isHidden = true;
+        if (authStore.user?.role !== "admin") {
+          router.push("/");
+        }
+      }
+    });
+
+    socketService.on("topic_unhidden", (data) => {
+      if (currentTopic.value && currentTopic.value._id === data.topicId) {
+        currentTopic.value.isHidden = false;
+      }
+    });
+
+    socketService.on("user_blocked_in_topic", (data) => {
+      if (data.userId === myId && data.topicId === currentTopic.value?._id) {
+        isBlocked.value = true;
+        canPost.value = false;
+      }
+    });
+
+    socketService.on("user_unblocked_in_topic", (data) => {
+      if (data.userId === myId && data.topicId === currentTopic.value?._id) {
+        isBlocked.value = false;
+        if (!isClosed.value) canPost.value = true;
+      }
+    });
+
+    const refreshPermissions = async (data) => {
+      if (data.topicId === currentTopic.value?._id) {
+        await fetchTopicDetails(data.topicId);
+      }
+    };
+    socketService.on("moderator_added", refreshPermissions);
+    socketService.on("moderator_removed", refreshPermissions);
+  }
+
+  function cleanupTopicSockets(topicId) {
+    if (topicId) socketService.leaveTopic(topicId);
+    socketService.off("new_subtopic");
+    socketService.off("topic_closed");
+    socketService.off("topic_opened");
+    socketService.off("topic_hidden");
+    socketService.off("topic_unhidden");
+    socketService.off("user_blocked_in_topic");
+    socketService.off("user_unblocked_in_topic");
+    socketService.off("moderator_added");
+    socketService.off("moderator_removed");
   }
 
   function clearCurrentTopic() {
@@ -383,16 +378,10 @@ export const useTopicsStore = defineStore("topics", () => {
     pagination,
     searchFilters,
     hasNewTopics,
-
     topicsCount,
     hasMoreTopics,
     canManageTopic,
-
-    updateFilter,
-
     fetchRootTopics,
-    subscribeToTopicsList,
-    unsubscribeFromTopicsList,
     setSearchFilters,
     resetSearchFilters,
     fetchTopicDetails,
@@ -410,5 +399,9 @@ export const useTopicsStore = defineStore("topics", () => {
     promoteModerator,
     revokeModerator,
     clearCurrentTopic,
+    subscribeToTopicsList,
+    unsubscribeFromTopicsList,
+    initTopicSockets,
+    cleanupTopicSockets,
   };
 });

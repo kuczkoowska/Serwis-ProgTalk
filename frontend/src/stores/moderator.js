@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import api from "../plugins/axios";
+import socketService from "../plugins/socket";
 
 const getError = (err) => err.response?.data?.message || "Błąd operacji";
 
@@ -27,11 +28,27 @@ export const useModeratorStore = defineStore("moderator", () => {
     }
   }
 
+  // --- SOCKETS ---
+  function initModeratorSockets(topicId) {
+    const refreshList = (data) => {
+      if (data.topicId === topicId) fetchBlockedUsers(topicId);
+    };
+
+    socketService.on("user_blocked_in_topic", refreshList);
+    socketService.on("user_unblocked_in_topic", refreshList);
+  }
+
+  function cleanupModeratorSockets() {
+    socketService.off("user_blocked_in_topic");
+    socketService.off("user_unblocked_in_topic");
+  }
+
   return {
     loading,
     error,
     blockedUsers,
-
     fetchBlockedUsers,
+    initModeratorSockets,
+    cleanupModeratorSockets,
   };
 });

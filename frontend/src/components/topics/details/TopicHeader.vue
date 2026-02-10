@@ -1,69 +1,53 @@
 <template>
-  <div class="custom-card layout-container mb-3">
-    <div>
-      <div>
-        <div class="mb-3">
-          <Tag
-            :value="topic?.isClosed ? 'Zamknięty' : 'Otwarty'"
-            :severity="topic?.isClosed ? 'danger' : 'success'"
-            rounded
-          />
-          <Tag
-            v-if="topic?.isHidden"
-            value="Ukryty"
-            severity="warning"
-            rounded
-            class="ml-2"
-          />
-        </div>
+  <div class="surface-card p-4 border-round shadow-1 border-1 surface-border">
+    <div class="flex flex-column gap-3">
+      <div class="flex gap-2">
+        <Tag
+          :value="topic?.isClosed ? 'Zamknięty' : 'Otwarty'"
+          :severity="topic?.isClosed ? 'danger' : 'success'"
+          rounded
+          icon="pi pi-circle-fill"
+        />
+        <Tag
+          v-if="topic?.isHidden"
+          value="Ukryty"
+          severity="warning"
+          rounded
+          icon="pi pi-eye-slash"
+        />
+      </div>
 
-        <h1 class="topic-title">{{ topic?.name }}</h1>
+      <h1 class="text-3xl font-bold text-900 m-0">{{ topic?.name }}</h1>
 
-        <div class="meta-info">
+      <div class="flex align-items-center gap-3 text-sm text-600">
+        <div class="flex align-items-center gap-2">
           <Avatar
             :label="topic?.creator?.username?.charAt(0).toUpperCase()"
-            size="normal"
+            shape="circle"
+            size="small"
           />
-          <div class="user-info-col">
-            <span class="username">{{ topic?.creator?.username }}</span>
-            <span class="date">
-              utworzono
-              {{ new Date(topic?.createdAt).toLocaleDateString() }}
-            </span>
-          </div>
+          <span class="font-semibold">{{
+            topic?.creator?.username || "Anonim"
+          }}</span>
+        </div>
+        <span>&bull;</span>
+        <div class="flex align-items-center gap-1">
+          <i class="pi pi-calendar"></i>
+          <span>{{ new Date(topic?.createdAt).toLocaleDateString() }}</span>
         </div>
       </div>
-    </div>
-    <Divider />
-    <div class="topic-description">
-      {{ topic?.description }}
+
+      <Divider />
+
+      <div class="text-700 line-height-3">
+        {{ topic?.description || "Brak opisu." }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 defineProps({
-  topic: {
-    type: Object,
-    required: true,
-  },
+  topic: { type: Object, required: true },
 });
 </script>
-
-<style scoped>
-.topic-title {
-  font-size: 2rem;
-  color: #1e293b;
-  margin: 0.5rem 0 1rem 0;
-}
-
-.topic-description {
-  font-size: 1.05rem;
-  color: #475569;
-  margin-top: 1rem;
-}
-
-.ml-2 {
-  margin-left: 0.5rem;
-}
-</style>

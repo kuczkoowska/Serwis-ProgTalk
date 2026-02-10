@@ -1,121 +1,109 @@
 <template>
-  <div v-if="canManage">
-    <div class="applicant-trigger-card" @click="showDialog = true">
-      <div class="trigger-content">
-        <div class="trigger-text">
-          <span class="trigger-title">Kandydaci</span>
-          <span class="trigger-subtitle">Zarządzaj zgłoszeniami</span>
-        </div>
+  <div>
+    <div
+      class="p-3 border-1 border-round cursor-pointer hover:surface-hover transition-colors transition-duration-200 flex align-items-center justify-content-between"
+      :class="
+        pendingCount > 0
+          ? 'bg-orange-50 border-orange-200'
+          : 'bg-surface-0 border-300'
+      "
+      @click="showDialog = true"
+    >
+      <div class="flex align-items-center gap-2">
+        <i
+          class="pi pi-users"
+          :class="pendingCount > 0 ? 'text-orange-500' : 'text-700'"
+        ></i>
+        <span
+          class="font-bold text-sm"
+          :class="pendingCount > 0 ? 'text-orange-900' : 'text-700'"
+        >
+          Kandydaci na moderatora
+        </span>
       </div>
-
-      <div class="trigger-action">
-        <Badge
-          v-if="pendingCount > 0"
-          :value="pendingCount"
-          severity="danger"
-        />
-        <i v-else class="pi pi-angle-right text-gray-400"></i>
-      </div>
+      <Badge v-if="pendingCount > 0" :value="pendingCount" severity="warning" />
+      <i v-else class="pi pi-angle-right text-500"></i>
     </div>
 
     <Dialog
       v-model:visible="showDialog"
       modal
-      header="Oczekujące zgłoszenia"
-      :style="{ width: '650px', maxWidth: '95vw' }"
-      class="custom-dialog"
-      :draggable="false"
+      header="Zgłoszenia na moderatora"
+      :style="{ width: '600px' }"
     >
-      <div v-if="loading" class="flex justify-content-center p-6">
-        <ProgressSpinner strokeWidth="4" style="width: 50px; height: 50px" />
+      <div
+        v-if="applicationsStore.loading"
+        class="flex justify-content-center p-4"
+      >
+        <ProgressSpinner />
       </div>
 
-      <div v-else-if="applications.length === 0" class="empty-state">
-        <div class="empty-icon">
-          <i class="pi pi-check text-3xl"></i>
-        </div>
-        <h3>Wszystko czyste!</h3>
-        <p>Brak nowych zgłoszeń na moderatora.</p>
+      <div
+        v-else-if="applications.length === 0"
+        class="text-center p-5 text-500"
+      >
+        <i class="pi pi-check-circle text-4xl mb-2 text-green-500"></i>
+        <p class="m-0">Brak nowych zgłoszeń.</p>
       </div>
 
-      <div v-else class="applications-list">
+      <div v-else class="flex flex-column gap-3">
         <div
           v-for="app in applications"
           :key="app._id"
-          class="application-card"
+          class="surface-card p-3 border-1 surface-border border-round"
         >
-          <div class="card-header">
-            <div class="user-profile">
+          <div class="flex justify-content-between align-items-start mb-3">
+            <div class="flex align-items-center gap-2">
               <Avatar
-                :label="app.applicant?.username?.[0]?.toUpperCase()"
+                :label="app.applicant?.username[0]"
                 shape="circle"
-                class="user-avatar"
+                class="bg-blue-100 text-blue-700"
               />
-              <div class="user-info">
-                <div class="user-name">{{ app.applicant?.username }}</div>
-                <div class="user-date">
-                  <i class="pi pi-clock"></i>
-                  <span>{{ formatDate(app.createdAt) }}</span>
+              <div>
+                <div class="font-bold">{{ app.applicant?.username }}</div>
+                <div class="text-xs text-500">
+                  {{ formatDate(app.createdAt) }}
                 </div>
               </div>
             </div>
-
-            <Tag
-              :value="getAvailabilityLabel(app.availability)"
-              :severity="getAvailabilitySeverity(app.availability)"
-              class="availability-tag"
-              rounded
-            />
+            <Tag :value="app.availability" severity="info" />
           </div>
 
-          <div class="card-body">
-            <div class="content-section">
-              <span class="section-label">
-                <i class="pi pi-comment"></i> Motywacja
-              </span>
-              <p class="section-text">{{ app.motivation }}</p>
+          <div class="mb-3">
+            <div class="text-xs font-bold uppercase text-500 mb-1">
+              Motywacja:
             </div>
-
-            <div v-if="app.experience" class="mt-3">
-              <div class="divider"></div>
-              <span class="section-label mt-3">
-                <i class="pi pi-star"></i> Doświadczenie
-              </span>
-              <p class="section-text">{{ app.experience }}</p>
-            </div>
+            <p class="m-0 text-sm line-height-3">{{ app.motivation }}</p>
           </div>
 
-          <div class="card-footer">
+          <div v-if="app.experience" class="mb-3">
+            <div class="text-xs font-bold uppercase text-500 mb-1">
+              Doświadczenie:
+            </div>
+            <p class="m-0 text-sm line-height-3">{{ app.experience }}</p>
+          </div>
+
+          <div class="flex justify-content-end gap-2">
             <Button
               label="Odrzuć"
               icon="pi pi-times"
               severity="danger"
-              text
               size="small"
-              :loading="processingId === app._id"
+              outlined
               @click="handleReview(app._id, 'rejected')"
+              :loading="processingId === app._id"
             />
             <Button
               label="Zatwierdź"
               icon="pi pi-check"
               severity="success"
               size="small"
-              :loading="processingId === app._id"
               @click="handleReview(app._id, 'approved')"
+              :loading="processingId === app._id"
             />
           </div>
         </div>
       </div>
-
-      <template #footer>
-        <Button
-          label="Zamknij"
-          icon="pi pi-times"
-          text
-          severity="secondary"
-          @click="showDialog = false"
-        />
-      </template>
     </Dialog>
   </div>
 </template>
@@ -123,55 +111,24 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { useToastHelper } from "../../../composables/useToastHelper";
-import { useTopicsStore } from "../../../stores/topics";
 import { useApplicationsStore } from "../../../stores/applications";
+import { useTopicsStore } from "../../../stores/topics";
 
 const props = defineProps({
   topicId: { type: String, required: true },
 });
 
-const emit = defineEmits(["moderator-added"]);
-const { showSuccess, showError, showInfo } = useToastHelper();
-const topicsStore = useTopicsStore();
+const { showSuccess, showError } = useToastHelper();
 const applicationsStore = useApplicationsStore();
+const topicsStore = useTopicsStore();
 
 const showDialog = ref(false);
 const processingId = ref(null);
 
-const canManage = computed(() => topicsStore.canManage);
 const applications = computed(() => applicationsStore.pendingApplications);
 const pendingCount = computed(() => applicationsStore.pendingCount);
-const loading = computed(() => applicationsStore.loading);
 
-const getAvailabilityLabel = (val) => {
-  const map = {
-    low: "Niska dostępność",
-    moderate: "Średnia dostępność",
-    high: "Wysoka dostępność",
-  };
-  return map[val] || val;
-};
-
-const getAvailabilitySeverity = (val) => {
-  const map = { low: "warning", moderate: "info", high: "success" };
-  return map[val] || "secondary";
-};
-
-const formatDate = (dateString) => {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  return date.toLocaleDateString("pl-PL", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const fetchApplications = async () => {
-  if (!canManage.value) return;
-  await applicationsStore.fetchApplications(props.topicId);
-};
+const formatDate = (date) => new Date(date).toLocaleDateString();
 
 const handleReview = async (appId, status) => {
   processingId.value = appId;
@@ -179,10 +136,7 @@ const handleReview = async (appId, status) => {
     await applicationsStore.reviewApplication(appId, status);
     if (status === "approved") {
       showSuccess("Nowy moderator dodany!");
-      emit("moderator-added");
       await topicsStore.fetchTopicDetails(props.topicId);
-    } else {
-      showInfo("Zgłoszenie odrzucone.");
     }
   } catch (error) {
     showError(error);
@@ -192,172 +146,7 @@ const handleReview = async (appId, status) => {
 };
 
 onMounted(() => {
-  fetchApplications();
+  applicationsStore.fetchApplications(props.topicId);
+  applicationsStore.initApplicationSockets(props.topicId);
 });
 </script>
-
-<style scoped>
-.applicant-trigger-card {
-  background-color: #ffffff;
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  margin-bottom: 1rem;
-}
-
-.trigger-content {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.trigger-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.trigger-title {
-  font-weight: 700;
-  color: #1e293b;
-  font-size: 1rem;
-}
-
-.trigger-subtitle {
-  font-size: 0.85rem;
-  color: #64748b;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 3rem 1rem;
-}
-
-.empty-icon {
-  width: 60px;
-  height: 60px;
-  background-color: #dcfce7;
-  color: #16a34a;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1rem auto;
-}
-
-.empty-state h3 {
-  margin: 0 0 0.5rem 0;
-  color: #1e293b;
-}
-
-.empty-state p {
-  margin: 0;
-  color: #64748b;
-}
-
-.applications-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  padding: 0.5rem 0;
-}
-
-.application-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.user-profile {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.user-avatar {
-  width: 48px;
-  height: 48px;
-  font-size: 1.25rem;
-  background-color: #eff6ff;
-  color: #2563eb;
-  font-weight: 700;
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.user-name {
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: #0f172a;
-}
-
-.user-date {
-  font-size: 0.85rem;
-  color: #64748b;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.availability-tag {
-  font-size: 0.8rem;
-  padding: 0.25rem 0.75rem;
-}
-
-.card-body {
-  background-color: #f8fafc;
-  border-radius: 12px;
-  padding: 1.25rem;
-  margin-bottom: 1.5rem;
-  border: 1px solid #f1f5f9;
-}
-
-.section-label {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #94a3b8;
-  margin-bottom: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.section-text {
-  font-size: 0.95rem;
-  color: #334155;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-word;
-  margin: 0;
-}
-
-.divider {
-  height: 1px;
-  background-color: #e2e8f0;
-  margin: 1rem 0;
-}
-
-.card-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-}
-</style>

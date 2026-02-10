@@ -1,9 +1,6 @@
 <script setup>
 import NavBarComponent from "./components/NavBarComponent.vue";
-import { useGlobalUserSocketNotifications } from "./composables/useSocketNotifications";
 import Toast from "primevue/toast";
-
-useGlobalUserSocketNotifications();
 </script>
 
 <template>

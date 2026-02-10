@@ -1,52 +1,41 @@
 <template>
-  <div class="custom-card mt-3">
-    <div class="sidebar-header">
-      <i class="pi pi-tags text-primary"></i>
-      <span>Tagi tematu</span>
-    </div>
-
-    <div class="sidebar-content">
-      <div v-if="tagsStore.loading" class="loading-state">
-        <ProgressSpinner />
+  <div class="surface-card p-3 border-round shadow-1 border-1 surface-border">
+    <div class="flex align-items-center justify-content-between mb-3">
+      <div class="flex align-items-center gap-2">
+        <i class="pi pi-tags text-primary text-xl"></i>
+        <span class="font-bold text-lg text-900">Tagi</span>
       </div>
-
-      <div v-else-if="tagsStore.topicTags.length === 0" class="empty-tags">
-        <p>Brak tagów dla tego tematu</p>
-      </div>
-
-      <div v-else class="tags-list">
-        <ul class="subtopics-list">
-          <li
-            v-for="tag in tagsStore.topicTags"
-            :key="tag._id"
-            class="tag-item"
-          >
-            <span class="tag-badge" :style="{ background: tag.color }">
-              {{ tag.name }}
-            </span>
-            <Button
-              v-if="canManage"
-              icon="pi pi-times"
-              rounded
-              text
-              size="small"
-              severity="danger"
-              @click="handleDelete(tag._id)"
-            />
-          </li>
-        </ul>
-      </div>
-
       <Button
         v-if="canManage"
-        label="Zarządzaj tagami"
+        icon="pi pi-cog"
+        rounded
+        text
         size="small"
-        severity="secondary"
-        outlined
-        fluid
-        icon="pi pi-plus"
+        v-tooltip="'Zarządzaj tagami'"
         @click="showDialog = true"
       />
+    </div>
+
+    <div v-if="tagsStore.loading" class="flex justify-content-center p-2">
+      <ProgressSpinner style="width: 20px; height: 20px" />
+    </div>
+
+    <div
+      v-else-if="tagsStore.topicTags.length === 0"
+      class="text-center py-2 text-500 text-sm font-italic"
+    >
+      Brak przypisanych tagów.
+    </div>
+
+    <div v-else class="flex flex-wrap gap-2">
+      <span
+        v-for="tag in tagsStore.topicTags"
+        :key="tag._id"
+        class="px-2 py-1 border-round text-sm font-medium text-white"
+        :style="{ backgroundColor: tag.color || '#64748b' }"
+      >
+        #{{ tag.name }}
+      </span>
     </div>
 
     <TagDialog
@@ -59,94 +48,32 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
-import { useToastHelper } from "../../../composables/useToastHelper";
-import { useTagsStore } from "../../../stores/tags.js";
-import { useAuthStore } from "../../../stores/auth.js";
-import { useTopicsStore } from "../../../stores/topics.js";
-import api from "../../../plugins/axios.js";
+import { ref, computed, onMounted, watch } from "vue";
+import { useTagsStore } from "../../../stores/tags";
+import { useAuthStore } from "../../../stores/auth";
+import { useTopicsStore } from "../../../stores/topics";
+import TagDialog from "./TagDialog.vue";
 
 const props = defineProps({
   topicId: { type: String, required: true },
-  moderators: { type: Array, default: () => [] },
 });
 
 const tagsStore = useTagsStore();
 const authStore = useAuthStore();
 const topicsStore = useTopicsStore();
-const { showSuccess, showError } = useToastHelper();
-
 const showDialog = ref(false);
 
 const canManage = computed(() => {
-  if (!authStore.user) return false;
-  if (authStore.user.role === "admin") return true;
-
-  return topicsStore.canManageTopic(authStore.user.id);
+  return authStore.user?.role === "admin" || topicsStore.canManage;
 });
 
-const refreshTags = async () => {
-  await tagsStore.fetchTagsForTopic(props.topicId);
+const refreshTags = () => {
+  tagsStore.fetchTagsForTopic(props.topicId);
 };
 
-const handleDelete = async (tagId) => {
-  try {
-    await api.post("/tags/remove", {
-      topicId: props.topicId,
-      tagId: tagId,
-    });
-
-    showSuccess("Tag został usunięty z tematu", "Sukces");
-
-    await refreshTags();
-  } catch (err) {
-    showError(
-      err.response?.data?.message || "Nie udało się usunąć tagu",
-      "Błąd",
-    );
-  }
-};
+onMounted(() => refreshTags());
+watch(
+  () => props.topicId,
+  () => refreshTags(),
+);
 </script>
-
-<style scoped>
-.loading-state {
-  display: flex;
-  justify-content: center;
-  padding: 1rem;
-}
-
-.empty-tags {
-  text-align: center;
-  padding: 1rem;
-  color: #64748b;
-  font-size: 0.9rem;
-}
-
-.tags-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.subtopics-list li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 0.5rem;
-  border-radius: 6px;
-  color: #334155;
-  font-weight: 500;
-}
-
-.subtopics-list li:hover {
-  background-color: #f8f1f9;
-}
-
-.tag-badge {
-  padding: 0.4rem 0.9rem;
-  border-radius: 16px;
-  color: white;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-</style>
