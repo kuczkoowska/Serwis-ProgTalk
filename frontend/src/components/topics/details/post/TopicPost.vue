@@ -2,12 +2,13 @@
   <div
     class="surface-card p-3 border-round shadow-1 border-1 surface-border transition-colors transition-duration-200"
     :class="{
-      'deleted-post-admin': post.isDeleted && isAdmin,
-      'deleted-post-user': post.isDeleted && !isAdmin,
+      'opacity-60 bg-gray-50': post.isDeleted,
+      'border-blue-200 bg-blue-50': isMyPost && !post.isDeleted,
+      'highlight-flash': isHighlighted,
     }"
     :id="`post-${post._id}`"
   >
-    <div class="flex justify-content-between align-items-start mb-3">
+    <div class="flex justify-content-between align-items-start mb-2">
       <div class="flex align-items-center gap-3">
         <Avatar
           :label="post.author?.username?.charAt(0).toUpperCase() || '?'"
@@ -15,8 +16,8 @@
           size="large"
           class="bg-primary-50 text-primary font-bold"
         />
-        <div class="flex flex-column">
-          <div class="flex align-items-center gap-2">
+        <div class="flex flex-column gap-1">
+          <div class="flex align-items-center gap-2 flex-wrap">
             <span class="font-bold text-900">
               {{ post.author?.username || "Użytkownik" }}
             </span>
@@ -36,9 +37,25 @@
             />
           </div>
 
-          <span class="text-sm text-500">
-            {{ formatDate(post.createdAt) }}
-          </span>
+          <div class="flex align-items-center gap-2">
+            <span class="text-sm text-500">
+              {{ formatDate(post.createdAt) }}
+            </span>
+
+            <div
+              v-if="post.tags && post.tags.length > 0"
+              class="flex gap-1 ml-2"
+            >
+              <span
+                v-for="tag in post.tags"
+                :key="tag._id"
+                class="text-xs px-2 py-0 border-round text-white font-medium"
+                :style="{ backgroundColor: tag.color || '#64748b' }"
+              >
+                #{{ tag.name }}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -54,12 +71,21 @@
       </div>
     </div>
 
-    <div v-if="!post.isDeleted || isAdmin" class="post-content-wrapper">
+    <div v-if="!post.isDeleted || isAdmin" class="post-content-wrapper mt-2">
+      <div
+        v-if="post.isDeleted && isAdmin"
+        class="text-red-500 text-sm font-bold mb-2"
+      >
+        <i class="pi pi-eye-slash mr-1"></i> Treść widoczna tylko dla
+        moderatorów:
+      </div>
+
       <div
         v-if="post.replyTo"
-        class="reply-reference cursor-pointer hover:surface-hover"
+        class="reply-reference cursor-pointer transition-colors transition-duration-200"
         :class="{ 'opacity-50': post.replyTo.isDeleted }"
         @click="!post.replyTo.isDeleted && scrollToPost(post.replyTo._id)"
+        v-tooltip.top="'Kliknij, aby zobaczyć oryginał'"
       >
         <div class="text-xs text-500 mb-1 flex align-items-center gap-1">
           <i class="pi pi-reply"></i> Odpowiedź do:
@@ -85,10 +111,9 @@
 
     <div
       v-else
-      class="text-500 font-italic text-sm py-3 flex align-items-center justify-content-center bg-gray-50 border-round"
+      class="text-500 font-italic text-sm py-3 flex align-items-center justify-content-center bg-gray-50 border-round mt-2"
     >
-      <i class="pi pi-trash mr-2"></i> Ta wiadomość została usunięta przez
-      moderatora lub autora.
+      <i class="pi pi-trash mr-2"></i> Ta wiadomość została usunięta.
     </div>
 
     <div
@@ -117,7 +142,9 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { ref, computed, nextTick } from "vue";
+import { useToastHelper } from "../../../../composables/useToastHelper";
+import { usePostsStore } from "../../../../stores/posts";
 
 const props = defineProps({
   post: { type: Object, required: true },
@@ -127,6 +154,10 @@ const props = defineProps({
 });
 
 defineEmits(["like", "reply", "delete"]);
+
+const isHighlighted = ref(false);
+const postsStore = usePostsStore();
+const { showInfo, showError } = useToastHelper();
 
 const formatDate = (date) =>
   new Date(date).toLocaleString("pl-PL", {
@@ -141,29 +172,53 @@ const isLiked = computed(() => {
   return false;
 });
 
-const canDelete = computed(() => {
-  return props.post.author?._id === props.currentUserId;
-});
+const isMyPost = computed(() => props.post.author?._id === props.currentUserId);
+const canDelete = computed(
+  () => props.post.author?._id === props.currentUserId,
+);
 
-const scrollToPost = (id) => {
-  const el = document.getElementById(`post-${id}`);
-  if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+const scrollToPost = async (id) => {
+  let el = document.getElementById(`post-${id}`);
+
+  if (el) {
+    animateScroll(el);
+    return;
+  }
+
+  showInfo("Szukam posta na innych stronach...");
+
+  const success = await postsStore.loadPageWithPost(id);
+
+  if (success) {
+    await nextTick();
+
+    el = document.getElementById(`post-${id}`);
+    if (el) {
+      animateScroll(el);
+    } else {
+      showError("Nie udało się znaleźć posta (może został usunięty?).");
+    }
+  }
+};
+
+const animateScroll = (el) => {
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.classList.add("highlight-flash");
+  setTimeout(() => {
+    el.classList.remove("highlight-flash");
+  }, 2000);
 };
 
 const parsedContent = computed(() => {
   const text = props.post.content || "";
   const regex = /```(\w*)\n?([\s\S]*?)```/g;
-
   const parts = [];
   let lastIndex = 0;
   let match;
 
   while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      parts.push({
-        type: "text",
-        content: text.slice(lastIndex, match.index),
-      });
+      parts.push({ type: "text", content: text.slice(lastIndex, match.index) });
     }
     parts.push({
       type: "code",
@@ -172,36 +227,45 @@ const parsedContent = computed(() => {
     });
     lastIndex = regex.lastIndex;
   }
-
   if (lastIndex < text.length) {
-    parts.push({
-      type: "text",
-      content: text.slice(lastIndex),
-    });
+    parts.push({ type: "text", content: text.slice(lastIndex) });
   }
-
   return parts;
 });
 </script>
 
 <style scoped>
-.deleted-post-admin {
-  background-color: #fff5f5 !important;
-  border-color: #fca5a5 !important;
-  opacity: 0.9;
-}
-
-.deleted-post-user {
-  opacity: 0.7;
-  border-style: dashed;
-}
-
 .reply-reference {
   background: #f8fafc;
   padding: 0.5rem 0.75rem;
   border-left: 3px solid var(--primary-color);
   border-radius: 6px;
   margin-bottom: 0.75rem;
+}
+
+.reply-reference:hover {
+  background-color: #e0f2fe;
+  border-left-color: #2563eb;
+}
+
+@keyframes flash {
+  0% {
+    background-color: rgba(254, 240, 138, 0.6);
+    transform: scale(1.02);
+  }
+  50% {
+    background-color: rgba(254, 240, 138, 0.3);
+    transform: scale(1.01);
+  }
+  100% {
+    background-color: transparent;
+    transform: scale(1);
+  }
+}
+
+.highlight-flash {
+  animation: flash 2s ease-out;
+  border: 1px solid #facc15 !important;
 }
 
 :deep(pre) {

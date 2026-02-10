@@ -48,30 +48,34 @@ exports.createPost = async (req, res) => {
       replyTo: replyTo || null,
     });
 
-    await newPost.populate("author", "username role");
-    await newPost.populate("tags", "name color");
-    if (replyTo) {
-      await newPost.populate({
+    const populatedPost = await Post.findById(newPost._id)
+      .populate("author", "username email role avatar")
+      .populate("tags", "name color")
+      .populate({
         path: "replyTo",
-        select: "content author",
+        select: "content author isDeleted",
         populate: { path: "author", select: "username" },
       });
+
+    if (validatedTags.length > 0) {
+      await Tag.updateMany(
+        { _id: { $in: validatedTags } },
+        { $inc: { usageCount: 1 } },
+      );
     }
 
-    notificationService.notifyNewPost(newPost, topicId);
+    notificationService.notifyNewPost(topicId, populatedPost);
 
     res.status(201).json({
       status: "success",
-      data: { post: newPost },
+      data: { post: populatedPost },
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ status: "error", message: "Błąd serwera", error: error.message });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
-exports.getTopicPosts = async (req, res) => {
+exports.getPostsByTopic = async (req, res) => {
   try {
     const { topicId } = req.params;
 
@@ -88,14 +92,16 @@ exports.getTopicPosts = async (req, res) => {
     }
 
     const filter = { topic: topicId, isDeleted: false };
-
-    if (req.user && req.user.role === "admin") delete filter.isDeleted;
-
     const totalPosts = await Post.countDocuments(filter);
 
     const posts = await Post.find(filter)
       .populate("author", "username email role avatar")
-      .populate("replyTo", "content author isDeleted")
+      .populate("tags", "name color")
+      .populate({
+        path: "replyTo",
+        select: "content author isDeleted",
+        populate: { path: "author", select: "username" },
+      })
       .sort("createdAt")
       .skip(skip)
       .limit(limit);
@@ -113,6 +119,35 @@ exports.getTopicPosts = async (req, res) => {
         posts: responseData.items,
         pagination: responseData.pagination,
       },
+    });
+  } catch (error) {
+    res.status(500).json({ status: "error", message: error.message });
+  }
+};
+
+exports.getPostPage = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Post nie istnieje." });
+    }
+
+    const countBefore = await Post.countDocuments({
+      topic: post.topic,
+      isDeleted: false,
+      createdAt: { $lt: post.createdAt },
+    });
+
+    const pageNumber = Math.floor(countBefore / limit) + 1;
+
+    res.status(200).json({
+      status: "success",
+      data: { page: pageNumber, topicId: post.topic },
     });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });

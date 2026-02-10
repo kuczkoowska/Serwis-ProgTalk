@@ -1,6 +1,6 @@
 <template>
   <div class="posts-wrapper">
-    <div v-if="posts.length > 0" class="flex flex-column gap-3">
+    <div v-if="posts && posts.length > 0" class="flex flex-column gap-3">
       <TopicPost
         v-for="post in posts"
         :key="post._id"

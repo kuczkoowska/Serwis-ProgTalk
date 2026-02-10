@@ -16,6 +16,7 @@ export const usePostsStore = defineStore("posts", () => {
     hasNextPage: false,
     hasPrevPage: false,
     totalPages: 1,
+    totalItems: 0,
   });
 
   const waitingForOwnPost = ref(false);
@@ -39,6 +40,7 @@ export const usePostsStore = defineStore("posts", () => {
         hasNextPage: backendPag.hasNextPage || false,
         hasPrevPage: page > 1,
         totalPages: backendPag.totalPages || 1,
+        totalItems: backendPag.totalItems || 0,
       };
     } catch (err) {
       error.value = "Nie udało się pobrać wpisów.";
@@ -49,14 +51,31 @@ export const usePostsStore = defineStore("posts", () => {
   }
 
   async function fetchLastPage(topicId) {
-    await fetchPosts(topicId, pagination.value.page, pagination.value.limit);
+    const targetPage =
+      pagination.value.totalPages > 0 ? pagination.value.totalPages : 1;
+    await fetchPosts(topicId, targetPage, pagination.value.limit);
+  }
 
-    if (pagination.value.totalPages > pagination.value.page) {
-      await fetchPosts(
-        topicId,
-        pagination.value.totalPages,
-        pagination.value.limit,
-      );
+  async function loadPageWithPost(postId) {
+    loading.value = true;
+    try {
+      const { data } = await api.get(`/posts/${postId}/page`, {
+        params: { limit: pagination.value.limit },
+      });
+
+      const targetPage = data.data.page;
+      const topicId = data.data.topicId;
+
+      if (targetPage !== pagination.value.page) {
+        await fetchPosts(topicId, targetPage, pagination.value.limit);
+      }
+
+      return true;
+    } catch (err) {
+      console.error("Nie udało się znaleźć strony posta:", err);
+      return false;
+    } finally {
+      loading.value = false;
     }
   }
 
@@ -110,21 +129,27 @@ export const usePostsStore = defineStore("posts", () => {
       hasNextPage: false,
       hasPrevPage: false,
       totalPages: 1,
+      totalItems: 0,
     };
     waitingForOwnPost.value = false;
   }
 
   const handleNewPost = (post) => {
-    const exists = posts.value.find((p) => p._id === post._id);
-    if (exists) return;
+    pagination.value.totalItems++;
 
-    if (!isLastPage.value) return;
+    const newTotalPages = Math.ceil(
+      pagination.value.totalItems / pagination.value.limit,
+    );
+    pagination.value.totalPages = newTotalPages || 1;
+
+    pagination.value.hasNextPage =
+      pagination.value.page < pagination.value.totalPages;
 
     if (posts.value.length < pagination.value.limit) {
-      posts.value.push(post);
-    } else {
-      pagination.value.hasNextPage = true;
-      pagination.value.totalPages++;
+      if (pagination.value.page === pagination.value.totalPages) {
+        const exists = posts.value.find((p) => p._id === post._id);
+        if (!exists) posts.value.push(post);
+      }
     }
   };
 
@@ -158,10 +183,12 @@ export const usePostsStore = defineStore("posts", () => {
 
     fetchPosts,
     fetchLastPage,
+    loadPageWithPost,
     addPost,
     toggleLike,
     deletePost,
     clearPosts,
+
     initPostSockets,
     cleanupPostSockets,
   };
