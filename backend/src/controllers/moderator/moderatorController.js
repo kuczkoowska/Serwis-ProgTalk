@@ -88,6 +88,19 @@ exports.takeBackModerator = async (req, res) => {
       });
     }
 
+    const isTargetCreatorOfCurrent = topic.creator.toString() === userIdToTake;
+
+    const isTargetCreatorOfAnyAncestor = topic.ancestors.some(
+      (ancestor) => ancestor.creator.toString() === userIdToTake,
+    );
+
+    if (isTargetCreatorOfCurrent || isTargetCreatorOfAnyAncestor) {
+      return res.status(403).json({
+        message:
+          "Nie można usunąć właściciela tematu nadrzędnego z listy moderatorów.",
+      });
+    }
+
     const isPromoter =
       mod.promotedBy && mod.promotedBy.toString() === req.user._id.toString();
 
