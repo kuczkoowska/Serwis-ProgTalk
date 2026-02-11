@@ -47,7 +47,7 @@
     <div class="flex justify-content-between align-items-center">
       <small class="text-gray-500 hidden md:block">
         <i class="pi pi-info-circle mr-1"></i>
-        Markdown: **bold**, `code`, ```block```
+        ```block```
       </small>
 
       <Button
