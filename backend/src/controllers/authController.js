@@ -39,6 +39,7 @@ exports.register = async (req, res) => {
       email,
       username,
       password,
+      isEmailVerified: false,
     });
 
     const verificationToken = newUser.createEmailVerificationToken();

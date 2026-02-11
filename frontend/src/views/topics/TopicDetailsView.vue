@@ -182,7 +182,7 @@
       @created="onSubtopicCreated"
     />
     <ModeratorApplicationDialog
-      v-model:visible="showModeratorApp"
+      v-model="showModeratorApp"
       :topicId="topicsStore.currentTopic?._id"
       @submitted="onModeratorApplicationSubmitted"
     />

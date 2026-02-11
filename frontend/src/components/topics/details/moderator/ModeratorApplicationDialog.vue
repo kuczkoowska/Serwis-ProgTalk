@@ -52,7 +52,6 @@
     </div>
 
     <template #footer>
-      <Button label="Anuluj" icon="pi pi-times" text @click="closeDialog" />
       <Button
         label="Wyślij zgłoszenie"
         icon="pi pi-send"
