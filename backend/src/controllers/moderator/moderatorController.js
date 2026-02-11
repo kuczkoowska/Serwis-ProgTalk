@@ -2,6 +2,7 @@ const Topic = require("../../models/Topic");
 const User = require("../../models/User");
 const authService = require("../../services/authorizationService");
 const notificationService = require("../../services/notificationService");
+const ModeratorApplication = require("../../models/ModeratorApplication");
 const SystemLogs = require("../../models/SystemLogs");
 const { ACTION_TYPES } = require("../../utils/constants/actionTypes");
 const {
@@ -40,6 +41,17 @@ exports.promoteModerator = async (req, res) => {
     });
 
     await topic.save();
+
+    await ModeratorApplication.deleteMany({
+      topic: topicId,
+      applicant: userIdToPromote,
+    });
+
+    notificationService.notifyApplicationApproved(
+      userIdToPromote,
+      topicId,
+      topic.name,
+    );
 
     await moderatorToSubtopics(topicId, userIdToPromote, req.user._id);
 

@@ -10,7 +10,10 @@ exports.getAdminStats = async (req, res) => {
       isBlocked: false,
       isEmailVerified: true,
     });
-    const blockedUsers = await User.countDocuments({ isBlocked: true });
+    const blockedUsers = await User.countDocuments({
+      isBlocked: true,
+      isActive: true,
+    });
     const totalTopics = await Topic.countDocuments();
     const closedTopics = await Topic.countDocuments({ isClosed: true });
     const hiddenTopics = await Topic.countDocuments({ isHidden: true });

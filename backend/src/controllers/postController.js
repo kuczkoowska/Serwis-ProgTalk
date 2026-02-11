@@ -78,7 +78,6 @@ exports.createPost = async (req, res) => {
 exports.getPostsByTopic = async (req, res) => {
   try {
     const { topicId } = req.params;
-
     const { page, limit, skip } = paginationService.getPaginationParams(
       req.query,
       10,
@@ -91,7 +90,14 @@ exports.getPostsByTopic = async (req, res) => {
         .json({ status: "fail", message: "Temat nie znaleziony." });
     }
 
-    const filter = { topic: topicId, isDeleted: false };
+    const isAdmin = req.user && authService.isAdmin(req.user);
+
+    const filter = { topic: topicId };
+
+    if (!isAdmin) {
+      filter.isDeleted = false;
+    }
+
     const totalPosts = await Post.countDocuments(filter);
 
     const posts = await Post.find(filter)
@@ -102,7 +108,7 @@ exports.getPostsByTopic = async (req, res) => {
         select: "content author isDeleted",
         populate: { path: "author", select: "username" },
       })
-      .sort("createdAt")
+      .sort({ createdAt: 1, _id: 1 })
       .skip(skip)
       .limit(limit);
 
@@ -137,11 +143,21 @@ exports.getPostPage = async (req, res) => {
         .json({ status: "fail", message: "Post nie istnieje." });
     }
 
-    const countBefore = await Post.countDocuments({
+    const isAdmin = req.user && authService.isAdmin(req.user);
+
+    const countFilter = {
       topic: post.topic,
-      isDeleted: false,
-      createdAt: { $lt: post.createdAt },
-    });
+      $or: [
+        { createdAt: { $lt: post.createdAt } },
+        { createdAt: post.createdAt, _id: { $lt: post._id } },
+      ],
+    };
+
+    if (!isAdmin) {
+      countFilter.isDeleted = false;
+    }
+
+    const countBefore = await Post.countDocuments(countFilter);
 
     const pageNumber = Math.floor(countBefore / limit) + 1;
 
